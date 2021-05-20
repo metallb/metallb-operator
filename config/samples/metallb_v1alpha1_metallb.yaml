@@ -1,7 +1,0 @@
-apiVersion: metallb.quay.io/fpaoline/metallboperator/v1alpha1
-kind: Metallb
-metadata:
-  name: metallb-sample
-spec:
-  # Add fields here
-  foo: bar
