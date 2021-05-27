@@ -1,0 +1,56 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+defaults:
+  run:
+    shell: bash
+    working-directory: metallboperator
+
+jobs:
+  main:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        go: [ '1.16' ]
+    name: Go ${{ matrix.go }}
+    steps:
+    - name: Checkout Metal LB Operator
+      uses: actions/checkout@v2
+      with:
+        path: metallboperator
+        fetch-depth: 0 # Fetch all history for all tags and branches
+
+    - uses: actions/setup-go@v2
+      id: go
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Verify modules
+      run: go mod verify
+
+    - name: Verify format
+      run: |
+        make fmt
+        git diff --exit-code
+  
+    - name: Verify manifests
+      run: |
+        make manifests
+        git diff --exit-code
+
+    - name: Create K8s Kind Cluster
+      run: kind create cluster --image kindest/node:v1.19.7
+
+    - name: Deploy Metal LB Operator
+      run: |
+        make deploy
+
+    - name: E2E Tests
+      run: |
+        export KUBECONFIG=${HOME}/.kube/config 
+        make test
