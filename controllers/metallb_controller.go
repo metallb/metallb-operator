@@ -18,11 +18,11 @@ package controllers
 
 import (
 	"context"
+	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,11 +80,10 @@ func (r *MetallbReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *MetallbReconciler) syncMetalLBResources(config *metallbv1alpha1.Metallb) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
-	// var err error
-	objs := []*uns.Unstructured{}
 	data := render.MakeRenderData()
 
-	// data.Data["Image"] = os.Getenv("METALLB_IMAGE") // TODO Make images parametric here
+	data.Data["SpeakerImage"] = os.Getenv("SPEAKER_IMAGE")
+	data.Data["ControllerImage"] = os.Getenv("CONTROLLER_IMAGE")
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")
