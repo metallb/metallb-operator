@@ -15,7 +15,7 @@ all: manager
 
 # Run tests
 test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
+	go test -v ./test/e2e
 
 # Build manager binary
 manager: generate fmt vet
