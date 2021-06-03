@@ -65,12 +65,19 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	watchNamepace := os.Getenv("WATCH_NAMESPACE")
+	if watchNamepace == "" {
+		setupLog.Error(nil, "WATCH_NAMESPACE env variable must be set")
+		os.Exit(1)
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "metallb.io.metallboperator",
+		Namespace:          watchNamepace,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
