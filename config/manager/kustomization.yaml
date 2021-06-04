@@ -6,3 +6,5 @@ images:
 - name: controller
   newName: quay.io/fpaoline/metallboperator
   newTag: latest
+patchesStrategicMerge:
+- env.yaml
