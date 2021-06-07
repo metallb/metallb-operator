@@ -40,6 +40,8 @@ spec:
               description: Foo is an example field of Metallb. Edit Metallb_types.go
                 to remove/update
               type: string
+            namespace:
+              type: string
           type: object
         status:
           description: MetallbStatus defines the observed state of Metallb

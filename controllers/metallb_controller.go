@@ -29,6 +29,7 @@ import (
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
+	"github.com/metallb/metallb-operator/pkg/override"
 	"github.com/metallb/metallb-operator/pkg/render"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -108,6 +109,8 @@ func (r *MetallbReconciler) syncMetalLBResources(config *metallbv1alpha1.Metallb
 		logger.Error(err, "Fail to render config daemon manifests")
 		return err
 	}
+
+	override.ResourceOverrides(objs, config)
 
 	for _, obj := range objs {
 		// Mark the object to be GC'd if the owner is deleted.

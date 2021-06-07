@@ -29,7 +29,8 @@ type MetallbSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Metallb. Edit Metallb_types.go to remove/update
-	MetallbImage string `json:"image,omitempty"`
+	MetallbImage     string `json:"image,omitempty"`
+	MetallbNamespace string `json:"namespace,omitempty"`
 }
 
 // MetallbStatus defines the observed state of Metallb
