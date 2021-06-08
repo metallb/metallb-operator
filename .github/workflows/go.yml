@@ -53,4 +53,4 @@ jobs:
     - name: E2E Tests
       run: |
         export KUBECONFIG=${HOME}/.kube/config 
-        make test
+        make test-e2e
