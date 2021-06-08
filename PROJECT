@@ -1,6 +1,6 @@
 domain: metallb.io
 layout: go.kubebuilder.io/v2.0.0
-repo: github.com/fedepaol/metallboperator
+repo: github.com/metallb/metallb-operator
 version: 3-alpha
 plugins:
   go.operator-sdk.io/v2.0.0: {}

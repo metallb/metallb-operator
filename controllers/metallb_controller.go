@@ -27,9 +27,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metallbv1alpha1 "github.com/fedepaol/metallboperator/api/v1alpha1"
-	"github.com/fedepaol/metallboperator/pkg/apply"
-	"github.com/fedepaol/metallboperator/pkg/render"
+	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	"github.com/metallb/metallb-operator/pkg/apply"
+	"github.com/metallb/metallb-operator/pkg/render"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
