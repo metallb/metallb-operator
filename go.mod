@@ -1,4 +1,4 @@
-module github.com/fedepaol/metallboperator
+module github.com/metallb/metallb-operator
 
 go 1.16
 

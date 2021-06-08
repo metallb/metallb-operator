@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 
-	metallbv1alpha1 "github.com/fedepaol/metallboperator/api/v1alpha1"
+	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 

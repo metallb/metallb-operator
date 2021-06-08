@@ -32,8 +32,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	metallbv1alpha1 "github.com/fedepaol/metallboperator/api/v1alpha1"
-	"github.com/fedepaol/metallboperator/controllers"
+	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	"github.com/metallb/metallb-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
 
