@@ -3,6 +3,8 @@
 IMG ?= quay.io/metallb/metallb-operator:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+# Which dir to use in deploy kustomize build
+KUSTOMIZE_DEPLOY_DIR ?= config/default
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -39,7 +41,7 @@ uninstall: manifests kustomize
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests kustomize
 	cd config/manager && kustomize edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.

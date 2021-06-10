@@ -2,9 +2,9 @@ resources:
 - manager.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+patchesStrategicMerge:
+- env.yaml
 images:
 - name: controller
   newName: quay.io/metallb/metallb-operator
   newTag: latest
-patchesStrategicMerge:
-- env.yaml

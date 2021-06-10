@@ -14,6 +14,8 @@ defaults:
 jobs:
   main:
     runs-on: ubuntu-18.04
+    env:
+      built_image: "metallb-operator:ci" # Arbitrary name
     strategy:
       matrix:
         go: [ '1.16' ]
@@ -43,12 +45,18 @@ jobs:
         make manifests
         git diff --exit-code
 
+    - name: Build image
+      run: |
+        docker build . -t ${built_image}
+
     - name: Create K8s Kind Cluster
-      run: kind create cluster --image kindest/node:v1.19.7
+      run: |
+        kind create cluster --image kindest/node:v1.19.7
+        kind load docker-image ${built_image}
 
     - name: Deploy Metal LB Operator
       run: |
-        make deploy
+        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
 
     - name: E2E Tests
       run: |
