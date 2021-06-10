@@ -27,7 +27,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: quay.io/fpaoline/metallboperator:latest
+        image: controller # Should be controller, this is the name that kustomize looks for and edits on deploy
         name: manager
         resources:
           limits:
