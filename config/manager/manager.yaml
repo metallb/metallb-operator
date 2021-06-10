@@ -27,7 +27,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: quay.io/fpaoline/metallboperator:latest
+        image: controller:latest
         name: manager
         resources:
           limits:

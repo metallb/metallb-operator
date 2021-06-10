@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: {{ .AddressPool.Name }}
+      protocol: {{ .AddressPool.Protocol }}
+      addresses:
+
+      {{ range $address := .AddressPool.Addresses -}}
+      - {{ $address }}
+      {{ end -}}
+
+      {{ $auto_assign := .AddressPool.AutoAssign}} {{ if ne $auto_assign false }}
+        auto-assign: {{ $auto_assign }}
+      {{ end }}
+
+      {{ $avoid_buggy_ips := .AddressPool.AvoidBuggyIPs}} {{ if ne $avoid_buggy_ips false }}
+        avoid-buggy-ips: {{ $avoid_buggy_ips }}
+      {{ end }}
+

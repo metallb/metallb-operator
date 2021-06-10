@@ -50,6 +50,26 @@ rules:
   - patch
   - update
 - apiGroups:
+  - metallb.io.metallb.io
+  resources:
+  - addresspools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - metallb.io.metallb.io
+  resources:
+  - addresspools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - policy
   resources:
   - podsecuritypolicies
