@@ -14,7 +14,8 @@ COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
-COPY bindata/ bindata/
+COPY bindata/deployment/ bindata/deployment/
+COPY bindata/configuration/address-pool/ bindata/configuration/address-pool/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
@@ -24,7 +25,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
-COPY --from=builder /workspace/bindata /bindata
+COPY --from=builder /workspace/bindata/deployment /bindata/deployment
+COPY --from=builder /workspace/bindata/configuration/address-pool/ /bindata/configuration/address-pool
 
 USER nonroot:nonroot
 

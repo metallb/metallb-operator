@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/metallb/metallb-operator:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd:trivialVersions=true,crdVersions=v1"
 # Which dir to use in deploy kustomize build
 KUSTOMIZE_DEPLOY_DIR ?= config/default
 

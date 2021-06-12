@@ -1,11 +1,11 @@
 domain: metallb.io
-layout: go.kubebuilder.io/v2
-repo: github.com/metallb/metallb-operator
-version: "3"
+layout:
+- go.kubebuilder.io/v2
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: metallb-operator
+repo: github.com/metallb/metallb-operator
 resources:
 - api:
     crdVersion: v1alpha1
@@ -16,3 +16,13 @@ resources:
   kind: Metallb
   path: metallb.io/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1beta1
+    namespaced: true
+  controller: true
+  domain: metallb.io
+  group: metallb.io
+  kind: AddressPool
+  path: github.com/metallb/metallb-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"

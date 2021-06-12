@@ -40,6 +40,10 @@ func MergeObjectForUpdate(current, updated *uns.Unstructured) error {
 		return err
 	}
 
+	if err := mergeConfigMapForUpdate(current, updated); err != nil {
+		return err
+	}
+
 	// For all object types, merge metadata.
 	// Run this last, in case any of the more specific merge logic has
 	// changed "updated"
@@ -198,6 +202,30 @@ func mergeLabels(current, updated *uns.Unstructured) {
 	if len(curLabels) != 0 {
 		updated.SetLabels(curLabels)
 	}
+}
+
+func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
+	if gvk := updated.GroupVersionKind(); gvk.Kind != "ConfigMap" || gvk.Group != "" {
+		return nil
+	}
+
+	s1, ok, err := uns.NestedStringMap(current.Object, "data")
+	if ok == false || err != nil {
+		return err
+	}
+
+	s2, ok, err := uns.NestedStringMap(updated.Object, "data")
+	if ok == false || err != nil {
+		return err
+	}
+
+	for k, v := range s2 {
+		s1[k] += v
+	}
+
+	err = uns.SetNestedStringMap(updated.Object, s1, "data")
+
+	return err
 }
 
 // IsObjectSupported rejects objects with configurations we don't support.
