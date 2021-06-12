@@ -2,7 +2,7 @@
 
 . $(dirname "$0")/common.sh
 
-METALLB_MANIFESTS_DIR="bindata"
+METALLB_MANIFESTS_DIR="bindata/deployment"
 METALLB_MANIFESTS_FILE="metallb.yaml"
 
 mv ${METALLB_MANIFESTS_DIR}/${METALLB_MANIFESTS_FILE} _cache/${METALLB_MANIFESTS_FILE}.manifests

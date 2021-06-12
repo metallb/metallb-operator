@@ -1,0 +1,33 @@
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-sample1
+  namespace: metallb-system
+spec:
+  name: default
+  protocol: layer2
+  addresses:
+    - 172.18.0.100-172.18.0.255
+---
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-sample2
+  namespace: metallb-system
+spec:
+  name: gold
+  protocol: layer2
+  addresses:
+    - 172.20.0.100/24
+  autoAssign: false
+---
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-sample3
+  namespace: metallb-system
+spec:
+  name: silver
+  protocol: layer2
+  addresses:
+    - 2002:2:2::1-2002:2:2::100
