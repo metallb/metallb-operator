@@ -1,0 +1,18 @@
+reviewers:
+  - fedepaol
+  - russellb
+  - dougbtv
+  - dcbw
+  - squeed
+  - markdgray
+  - msherif1234
+approvers:
+  - fedepaol
+  - russellb
+  - dougbtv
+  - dcbw
+  - squeed
+  - markdgray
+  - msherif1234
+component: "Networking"
+subcomponent: "metallb"
