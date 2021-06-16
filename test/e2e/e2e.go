@@ -293,6 +293,49 @@ var _ = Describe("validation", func() {
 
 `))
 	})
+	Context("MetalLB contains incorrect data", func() {
+		Context("MetalLB has incorrect name", func() {
+
+			var metallb *metallbv1alpha1.Metallb
+			BeforeEach(func() {
+				metallb = &metallbv1alpha1.Metallb{}
+				err := loadMetallbFromFile(metallb, consts.MetallbCRFile)
+				Expect(err).ToNot(HaveOccurred())
+				metallb.SetName("incorrectname")
+				Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
+			})
+
+			AfterEach(func() {
+				err := testclient.Client.Delete(context.Background(), metallb)
+				Expect(err).ToNot(HaveOccurred())
+				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
+				Eventually(func() bool {
+					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
+					if errors.IsNotFound(err) {
+						return true
+					}
+					return false
+				}, 5*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
+			})
+			It("should not deploy metallb resources", func() {
+				By("checking MetalLB controller and daemonset are not created", func() {
+					Eventually(func() bool {
+						instance := &metallbv1alpha1.Metallb{}
+						err := testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, instance)
+						if err != nil {
+							Expect(err).ToNot(HaveOccurred())
+						}
+						for _, condition := range instance.Status.Conditions {
+							if condition.Type == status.ConditionDegraded && condition.Status == metav1.ConditionTrue {
+								return true
+							}
+						}
+						return false
+					}, 30*time.Second, 5*time.Second).Should(BeTrue())
+				})
+			})
+		})
+	})
 })
 
 func decodeYAML(r io.Reader, obj interface{}) error {

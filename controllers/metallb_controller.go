@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -35,6 +36,8 @@ import (
 	"github.com/metallb/metallb-operator/pkg/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+const defaultMetallbCrName = "metallb"
 
 // MetallbReconciler reconciles a Metallb object
 type MetallbReconciler struct {
@@ -55,7 +58,7 @@ var ManifestPath = "./bindata/deployment"
 
 func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("metallb reconcile", req.NamespacedName)
+	logger := r.Log.WithValues("metallb", req.NamespacedName)
 
 	instance := &metallbv1alpha1.Metallb{}
 	err := r.Get(context.TODO(), req.NamespacedName, instance)
@@ -70,7 +73,15 @@ func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	logger := r.Log.WithValues("metallb reconcile", req.NamespacedName)
+	if req.Name != defaultMetallbCrName {
+		err := fmt.Errorf("Metallb resource name must be '%s'", defaultMetallbCrName)
+		logger.Error(err, "Invalid Metallb resource name", "name", req.Name)
+		if err := status.Update(context.TODO(), r.Client, instance, status.ConditionDegraded, "IncorrectMetallbResourceName", fmt.Sprintf("Incorrect Metallb resource name: %s", req.Name)); err != nil {
+			logger.Error(err, "Failed to update metallb status", "Desired status", status.ConditionDegraded)
+		}
+		return ctrl.Result{}, nil // Return success to avoid requeue
+	}
+
 	result, condition, err := r.reconcileResource(ctx, req, instance)
 	if condition != "" {
 		errorMsg, wrappedErrMsg := "", ""
