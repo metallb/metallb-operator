@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
@@ -95,10 +96,9 @@ func (r *MetallbReconciler) syncMetalLBResources(config *metallbv1alpha1.Metallb
 	}
 
 	for _, obj := range objs {
-		// Mark the object to be GC'd if the owner is deleted.
-		//if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
-		//	return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
-		//}
+		if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
+			return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
+		}
 
 		// Open question: should an error here indicate we will never retry?
 		if err := apply.ApplyObject(context.TODO(), r.Client, obj); err != nil {

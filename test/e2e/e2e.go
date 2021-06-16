@@ -99,16 +99,33 @@ var _ = Describe("validation", func() {
 
 		AfterEach(func() {
 			if !metallbCRExisted {
-				err := testclient.Client.Delete(context.Background(), metallb)
+				deployment, err := testclient.Client.Deployments(MetallbNameSpace).Get(context.Background(), MetallbDeploymentName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(deployment.OwnerReferences).ToNot(BeNil())
+				Expect(deployment.OwnerReferences[0].Kind).To(Equal("Metallb"))
+
+				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), MetallbDaemonsetName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(daemonset.OwnerReferences).ToNot(BeNil())
+				Expect(daemonset.OwnerReferences[0].Kind).To(Equal("Metallb"))
+
+				err = testclient.Client.Delete(context.Background(), metallb)
 				Expect(err).ToNot(HaveOccurred())
 				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
 				Eventually(func() bool {
 					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
-					if errors.IsNotFound(err) {
-						return true
-					}
-					return false
+					return errors.IsNotFound(err)
 				}, 5*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
+
+				Eventually(func() bool {
+					_, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), MetallbDeploymentName, metav1.GetOptions{})
+					return errors.IsNotFound(err)
+				}, 2*time.Minute, 2*time.Second).Should(BeTrue())
+
+				Eventually(func() bool {
+					_, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), MetallbDaemonsetName, metav1.GetOptions{})
+					return errors.IsNotFound(err)
+				}, 2*time.Minute, 2*time.Second).Should(BeTrue())
 			}
 		})
 
