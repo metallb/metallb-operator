@@ -18,7 +18,7 @@ test: generate fmt vet manifests
 	go test ./... -coverprofile cover.out
 
 test-e2e: generate fmt vet manifests
-	go test -v ./test/e2e -ginkgo.v
+	go test --tags=e2etests -v ./test/e2e -ginkgo.v
 
 # Build manager binary
 manager: generate fmt vet
