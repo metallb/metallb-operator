@@ -40,6 +40,7 @@ uninstall: manifests kustomize
 deploy: manifests kustomize
 	cd config/manager && kustomize edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -96,3 +97,11 @@ KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
 endif
+
+generate-metallb-manifests:
+	@echo "Generating MetalLB manifests"
+	hack/generate-metallb-manifests.sh
+
+validate-metallb-manifests:
+	@echo "Comparing newly generated MetalLB manifests to existing ones"
+	hack/compare-gen-manifests.sh
