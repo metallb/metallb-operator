@@ -6,6 +6,12 @@ CRD_OPTIONS ?= "crd:trivialVersions=true,crdVersions=v1"
 # Which dir to use in deploy kustomize build
 KUSTOMIZE_DEPLOY_DIR ?= config/default
 
+# Default bundle index image tag
+BUNDLE_INDEX_IMG ?= $(REPO)/metallb-operator-bundle-index:$(VERSION)
+
+# Default namespace
+NAMESPACE ?= metallb-system
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -68,6 +74,27 @@ docker-build: test
 docker-push:
 	docker push ${IMG}
 
+deploy-olm:
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.18.2/crds.yaml
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.18.2/olm.yaml
+
+deploy-with-olm:
+	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:latest#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
+	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
+	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
+
+# Build the bundle index image.
+bundle-index-build: opm
+	$(OPM) index add --bundles $(BUNDLE_IMG) --tag $(BUNDLE_INDEX_IMG) -c docker
+
+# Generate and push bundle image and bundle index image
+build-and-push-bundle-images:
+	$(MAKE) bundle
+	$(MAKE) build-bundle
+	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
+	$(MAKE) bundle-index-build
+	$(MAKE) docker-push IMG=$(BUNDLE_INDEX_IMG)
+
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
@@ -98,6 +125,22 @@ ifeq (, $(shell which kustomize))
 KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
+endif
+
+# Get the current opm binary. If there isn't any, we'll use the
+# GOBIN path
+opm:
+ifeq (, $(shell which opm))
+	@{ \
+	set -e ;\
+	opm_tool_url=https://api.github.com/repos/operator-framework/operator-registry/releases ;\
+	opm_tool_latest_version=$$(curl -s $$opm_tool_url | grep tag_name | grep -v -- '-rc' | head -1 | awk -F': ' '{print $$2}' | sed 's/,//' | xargs) ;\
+	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$$opm_tool_latest_version/linux-amd64-opm > $(GOBIN)/opm ;\
+	chmod u+x $(GOBIN)/opm ;\
+	}
+OPM=$(GOBIN)/opm
+else
+OPM=$(shell which opm)
 endif
 
 generate-metallb-manifests:
