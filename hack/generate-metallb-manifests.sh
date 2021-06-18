@@ -4,7 +4,7 @@
 
 METALLB_COMMIT_ID="312b03cd3065687f25274486cd3ff5c79d6f6068"
 METALLB_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/manifests/metallb.yaml"
-METALLB_MANIFESTS_DIR="bindata"
+METALLB_MANIFESTS_DIR="bindata/deployment"
 METALLB_MANIFESTS_FILE="metallb.yaml"
 
 if ! command -v yq &> /dev/null

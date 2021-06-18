@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
-  name: metallbs.metallb.io
+  name: addresspools.metallb.io
 spec:
   group: metallb.io
   names:
-    kind: Metallb
-    listKind: MetallbList
-    plural: metallbs
-    singular: metallb
+    kind: AddressPool
+    listKind: AddressPoolList
+    plural: addresspools
+    singular: addresspool
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Metallb is the Schema for the metallbs API
+        description: AddressPool is the Schema for the addresspools API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,16 +34,41 @@ spec:
           metadata:
             type: object
           spec:
-            description: MetallbSpec defines the desired state of Metallb
+            description: AddressPoolSpec defines the desired state of AddressPool
             properties:
-              image:
-                description: Foo is an example field of Metallb. Edit Metallb_types.go
-                  to remove/update
+              addresses:
+                description: A list of IP address ranges over which MetalLB has authority.
+                  You can list multiple ranges in a single pool, they will all share
+                  the same settings. Each range can be either a CIDR prefix, or an
+                  explicit start-end range of IPs.
+                items:
+                  type: string
+                type: array
+              autoAssign:
+                default: true
+                description: AutoAssign flag used to prevent MetallB from automatic
+                  allocation for a pool.
+                type: boolean
+              name:
+                description: Address Pool Name
                 type: string
+              protocol:
+                description: Protocol can be used to select how the announcement is
+                  done,
+                enum:
+                - layer2
+                - bgp
+                type: string
+            required:
+            - addresses
+            - name
+            - protocol
             type: object
           status:
-            description: MetallbStatus defines the observed state of Metallb
+            description: AddressPoolStatus defines the observed state of AddressPool
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

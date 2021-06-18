@@ -41,7 +41,7 @@ type MetallbReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-var ManifestPath = "./bindata"
+var ManifestPath = "./bindata/deployment"
 
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
