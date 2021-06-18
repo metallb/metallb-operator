@@ -7,27 +7,24 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - ""
+  - metallb.io
   resources:
-  - endpoints
-  - nodes
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - events
+  - addresspools
   verbs:
   - create
+  - delete
+  - get
+  - list
   - patch
+  - update
+  - watch
 - apiGroups:
-  - ""
+  - metallb.io
   resources:
-  - services/status
+  - addresspools/status
   verbs:
+  - get
+  - patch
   - update
 - apiGroups:
   - metallb.io
@@ -61,37 +58,6 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - policy
-  resourceNames:
-  - controller
-  - speaker
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterrolebindings
-  - clusterroles
-  verbs:
-  - create
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resourceNames:
-  - metallb-system:controller
-  - metallb-system:speaker
-  resources:
-  - clusterrolebindings
-  - clusterroles
-  verbs:
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -102,71 +68,10 @@ metadata:
   namespace: metallb-system
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - create
-- apiGroups:
-  - ""
-  resourceNames:
-  - memberlist
-  resources:
-  - secrets
-  verbs:
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - apps
   resources:
   - daemonsets
   - deployments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apps
-  resourceNames:
-  - controller
-  resources:
-  - deployments
-  verbs:
-  - get
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - rolebindings
-  - roles
   verbs:
   - create
   - delete

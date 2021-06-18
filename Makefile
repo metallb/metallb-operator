@@ -1,8 +1,10 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/fpaoline/metallboperator:latest
+IMG ?= quay.io/metallb/metallb-operator:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd:trivialVersions=true,crdVersions=v1"
+# Which dir to use in deploy kustomize build
+KUSTOMIZE_DEPLOY_DIR ?= config/default
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -16,6 +18,9 @@ all: manager
 # Run tests
 test: generate fmt vet manifests
 	go test ./... -coverprofile cover.out
+
+test-e2e: generate fmt vet manifests
+	go test --tags=e2etests -v ./test/e2e -ginkgo.v
 
 # Build manager binary
 manager: generate fmt vet
@@ -36,7 +41,8 @@ uninstall: manifests kustomize
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests kustomize
 	cd config/manager && kustomize edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
+	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -93,3 +99,11 @@ KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
 endif
+
+generate-metallb-manifests:
+	@echo "Generating MetalLB manifests"
+	hack/generate-metallb-manifests.sh
+
+validate-metallb-manifests:
+	@echo "Comparing newly generated MetalLB manifests to existing ones"
+	hack/compare-gen-manifests.sh

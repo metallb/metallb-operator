@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: {{ .Name }}
+      protocol: {{ .Protocol }}
+      addresses:
+
+      {{ range $address := .Addresses -}}
+      - {{ $address }}
+      {{ end -}}
+
+      {{ $auto_assign := .AutoAssign}} {{ if ne $auto_assign true }}
+        autoAssign: {{ $auto_assign }}
+      {{ end }}
