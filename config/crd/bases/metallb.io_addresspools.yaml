@@ -66,6 +66,30 @@ spec:
             type: object
           status:
             description: AddressPoolStatus defines the observed state of AddressPool
+            properties:
+              address-pool-services:
+                additionalProperties:
+                  description: AddressPool Service's information
+                  properties:
+                    address_pool_name:
+                      description: Address Pool name
+                      type: string
+                    allow-ip-sharing:
+                      description: Allow External IP sharing
+                      type: boolean
+                    external-ip:
+                      description: Service's Allocated External IP address
+                      type: string
+                    name-space:
+                      description: Service Namespace
+                      type: string
+                    service:
+                      description: Service Name
+                      type: string
+                  type: object
+                type: object
+            required:
+            - address-pool-services
             type: object
         required:
         - spec

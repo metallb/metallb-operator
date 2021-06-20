@@ -42,10 +42,23 @@ type AddressPoolSpec struct {
 	AutoAssign bool `json:"autoAssign,omitempty"`
 }
 
+// AddressPool Service's information
+type AddressPoolSvcStats struct {
+	// Service Name
+	Service string `json:"service,omitempty"`
+	// Service Namespace
+	NameSpace string `json:"name-space,omitempty"`
+	// Allow External IP sharing
+	AllowIPSharing bool `json:"allow-ip-sharing,omitempty"`
+	// Address Pool name
+	AddressPoolName string `json:"address_pool_name,omitempty"`
+	// Service's Allocated External IP address
+	ExternalIP string `json:"external-ip,omitempty"`
+}
+
 // AddressPoolStatus defines the observed state of AddressPool
 type AddressPoolStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	AddressPoolServices map[string]AddressPoolSvcStats `json:"address-pool-services"`
 }
 
 // +kubebuilder:object:root=true
