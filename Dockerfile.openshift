@@ -16,7 +16,7 @@ COPY bindata/deployment/ bindata/deployment/
 COPY bindata/configuration/address-pool/ bindata/configuration/address-pool/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -mod=vendor-o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -mod=vendor -o manager main.go
 
 FROM registry.ci.openshift.org/ocp/4.8:base
 
