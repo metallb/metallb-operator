@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"github.com/onsi/ginkgo/extensions/table"
 	"io"
 	"os"
 	"testing"
@@ -11,12 +12,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	metallbv1alpha "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
@@ -37,7 +39,16 @@ const (
 	MetallbDeploymentName = "controller"
 	// MetallbDaemonsetName contains the name of the MetalLB daemonset
 	MetallbDaemonsetName = "speaker"
+	// MetallbAddressPoolCRDName contains the name of MetallB AddressPool CRD
+	MetallbAddressPoolCRDName = "addresspools.metallb.io"
+	// MetallbConfigMapName contains created configmap
+	MetallbConfigMapName = "config"
+	// Timeout and Interval settings
+	timeout  = time.Minute * 3
+	interval = time.Second * 2
 )
+
+var autoAssign = false
 
 func RunE2ETests(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -56,7 +67,7 @@ var _ = Describe("validation", func() {
 					return false
 				}
 				return deploy.Status.ReadyReplicas == deploy.Status.Replicas
-			}, 5*time.Minute, 5*time.Second).Should(BeTrue())
+			}, timeout, interval).Should(BeTrue())
 
 			pods, err := testclient.Client.Pods(MetallbNameSpace).List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("control-plane=%s", MetallbOperatorDeploymentLabel)})
@@ -76,14 +87,20 @@ var _ = Describe("validation", func() {
 			err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Name: MetallbOperatorCRDName}, crd)
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		It("should have the MetalLB AddressPool CRD available in the cluster", func() {
+			crd := &apiext.CustomResourceDefinition{}
+			err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Name: MetallbAddressPoolCRDName}, crd)
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 
 	Context("MetalLB deploy", func() {
-		var metallb *metallbv1alpha.Metallb
+		var metallb *metallbv1alpha1.Metallb
 		var metallbCRExisted bool
 
 		BeforeEach(func() {
-			metallb = &metallbv1alpha.Metallb{}
+			metallb = &metallbv1alpha1.Metallb{}
 			err := loadMetallbFromFile(metallb, MetallbCRFile)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -115,17 +132,17 @@ var _ = Describe("validation", func() {
 				Eventually(func() bool {
 					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
 					return errors.IsNotFound(err)
-				}, 5*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
+				}, timeout, interval).Should(BeTrue(), "Failed to delete MetalLB custom resource")
 
 				Eventually(func() bool {
 					_, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), MetallbDeploymentName, metav1.GetOptions{})
 					return errors.IsNotFound(err)
-				}, 2*time.Minute, 2*time.Second).Should(BeTrue())
+				}, timeout, interval).Should(BeTrue())
 
 				Eventually(func() bool {
 					_, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), MetallbDaemonsetName, metav1.GetOptions{})
 					return errors.IsNotFound(err)
-				}, 2*time.Minute, 2*time.Second).Should(BeTrue())
+				}, timeout, interval).Should(BeTrue())
 			}
 		})
 
@@ -137,7 +154,7 @@ var _ = Describe("validation", func() {
 						return false
 					}
 					return deploy.Status.ReadyReplicas == deploy.Status.Replicas
-				}, 5*time.Minute, 5*time.Second).Should(BeTrue())
+				}, timeout, interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(MetallbNameSpace).List(context.Background(), metav1.ListOptions{
 					LabelSelector: "component=controller"})
@@ -159,7 +176,7 @@ var _ = Describe("validation", func() {
 						return false
 					}
 					return daemonset.Status.DesiredNumberScheduled == daemonset.Status.NumberReady
-				}, 5*time.Minute, 5*time.Second).Should(BeTrue())
+				}, timeout, interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(MetallbNameSpace).List(context.Background(), metav1.ListOptions{
 					LabelSelector: "component=speaker"})
@@ -175,6 +192,92 @@ var _ = Describe("validation", func() {
 			})
 		})
 	})
+
+	Context("Creating AddressPool", func() {
+		table.DescribeTable("Testing creating addresspool CR successfully", func(addressPoolName string, addresspool *metallbv1alpha1.AddressPool, expectedConfigMap string) {
+			By("By creating AddressPool CR")
+
+			Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
+
+			key := types.NamespacedName{
+				Name:      addressPoolName,
+				Namespace: MetallbNameSpace,
+			}
+			// Create addresspool resource
+			By("By checking AddressPool resource is created")
+			Eventually(func() error {
+				err := testclient.Client.Get(context.Background(), key, addresspool)
+				return err
+			}, timeout, interval).Should(Succeed())
+
+			// Checking ConfigMap is created
+			By("By checking ConfigMap is created match the expected configuration")
+			Eventually(func() (string, error) {
+				configmap, err := testclient.Client.ConfigMaps(MetallbNameSpace).Get(context.Background(), MetallbConfigMapName, metav1.GetOptions{})
+				if err != nil {
+					return "", err
+				}
+				return configmap.Data[MetallbConfigMapName], err
+			}, timeout, interval).Should(MatchYAML(expectedConfigMap))
+
+			By("By checking AddressPool resource and ConfigMap are deleted")
+			Eventually(func() bool {
+				err := testclient.Client.Delete(context.Background(), addresspool)
+				return errors.IsNotFound(err)
+			}, timeout, interval).Should(BeTrue(), "Failed to delete AddressPool custom resource")
+
+			Eventually(func() bool {
+				_, err := testclient.Client.ConfigMaps(MetallbNameSpace).Get(context.Background(), MetallbConfigMapName, metav1.GetOptions{})
+				return errors.IsNotFound(err)
+			}, timeout, interval).Should(BeTrue())
+		},
+			table.Entry("Test AddressPool object with default auto assign", "addresspool1", &metallbv1alpha1.AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "addresspool1",
+					Namespace: MetallbNameSpace,
+				},
+				Spec: metallbv1alpha1.AddressPoolSpec{
+					Name:     "test1",
+					Protocol: "layer2",
+					Addresses: []string{
+						"1.1.1.1",
+						"1.1.1.100",
+					},
+				},
+			}, `address-pools:
+- name: test1
+  protocol: layer2
+  addresses:
+
+  - 1.1.1.1
+  - 1.1.1.100
+
+`),
+			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1alpha1.AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "addresspool2",
+					Namespace: MetallbNameSpace,
+				},
+				Spec: metallbv1alpha1.AddressPoolSpec{
+					Name:     "test2",
+					Protocol: "layer2",
+					Addresses: []string{
+						"2.2.2.1",
+						"2.2.2.100",
+					},
+					AutoAssign: &autoAssign,
+				},
+			}, `address-pools:
+- name: test2
+  protocol: layer2
+  auto-assign: false
+  addresses:
+
+  - 2.2.2.1
+  - 2.2.2.100
+
+`))
+	})
 })
 
 func decodeYAML(r io.Reader, obj interface{}) error {
@@ -182,7 +285,7 @@ func decodeYAML(r io.Reader, obj interface{}) error {
 	return decoder.Decode(obj)
 }
 
-func loadMetallbFromFile(metallb *metallbv1alpha.Metallb, fileName string) error {
+func loadMetallbFromFile(metallb *metallbv1alpha1.Metallb, fileName string) error {
 	f, err := os.Open(fmt.Sprintf("../../config/samples/%s", fileName))
 	if err != nil {
 		return err
