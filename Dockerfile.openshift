@@ -25,6 +25,4 @@ COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/bindata/deployment /bindata/deployment
 COPY --from=builder /workspace/bindata/configuration/address-pool/ /bindata/configuration/address-pool
 
-USER nonroot:nonroot
-
 ENTRYPOINT ["/manager"]
