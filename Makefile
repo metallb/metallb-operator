@@ -1,10 +1,27 @@
 
+# Current Operator version
+VERSION ?= 0.1.0
+# Default image repo
+REPO ?= quay.io/metallb
+
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/metallb/metallb-operator:latest
+IMG ?= $(REPO)/metallb-operator:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,crdVersions=v1"
 # Which dir to use in deploy kustomize build
 KUSTOMIZE_DEPLOY_DIR ?= config/default
+
+# Default bundle image tag
+BUNDLE_IMG ?= $(REPO)/metallb-operator-bundle:$(VERSION)
+
+# Options for 'bundle'
+ifneq ($(origin CHANNELS), undefined)
+BUNDLE_CHANNELS := --channels=$(CHANNELS)
+endif
+ifneq ($(origin DEFAULT_CHANNEL), undefined)
+BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
+endif
+BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -12,6 +29,8 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+
+OPERATOR_SDK_URL=https://api.github.com/repos/operator-framework/operator-sdk/releases
 
 all: manager
 
@@ -71,6 +90,17 @@ docker-build: test
 docker-push:
 	docker push ${IMG}
 
+# Generate bundle manifests and metadata, then validate generated files.
+bundle: operator-sdk manifests
+	$(OPERATOR_SDK) generate kustomize manifests --interactive=false -q
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
+	$(OPERATOR_SDK) bundle validate ./bundle
+
+# Build the bundle image.
+build-bundle:
+	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
@@ -101,6 +131,21 @@ ifeq (, $(shell which kustomize))
 KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
+endif
+
+# Get the current operator-sdk binary. If there isn't any, we'll use the
+# GOBIN path
+operator-sdk:
+ifeq (, $(shell which operator-sdk))
+	@{ \
+	set -e ;\
+	operator_sdk_latest_version=$$(curl -s $(OPERATOR_SDK_URL) | grep tag_name | grep -v -- '-rc' | head -1 | awk -F': ' '{print $$2}' | sed 's/,//' | xargs) ;\
+	curl -Lk  https://github.com/operator-framework/operator-sdk/releases/download/$$operator_sdk_latest_version/operator-sdk_linux_amd64 > $(GOBIN)/operator-sdk ;\
+	chmod u+x $(GOBIN)/operator-sdk ;\
+	}
+OPERATOR_SDK=$(GOBIN)/operator-sdk
+else
+OPERATOR_SDK=$(shell which operator-sdk)
 endif
 
 generate-metallb-manifests:
