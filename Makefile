@@ -15,62 +15,49 @@ endif
 
 all: manager
 
-# Run tests
-test: generate fmt vet manifests
+test: generate fmt vet manifests  ## Run tests
 	go test ./... -coverprofile cover.out
 
-test-e2e: generate fmt vet manifests
+test-e2e: generate fmt vet manifests  ## Run e2e tests
 	go test --tags=e2etests -v ./test/e2e -ginkgo.v
 
-# Build manager binary
-manager: generate fmt vet
+manager: generate fmt vet  ## Build manager binary
 	go build -o bin/manager main.go
 
-# Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet manifests
+run: generate fmt vet manifests  ## Run against the configured Kubernetes cluster in ~/.kube/config
 	go run ./main.go
 
-# Install CRDs into a cluster
-install: manifests kustomize
+install: manifests kustomize  ## Install CRDs into a cluster
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
-# Uninstall CRDs from a cluster
-uninstall: manifests kustomize
+uninstall: manifests kustomize  ## Uninstall CRDs into a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests kustomize
+deploy: manifests kustomize  ## Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 	cd config/manager && kustomize edit set image controller=${IMG}
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
-# Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
+manifests: controller-gen  ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-# Run go fmt against code
-fmt:
+fmt:  ## Run go fmt against code
 	go fmt ./...
 
-# Run go vet against code
-vet:
+vet:  ## Run go vet against code
 	go vet ./...
 
-# Generate code
-generate: controller-gen
+generate: controller-gen  ## Generate code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-# Build the docker image
-docker-build: test
+docker-build: test  ## Build the docker image
 	docker build . -t ${IMG}
 
-# Push the docker image
-docker-push:
+docker-push:  ## Push the docker image
 	docker push ${IMG}
 
-# find or download controller-gen
 # download controller-gen if necessary
-controller-gen:
+controller-gen:  ## Find or download controller-gen
 ifeq (, $(shell which controller-gen))
 	@{ \
 	set -e ;\
@@ -100,10 +87,14 @@ else
 KUSTOMIZE=$(shell which kustomize)
 endif
 
-generate-metallb-manifests:
+generate-metallb-manifests:  ## Generate metallb manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
 
-validate-metallb-manifests:
+validate-metallb-manifests:  ## Validate metallb manifests
 	@echo "Comparing newly generated MetalLB manifests to existing ones"
 	hack/compare-gen-manifests.sh
+
+help:  ## Show this help
+	@grep -F -h "##" $(MAKEFILE_LIST) | grep -F -v grep | sed -e 's/\\$$//' \
+		| awk -F'[:#]' '{print $$1 = sprintf("%-30s", $$1), $$4}'
