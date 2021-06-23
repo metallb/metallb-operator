@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 
-	metallbiov1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	"github.com/metallb/metallb-operator/pkg/render"
 )
@@ -50,11 +50,10 @@ func (r *AddressPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	log := r.Log.WithValues("addresspool", req.NamespacedName)
 	log.Info("Reconciling AddressPool resource")
 
-	instance := &metallbiov1alpha1.AddressPool{}
+	instance := &metallbv1alpha1.AddressPool{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
 	err := r.syncMetalLBAddressPool(instance)
 	if err != nil {
 		errors.Wrap(err, "Failed to create address-pool config map")
@@ -65,11 +64,11 @@ func (r *AddressPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return ctrl.Result{}, nil
 }
 
-func (r *AddressPoolReconciler) syncMetalLBAddressPool(instance *metallbiov1alpha1.AddressPool) error {
+func (r *AddressPoolReconciler) syncMetalLBAddressPool(instance *metallbv1alpha1.AddressPool) error {
 	data := render.MakeRenderData()
 	data.Data["Name"] = instance.Spec.Name
 	data.Data["Protocol"] = instance.Spec.Protocol
-	data.Data["AutoAssign"] = instance.Spec.AutoAssign
+	data.Data["AutoAssign"] = *instance.Spec.AutoAssign
 	data.Data["Addresses"] = instance.Spec.Addresses
 	objs, err := render.RenderDir(AddressPoolManifestPath, &data)
 	if err != nil {
@@ -92,6 +91,6 @@ func (r *AddressPoolReconciler) syncMetalLBAddressPool(instance *metallbiov1alph
 
 func (r *AddressPoolReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&metallbiov1alpha1.AddressPool{}).
+		For(&metallbv1alpha1.AddressPool{}).
 		Complete(r)
 }
