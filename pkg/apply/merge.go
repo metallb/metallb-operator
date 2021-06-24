@@ -2,8 +2,8 @@ package apply
 
 import (
 	"github.com/pkg/errors"
-
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"strings"
 )
 
 // MergeMetadataForUpdate merges the read-only fields of metadata.
@@ -23,6 +23,10 @@ func mergeMetadataForUpdate(current, updated *uns.Unstructured) error {
 
 	return nil
 }
+
+const (
+	AddressPoolConfigMap = "config"
+)
 
 // MergeObjectForUpdate prepares a "desired" object to be updated.
 // Some objects, such as Deployments and Services require
@@ -219,12 +223,13 @@ func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
 		return err
 	}
 
-	for k, v := range s2 {
-		s1[k] += v
-	}
-
-	err = uns.SetNestedStringMap(updated.Object, s1, "data")
-
+	slice1 := strings.Split(s1[AddressPoolConfigMap], "address-pools:")
+	slice2 := strings.Split(s2[AddressPoolConfigMap], "address-pools:")
+	res := append(slice1, slice2...)
+	res = append([]string{"address-pools:"}, res...)
+	data := make(map[string]string)
+	data[AddressPoolConfigMap] = strings.Join(res, "")
+	err = uns.SetNestedStringMap(updated.Object, data, "data")
 	return err
 }
 

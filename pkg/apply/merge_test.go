@@ -301,3 +301,121 @@ func UnstructuredFromYaml(t *testing.T, obj string) *uns.Unstructured {
 
 	return &u
 }
+
+func TestMergeConfigMapSingelObject(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cur := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: gold
+      protocol: layer2
+      addresses:
+      - 172.20.0.100/24
+      autoAssign: false`)
+
+	upd := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: sliver
+      protocol: layer2
+      addresses:
+      - 172.22.0.100/24
+      autoAssign: false`)
+
+	err := MergeObjectForUpdate(cur, upd)
+	g.Expect(err).NotTo(HaveOccurred())
+	configmap, _, err := uns.NestedStringMap(upd.Object, "data")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(configmap[AddressPoolConfigMap]).Should(MatchYAML(`address-pools:
+- name: gold
+  protocol: layer2
+  addresses:
+  - 172.20.0.100/24
+  autoAssign: false
+- name: sliver
+  protocol: layer2
+  addresses:
+  - 172.22.0.100/24
+  autoAssign: false
+`))
+}
+
+func TestMergeConfigMapMultipleObjects(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cur := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: green
+      protocol: layer2
+      addresses:
+      - 172.10.0.100/24
+    - name: blue
+      protocol: layer2
+      addresses:
+      - 172.20.0.100/24
+      autoAssign: false`)
+
+	upd := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: yellow
+      protocol: layer2
+      addresses:
+      - 172.30.0.100/24
+    - name: blue
+      protocol: layer2
+      addresses:
+      - 172.20.0.100/24
+      autoAssign: false`)
+
+	err := MergeObjectForUpdate(cur, upd)
+	g.Expect(err).NotTo(HaveOccurred())
+	configmap, _, err := uns.NestedStringMap(upd.Object, "data")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(configmap[AddressPoolConfigMap]).Should(MatchYAML(`address-pools:
+- name: green
+  protocol: layer2
+  addresses:
+  - 172.10.0.100/24
+- name: blue
+  protocol: layer2
+  addresses:
+  - 172.20.0.100/24
+  autoAssign: false
+- name: yellow
+  protocol: layer2
+  addresses:
+  - 172.30.0.100/24
+- name: blue
+  protocol: layer2
+  addresses:
+  - 172.20.0.100/24
+  autoAssign: false
+`))
+}
