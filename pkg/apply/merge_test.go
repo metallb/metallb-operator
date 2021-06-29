@@ -302,7 +302,7 @@ func UnstructuredFromYaml(t *testing.T, obj string) *uns.Unstructured {
 	return &u
 }
 
-func TestMergeConfigMapSingelObject(t *testing.T) {
+func TestMergeConfigMapSingleObject(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cur := UnstructuredFromYaml(t, `
@@ -329,7 +329,7 @@ metadata:
 data:
   config: |
     address-pools:
-    - name: sliver
+    - name: silver
       protocol: layer2
       addresses:
       - 172.22.0.100/24
@@ -345,7 +345,7 @@ data:
   addresses:
   - 172.20.0.100/24
   autoAssign: false
-- name: sliver
+- name: silver
   protocol: layer2
   addresses:
   - 172.22.0.100/24
