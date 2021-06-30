@@ -19,7 +19,7 @@ spec:
   protocol: layer2
   addresses:
     - 172.20.0.100/24
-  autoAssign: false
+  auto-assign: false
 ---
 apiVersion: metallb.io/v1alpha1
 kind: AddressPool
