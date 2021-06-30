@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 
 # Current Operator version
 VERSION ?= 0.1.0

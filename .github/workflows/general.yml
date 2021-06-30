@@ -1,0 +1,60 @@
+name: General
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+defaults:
+  run:
+    shell: bash
+    working-directory: metallboperator
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Verify
+      uses: golangci/golangci-lint-action@v2
+      with:
+        version: v1.41.1
+        args: --timeout=15m0s --verbose
+
+  unit:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        go: [ '1.16' ]
+    name: Unit and Integration tests
+    steps:
+    - name: Checkout Metal LB Operator
+      uses: actions/checkout@v2
+      with:
+        path: metallboperator
+        fetch-depth: 0 # Fetch all history for all tags and branches
+
+    - uses: actions/setup-go@v2
+      id: go
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Verify modules
+      run: go mod verify
+
+    - name: Verify format
+      run: |
+        make fmt
+        git diff --exit-code
+
+    - name: Verify manifests
+      run: |
+        make manifests
+        git diff --exit-code
+
+    - name: Unit and Integration Tests
+      run: make test
