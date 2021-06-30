@@ -124,12 +124,9 @@ func (r *MetallbReconciler) syncMetalLBResources(config *metallbv1alpha1.Metallb
 		if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
 			return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
 		}
-
-		// Open question: should an error here indicate we will never retry?
 		if err := apply.ApplyObject(context.TODO(), r.Client, obj); err != nil {
-			err = errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
+			return errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
 		}
 	}
-
 	return nil
 }
