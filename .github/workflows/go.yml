@@ -62,3 +62,15 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config 
         make test-e2e
+
+    - name: Export kind logs
+      if: ${{ failure() }}
+      run: |
+        kind export logs /tmp/kind_logs
+
+    - name: Archive kind logs
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: kind_logs
+        path: /tmp/kind_logs
