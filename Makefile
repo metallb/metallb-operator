@@ -108,10 +108,9 @@ bundle: operator-sdk manifests
 build-bundle:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
-deploy-olm:
-	olm_latest_version=$$(curl -s $(OLM_URL) | grep tag_name | grep -v -- '-rc' | head -1 | awk -F': ' '{print $$2}' | sed 's/,//' | xargs) ;\
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$${olm_latest_version}/crds.yaml ;\
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$${olm_latest_version}/olm.yaml ;\
+deploy-olm: operator-sdk
+	operator-sdk olm install
+	operator-sdk olm status
 
 deploy-with-olm:
 	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:latest#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
