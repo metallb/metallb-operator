@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ import (
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	"github.com/metallb/metallb-operator/pkg/render"
+	"github.com/metallb/metallb-operator/pkg/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -53,7 +55,7 @@ var ManifestPath = "./bindata/deployment"
 
 func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("metallb", req.NamespacedName)
+	_ = r.Log.WithValues("metallb reconcile", req.NamespacedName)
 
 	instance := &metallbv1alpha1.Metallb{}
 	err := r.Get(context.TODO(), req.NamespacedName, instance)
@@ -68,12 +70,35 @@ func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	err = r.syncMetalLBResources(instance)
-	if err != nil {
-		return ctrl.Result{}, err
+	logger := r.Log.WithValues("metallb reconcile", req.NamespacedName)
+	result, condition, err := r.reconcileResource(ctx, req, instance)
+	if condition != "" {
+		errorMsg, wrappedErrMsg := "", ""
+		if err != nil {
+			if errors.Unwrap(err) != nil {
+				wrappedErrMsg = errors.Unwrap(err).Error()
+			}
+		}
+		if err := status.Update(context.TODO(), r.Client, instance, condition, errorMsg, wrappedErrMsg); err != nil {
+			logger.Info("Failed to update metallb status", "Desired status", status.ConditionAvailable)
+		}
 	}
+	return result, err
+}
 
-	return ctrl.Result{}, nil
+func (r *MetallbReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1alpha1.Metallb) (ctrl.Result, string, error) {
+	err := r.syncMetalLBResources(instance)
+	if err != nil {
+		return ctrl.Result{}, status.ConditionDegraded, errors.Wrapf(err, "FailedToSyncMetalLBResources")
+	}
+	err = status.IsMetallbAvailable(context.TODO(), r.Client, req.NamespacedName.Namespace)
+	if err != nil {
+		if _, ok := err.(status.MetallbResourcesNotReadyError); ok {
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, status.ConditionProgressing, nil
+		}
+		return ctrl.Result{}, status.ConditionProgressing, err
+	}
+	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
 func (r *MetallbReconciler) SetupWithManager(mgr ctrl.Manager) error {

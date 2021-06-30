@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 	corev1 "k8s.io/api/core/v1"
@@ -172,6 +173,37 @@ var _ = Describe("validation", func() {
 				for _, pod := range pods.Items {
 					Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
 				}
+			})
+			By("checking MetalLB CR status is set", func() {
+				Eventually(func() bool {
+					config := &metallbv1alpha1.Metallb{}
+					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, config)
+					Expect(err).ToNot(HaveOccurred())
+					if config.Status.Conditions == nil {
+						return false
+					}
+					for _, condition := range config.Status.Conditions {
+						switch condition.Type {
+						case status.ConditionAvailable:
+							if condition.Status == metav1.ConditionFalse {
+								return false
+							}
+						case status.ConditionProgressing:
+							if condition.Status == metav1.ConditionTrue {
+								return false
+							}
+						case status.ConditionDegraded:
+							if condition.Status == metav1.ConditionTrue {
+								return false
+							}
+						case status.ConditionUpgradeable:
+							if condition.Status == metav1.ConditionFalse {
+								return false
+							}
+						}
+					}
+					return true
+				}, 5*time.Minute, 5*time.Second).Should(BeTrue())
 			})
 		})
 	})
