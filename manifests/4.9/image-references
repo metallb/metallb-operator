@@ -1,0 +1,13 @@
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: metallb-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-metallb-operator:4.9
+  - name: metallb
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-metallb:4.9
