@@ -1,0 +1,17 @@
+---
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: metallb-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-metallb-operator:4.9
+  - name: speaker
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-speaker:4.9
+  - name: controller
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-controller:4.9
