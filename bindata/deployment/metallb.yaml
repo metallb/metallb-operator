@@ -132,6 +132,7 @@ spec:
                   key: secretkey
           image: '{{.SpeakerImage}}'
           name: speaker
+          command: ["/speaker"]
           ports:
             - containerPort: 7472
               name: monitoring
@@ -192,6 +193,7 @@ spec:
               value: controller
           image: '{{.ControllerImage}}'
           name: controller
+          command: ["/controller"]
           ports:
             - containerPort: 7472
               name: monitoring
