@@ -1,0 +1,62 @@
+name: OLM
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+defaults:
+  run:
+    shell: bash
+    working-directory: metallboperator
+
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        go: [ '1.16' ]
+    name: Go ${{ matrix.go }}
+    steps:
+    - name: Checkout Metal LB Operator
+      uses: actions/checkout@v2
+      with:
+        path: metallboperator
+        fetch-depth: 0 # Fetch all history for all tags and branches
+
+    - uses: actions/setup-go@v2
+      id: go
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Verify modules
+      run: go mod verify
+
+    - name: Verify format
+      run: |
+        make fmt
+        git diff --exit-code
+  
+    - name: Verify manifests
+      run: |
+        make manifests
+        git diff --exit-code
+
+    - name: Create and set up K8s Kind Cluster
+      run: |
+        ./scripts/kind-cluster-with-registry.sh
+        make deploy-olm
+
+    - name: Build bundle image
+      run: |
+        make build-and-push-bundle-images REPO=localhost:5000
+
+    - name: Deploy Metal LB Operator with OLM
+      run: |
+        make deploy-with-olm REPO=localhost:5000
+
+    - name: E2E Tests
+      run: |
+        export KUBECONFIG=${HOME}/.kube/config 
+        make test-e2e

@@ -1,8 +1,9 @@
 package apply
 
 import (
+	metallbv1alpha "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/pkg/errors"
-
+	"gopkg.in/yaml.v2"
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -23,6 +24,10 @@ func mergeMetadataForUpdate(current, updated *uns.Unstructured) error {
 
 	return nil
 }
+
+const (
+	AddressPoolConfigMap = "config"
+)
 
 // MergeObjectForUpdate prepares a "desired" object to be updated.
 // Some objects, such as Deployments and Services require
@@ -205,26 +210,45 @@ func mergeLabels(current, updated *uns.Unstructured) {
 }
 
 func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
+	type configMapData struct {
+		AddressPools []metallbv1alpha.AddressPoolSpec `yaml:"address-pools"`
+	}
+
 	if gvk := updated.GroupVersionKind(); gvk.Kind != "ConfigMap" || gvk.Group != "" {
 		return nil
 	}
 
-	s1, ok, err := uns.NestedStringMap(current.Object, "data")
+	s1, ok, err := uns.NestedString(current.Object, "data", AddressPoolConfigMap)
 	if ok == false || err != nil {
 		return err
 	}
 
-	s2, ok, err := uns.NestedStringMap(updated.Object, "data")
+	s2, ok, err := uns.NestedString(updated.Object, "data", AddressPoolConfigMap)
 	if ok == false || err != nil {
 		return err
 	}
 
-	for k, v := range s2 {
-		s1[k] += v
+	st1, st2 := configMapData{}, configMapData{}
+
+	if err := yaml.Unmarshal([]byte(s1), &st1); err != nil {
+		return err
 	}
 
-	err = uns.SetNestedStringMap(updated.Object, s1, "data")
+	if err := yaml.Unmarshal([]byte(s2), &st2); err != nil {
+		return err
+	}
 
+	var mergedConfigMap configMapData
+	mergedConfigMap.AddressPools = append(st1.AddressPools, st2.AddressPools...)
+
+	resData, err := yaml.Marshal(mergedConfigMap)
+	if err != nil {
+		return err
+	}
+
+	data := make(map[string]string)
+	data[AddressPoolConfigMap] = string(resData)
+	err = uns.SetNestedStringMap(updated.Object, data, "data")
 	return err
 }
 

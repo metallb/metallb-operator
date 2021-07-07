@@ -18,7 +18,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -31,8 +33,11 @@ import (
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	"github.com/metallb/metallb-operator/pkg/render"
+	"github.com/metallb/metallb-operator/pkg/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+const defaultMetallbCrName = "metallb"
 
 // MetallbReconciler reconciles a Metallb object
 type MetallbReconciler struct {
@@ -53,7 +58,7 @@ var ManifestPath = "./bindata/deployment"
 
 func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("metallb", req.NamespacedName)
+	logger := r.Log.WithValues("metallb", req.NamespacedName)
 
 	instance := &metallbv1alpha1.Metallb{}
 	err := r.Get(context.TODO(), req.NamespacedName, instance)
@@ -68,12 +73,43 @@ func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	err = r.syncMetalLBResources(instance)
-	if err != nil {
-		return ctrl.Result{}, err
+	if req.Name != defaultMetallbCrName {
+		err := fmt.Errorf("Metallb resource name must be '%s'", defaultMetallbCrName)
+		logger.Error(err, "Invalid Metallb resource name", "name", req.Name)
+		if err := status.Update(context.TODO(), r.Client, instance, status.ConditionDegraded, "IncorrectMetallbResourceName", fmt.Sprintf("Incorrect Metallb resource name: %s", req.Name)); err != nil {
+			logger.Error(err, "Failed to update metallb status", "Desired status", status.ConditionDegraded)
+		}
+		return ctrl.Result{}, nil // Return success to avoid requeue
 	}
 
-	return ctrl.Result{}, nil
+	result, condition, err := r.reconcileResource(ctx, req, instance)
+	if condition != "" {
+		errorMsg, wrappedErrMsg := "", ""
+		if err != nil {
+			if errors.Unwrap(err) != nil {
+				wrappedErrMsg = errors.Unwrap(err).Error()
+			}
+		}
+		if err := status.Update(context.TODO(), r.Client, instance, condition, errorMsg, wrappedErrMsg); err != nil {
+			logger.Info("Failed to update metallb status", "Desired status", status.ConditionAvailable)
+		}
+	}
+	return result, err
+}
+
+func (r *MetallbReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1alpha1.Metallb) (ctrl.Result, string, error) {
+	err := r.syncMetalLBResources(instance)
+	if err != nil {
+		return ctrl.Result{}, status.ConditionDegraded, errors.Wrapf(err, "FailedToSyncMetalLBResources")
+	}
+	err = status.IsMetallbAvailable(context.TODO(), r.Client, req.NamespacedName.Namespace)
+	if err != nil {
+		if _, ok := err.(status.MetallbResourcesNotReadyError); ok {
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, status.ConditionProgressing, nil
+		}
+		return ctrl.Result{}, status.ConditionProgressing, err
+	}
+	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
 func (r *MetallbReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -99,12 +135,9 @@ func (r *MetallbReconciler) syncMetalLBResources(config *metallbv1alpha1.Metallb
 		if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
 			return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
 		}
-
-		// Open question: should an error here indicate we will never retry?
 		if err := apply.ApplyObject(context.TODO(), r.Client, obj); err != nil {
-			err = errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
+			return errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
 		}
 	}
-
 	return nil
 }

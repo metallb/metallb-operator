@@ -1,5 +1,6 @@
 # Temporary Build Files
 _cache
+testbin/
 
 # Binaries for programs and plugins
 *.exe

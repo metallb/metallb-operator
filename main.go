@@ -65,11 +65,9 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
-	watchNamepace := os.Getenv("WATCH_NAMESPACE")
-	if watchNamepace == "" {
-		setupLog.Error(nil, "WATCH_NAMESPACE env variable must be set")
-		os.Exit(1)
-	}
+	watchNamepace := checkEnvVar("WATCH_NAMESPACE")
+	checkEnvVar("SPEAKER_IMAGE")
+	checkEnvVar("CONTROLLER_IMAGE")
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -107,4 +105,13 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func checkEnvVar(name string) string {
+	value, isSet := os.LookupEnv(name)
+	if !isSet {
+		setupLog.Error(nil, "env variable must be set", "name", name)
+		os.Exit(1)
+	}
+	return value
 }
