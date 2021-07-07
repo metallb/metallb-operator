@@ -115,6 +115,7 @@ deploy-with-olm:
 	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:latest#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
 	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
 	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
+	VERSION=$(VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
 
 # Build the bundle index image.
 bundle-index-build: opm
