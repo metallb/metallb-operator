@@ -13,7 +13,7 @@ defaults:
 
 jobs:
   main:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     env:
       built_image: "metallb-operator:ci" # Arbitrary name
     strategy:
