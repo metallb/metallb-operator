@@ -318,7 +318,7 @@ data:
       protocol: layer2
       addresses:
       - 172.20.0.100/24
-      auto-assign: false`)
+      autoAssign: false`)
 
 	upd := UnstructuredFromYaml(t, `
 apiVersion: v1
@@ -333,7 +333,7 @@ data:
       protocol: layer2
       addresses:
       - 172.22.0.100/24
-      auto-assign: false`)
+      autoAssign: false`)
 
 	err := MergeObjectForUpdate(cur, upd)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -344,12 +344,12 @@ data:
   protocol: layer2
   addresses:
   - 172.20.0.100/24
-  auto-assign: false
+  autoAssign: false
 - name: silver
   protocol: layer2
   addresses:
   - 172.22.0.100/24
-  auto-assign: false
+  autoAssign: false
 `))
 }
 
@@ -373,7 +373,7 @@ data:
       protocol: layer2
       addresses:
       - 172.20.0.100/24
-      auto-assign: false`)
+      autoAssign: false`)
 
 	upd := UnstructuredFromYaml(t, `
 apiVersion: v1
@@ -392,7 +392,7 @@ data:
       protocol: layer2
       addresses:
       - 172.20.0.100/24
-      auto-assign: false`)
+      autoAssign: false`)
 
 	err := MergeObjectForUpdate(cur, upd)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -407,7 +407,7 @@ data:
   protocol: layer2
   addresses:
   - 172.20.0.100/24
-  auto-assign: false
+  autoAssign: false
 - name: yellow
   protocol: layer2
   addresses:
@@ -416,6 +416,6 @@ data:
   protocol: layer2
   addresses:
   - 172.20.0.100/24
-  auto-assign: false
+  autoAssign: false
 `))
 }

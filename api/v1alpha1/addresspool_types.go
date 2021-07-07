@@ -39,7 +39,7 @@ type AddressPoolSpec struct {
 	// for a pool.
 	// +optional
 	// +kubebuilder:default:=true
-	AutoAssign *bool `json:"auto-assign,omitempty" yaml:"auto-assign,omitempty"`
+	AutoAssign *bool `json:"autoAssign,omitempty" yaml:"autoAssign,omitempty"`
 }
 
 // AddressPoolStatus defines the observed state of AddressPool
