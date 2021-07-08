@@ -40,17 +40,13 @@ OPERATOR_SDK_URL=https://api.github.com/repos/operator-framework/operator-sdk/re
 OLM_URL=https://api.github.com/repos/operator-framework/operator-lifecycle-manager/releases
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
-# Run tests
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: generate fmt vet manifests
+test: generate fmt vet manifests ## Run unit and integration tests
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
 all: manager ## Default make target if no options specified
-
-test: generate fmt vet manifests  ## Run tests
-	go test ./... -coverprofile cover.out
 
 test-e2e: generate fmt vet manifests  ## Run e2e tests
 	go test --tags=e2etests -v ./test/e2e -ginkgo.v
@@ -190,6 +186,10 @@ generate-metallb-manifests:  ## Generate metallb manifests
 validate-metallb-manifests:  ## Validate metallb manifests
 	@echo "Comparing newly generated MetalLB manifests to existing ones"
 	hack/compare-gen-manifests.sh
+
+lint: ## Run golangci-lint against code
+	@echo "Running golangci-lint"
+	hack/lint.sh
 
 help:  ## Show this help
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -F -v grep | sed -e 's/\\$$//' \
