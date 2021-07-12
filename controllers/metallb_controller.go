@@ -32,6 +32,7 @@ import (
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
+	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/render"
 	"github.com/metallb/metallb-operator/pkg/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -42,8 +43,9 @@ const defaultMetallbCrName = "metallb"
 // MetallbReconciler reconciles a Metallb object
 type MetallbReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log          logr.Logger
+	Scheme       *runtime.Scheme
+	PlatformInfo platform.PlatformInfo
 }
 
 var ManifestPath = "./bindata/deployment"
@@ -125,6 +127,7 @@ func (r *MetallbReconciler) syncMetalLBResources(config *metallbv1alpha1.Metallb
 
 	data.Data["SpeakerImage"] = os.Getenv("SPEAKER_IMAGE")
 	data.Data["ControllerImage"] = os.Getenv("CONTROLLER_IMAGE")
+	data.Data["IsOpenShift"] = r.PlatformInfo.IsOpenShift()
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")
