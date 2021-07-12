@@ -55,7 +55,7 @@ test-e2e: generate fmt vet manifests  ## Run e2e tests
 	go test --tags=e2etests -v ./test/e2e -ginkgo.v
 
 manager: generate fmt vet  ## Build manager binary
-	go build -o bin/manager main.go
+	go build -ldflags "-X main.build=$$(git rev-parse HEAD)" -o bin/manager main.go
 
 run: generate fmt vet manifests  ## Run against the configured cluster
 	go run ./main.go
