@@ -350,6 +350,14 @@ spec:
           - pods
           verbs:
           - list
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - privileged
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
         serviceAccountName: speaker
     strategy: deployment
   installModes:
