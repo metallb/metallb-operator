@@ -207,6 +207,8 @@ spec:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
+        {{ if not .IsOpenShift }}
         runAsUser: 65534
+        {{ end }}
       serviceAccountName: controller
       terminationGracePeriodSeconds: 0
