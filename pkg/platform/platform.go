@@ -71,7 +71,7 @@ func (pv k8SBasedPlatformVersioner) getPlatformInfo(client discovery.DiscoveryIn
 	info := PlatformInfo{Name: Kubernetes}
 
 	var err error
-	client, cfg, err = pv.defaultArgs(client, cfg)
+	client, _, err = pv.defaultArgs(client, cfg)
 	if err != nil {
 		log.Info("issue occurred while defaulting client/cfg args")
 		return info, err

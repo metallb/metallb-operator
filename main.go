@@ -34,6 +34,7 @@ import (
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/controllers"
+	"github.com/metallb/metallb-operator/pkg/platform"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -82,10 +83,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg := ctrl.GetConfigOrDie()
+	platformInfo, err := platform.GetPlatformInfo(cfg)
+	if err != nil {
+		setupLog.Error(err, "unable to get platform name")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.MetallbReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Metallb"),
-		Scheme: mgr.GetScheme(),
+		Client:       mgr.GetClient(),
+		Log:          ctrl.Log.WithName("controllers").WithName("Metallb"),
+		Scheme:       mgr.GetScheme(),
+		PlatformInfo: platformInfo,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Metallb")
 		os.Exit(1)
