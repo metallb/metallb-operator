@@ -38,9 +38,9 @@ jobs:
         make fmt
         git diff --exit-code
   
-    - name: Verify manifests
+    - name: Verify bundle manifests
       run: |
-        make manifests
+        make bundle
         git diff --exit-code
 
     - name: Create and set up K8s Kind Cluster
