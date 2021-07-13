@@ -160,6 +160,15 @@ spec:
         - apiGroups:
           - metallb.io
           resources:
+          - metallbs/finalizers
+          verbs:
+          - delete
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - metallb.io
+          resources:
           - metallbs/status
           verbs:
           - get
