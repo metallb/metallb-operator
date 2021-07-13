@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -27,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
@@ -100,7 +101,7 @@ func (r *AddressPoolReconciler) syncMetalLBAddressPool(instance *metallbv1alpha1
 
 	for _, obj := range objs {
 		if err := apply.ApplyObject(context.Background(), r.Client, obj); err != nil {
-			err = fmt.Errorf("could not apply (%s) %s/%s err %v", obj.GroupVersionKind(),
+			return fmt.Errorf("could not apply (%s) %s/%s err %v", obj.GroupVersionKind(),
 				obj.GetNamespace(), obj.GetName(), err)
 		}
 	}
@@ -140,9 +141,7 @@ func (r *AddressPoolReconciler) syncMetallbAddressPools(req ctrl.Request) error 
 			return fmt.Errorf("Failed to render address-pool manifest %v", err)
 		}
 
-		for _, obj := range objslist {
-			objs = append(objs, obj)
-		}
+		objs = append(objs, objslist...)
 	}
 
 	if len(objs) > 0 {

@@ -80,9 +80,9 @@ func ApplyObject(ctx context.Context, client k8sclient.Client, obj *uns.Unstruct
 // ApplyObjects it applies a list of desired objects after merging them.
 func ApplyObjects(ctx context.Context, client k8sclient.Client, objs []*uns.Unstructured) error {
 
-	var lastObj, existing *uns.Unstructured = nil, nil
-	var objDesc string = ""
-	var err error = nil
+	var lastObj, existing *uns.Unstructured
+	var objDesc string
+	var err error
 
 	existing, objDesc, err = findOrCreateObject(ctx, client, objs[0])
 	if existing == nil {

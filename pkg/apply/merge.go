@@ -52,7 +52,7 @@ func MergeObjectForUpdate(current, updated *uns.Unstructured) error {
 	// For all object types, merge metadata.
 	// Run this last, in case any of the more specific merge logic has
 	// changed "updated"
-	mergeMetadataForUpdate(current, updated)
+	_ = mergeMetadataForUpdate(current, updated)
 
 	return nil
 }
@@ -157,7 +157,7 @@ func mergeServiceAccountForUpdate(current, updated *uns.Unstructured) error {
 		}
 
 		if ok {
-			uns.SetNestedField(updated.Object, curSecrets, "secrets")
+			_ = uns.SetNestedField(updated.Object, curSecrets, "secrets")
 		}
 
 		curImagePullSecrets, ok, err := uns.NestedSlice(current.Object, "imagePullSecrets")
@@ -165,7 +165,7 @@ func mergeServiceAccountForUpdate(current, updated *uns.Unstructured) error {
 			return err
 		}
 		if ok {
-			uns.SetNestedField(updated.Object, curImagePullSecrets, "imagePullSecrets")
+			_ = uns.SetNestedField(updated.Object, curImagePullSecrets, "imagePullSecrets")
 		}
 	}
 	return nil
@@ -219,12 +219,12 @@ func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
 	}
 
 	s1, ok, err := uns.NestedString(current.Object, "data", AddressPoolConfigMap)
-	if ok == false || err != nil {
+	if !ok || err != nil {
 		return err
 	}
 
 	s2, ok, err := uns.NestedString(updated.Object, "data", AddressPoolConfigMap)
-	if ok == false || err != nil {
+	if !ok || err != nil {
 		return err
 	}
 
