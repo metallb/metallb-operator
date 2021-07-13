@@ -82,7 +82,7 @@ func renderObject(instance *metallbv1alpha1.AddressPool) ([]*unstructured.Unstru
 	data.Data["Addresses"] = instance.Spec.Addresses
 	objs, err := render.RenderDir(AddressPoolManifestPath, &data)
 	if err != nil {
-		return nil, fmt.Errorf("Fail to render address-pool manifest %v", err)
+		return nil, fmt.Errorf("Fail to render address-pool manifest err %v", err)
 	}
 
 	if len(objs) > 1 {

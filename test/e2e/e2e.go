@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
@@ -34,6 +36,14 @@ const (
 
 var autoAssign = false
 
+var TestIsOpenShift = false
+
+func init() {
+	if len(os.Getenv("IS_OPENSHIFT")) != 0 {
+		TestIsOpenShift = true
+	}
+}
+
 func RunE2ETests(t *testing.T) {
 	RegisterFailHandler(Fail)
 
@@ -43,6 +53,15 @@ func RunE2ETests(t *testing.T) {
 }
 
 var _ = Describe("validation", func() {
+	Context("Platform Check", func() {
+		It("should be either Kubernetes or OpenShift platform", func() {
+			cfg := ctrl.GetConfigOrDie()
+			platforminfo, err := platform.GetPlatformInfo(cfg)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(platforminfo.IsOpenShift()).Should(Equal(TestIsOpenShift))
+		})
+	})
+
 	Context("MetalLB", func() {
 		It("should have the MetalLB operator deployment in running state", func() {
 			Eventually(func() bool {
