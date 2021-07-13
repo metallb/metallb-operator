@@ -44,7 +44,7 @@ spec:
                 items:
                   type: string
                 type: array
-              auto-assign:
+              autoAssign:
                 default: true
                 description: AutoAssign flag used to prevent MetallB from automatic
                   allocation for a pool.
