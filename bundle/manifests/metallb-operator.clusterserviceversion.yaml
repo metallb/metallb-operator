@@ -30,7 +30,7 @@ metadata:
             "addresses": [
               "172.20.0.100/24"
             ],
-            "autoAssign": false,
+            "auto-assign": false,
             "name": "gold",
             "protocol": "layer2"
           }
