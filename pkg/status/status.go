@@ -13,14 +13,14 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type MetallbResourcesNotReadyError struct {
+type MetalLBResourcesNotReadyError struct {
 	Message string
 }
 
-func (e MetallbResourcesNotReadyError) Error() string { return e.Message }
+func (e MetalLBResourcesNotReadyError) Error() string { return e.Message }
 
-func (e MetallbResourcesNotReadyError) Is(target error) bool {
-	_, ok := target.(*MetallbResourcesNotReadyError)
+func (e MetalLBResourcesNotReadyError) Is(target error) bool {
+	_, ok := target.(*MetalLBResourcesNotReadyError)
 	return ok
 }
 
@@ -33,7 +33,7 @@ const (
 	ConditionUpgradeable = "Upgradeable"
 )
 
-func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1alpha1.Metallb, condition string, reason string, message string) error {
+func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1alpha1.MetalLB, condition string, reason string, message string) error {
 	conditions := getConditions(condition, reason, message)
 	if equality.Semantic.DeepEqual(conditions, metallb.Status.Conditions) {
 		return nil
@@ -94,7 +94,7 @@ func getBaseConditions() []metav1.Condition {
 	}
 }
 
-func IsMetallbAvailable(ctx context.Context, client k8sclient.Client, namespace string) error {
+func IsMetalLBAvailable(ctx context.Context, client k8sclient.Client, namespace string) error {
 
 	ds := &appsv1.DaemonSet{}
 	err := client.Get(ctx, types.NamespacedName{Name: "speaker", Namespace: namespace}, ds)
@@ -102,7 +102,7 @@ func IsMetallbAvailable(ctx context.Context, client k8sclient.Client, namespace 
 		return err
 	}
 	if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled {
-		return MetallbResourcesNotReadyError{Message: "Metallb speaker daemonset not ready"}
+		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset not ready"}
 	}
 	deployment := &appsv1.Deployment{}
 	err = client.Get(ctx, types.NamespacedName{Name: "controller", Namespace: namespace}, deployment)
@@ -110,7 +110,7 @@ func IsMetallbAvailable(ctx context.Context, client k8sclient.Client, namespace 
 		return err
 	}
 	if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
-		return MetallbResourcesNotReadyError{Message: "Metallb controller deployment not ready"}
+		return MetalLBResourcesNotReadyError{Message: "MetalLB controller deployment not ready"}
 	}
 	return nil
 }

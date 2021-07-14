@@ -58,7 +58,7 @@ func (r *AddressPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if errors.IsNotFound(err) {
-			err = r.syncMetallbAddressPools(req)
+			err = r.syncMetalLBAddressPools(req)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -109,7 +109,7 @@ func (r *AddressPoolReconciler) syncMetalLBAddressPool(instance *metallbv1alpha1
 	return err
 }
 
-func (r *AddressPoolReconciler) syncMetallbAddressPools(req ctrl.Request) error {
+func (r *AddressPoolReconciler) syncMetalLBAddressPools(req ctrl.Request) error {
 	instanceList := &metallbv1alpha1.AddressPoolList{}
 	objs := make([]*unstructured.Unstructured, 0)
 

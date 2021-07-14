@@ -38,10 +38,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-const defaultMetallbCrName = "metallb"
+const defaultMetalLBCrName = "metallb"
 
-// MetallbReconciler reconciles a Metallb object
-type MetallbReconciler struct {
+// MetalLBReconciler reconciles a MetalLB object
+type MetalLBReconciler struct {
 	client.Client
 	Log          logr.Logger
 	Scheme       *runtime.Scheme
@@ -59,11 +59,11 @@ var ManifestPath = "./bindata/deployment"
 // +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/finalizers,verbs=delete;get;update;patch
 
-func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	logger := r.Log.WithValues("metallb", req.NamespacedName)
 
-	instance := &metallbv1alpha1.Metallb{}
+	instance := &metallbv1alpha1.MetalLB{}
 	err := r.Get(context.TODO(), req.NamespacedName, instance)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -76,10 +76,10 @@ func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	if req.Name != defaultMetallbCrName {
-		err := fmt.Errorf("Metallb resource name must be '%s'", defaultMetallbCrName)
-		logger.Error(err, "Invalid Metallb resource name", "name", req.Name)
-		if err := status.Update(context.TODO(), r.Client, instance, status.ConditionDegraded, "IncorrectMetallbResourceName", fmt.Sprintf("Incorrect Metallb resource name: %s", req.Name)); err != nil {
+	if req.Name != defaultMetalLBCrName {
+		err := fmt.Errorf("MetalLB resource name must be '%s'", defaultMetalLBCrName)
+		logger.Error(err, "Invalid MetalLB resource name", "name", req.Name)
+		if err := status.Update(context.TODO(), r.Client, instance, status.ConditionDegraded, "IncorrectMetalLBResourceName", fmt.Sprintf("Incorrect MetalLB resource name: %s", req.Name)); err != nil {
 			logger.Error(err, "Failed to update metallb status", "Desired status", status.ConditionDegraded)
 		}
 		return ctrl.Result{}, nil // Return success to avoid requeue
@@ -100,14 +100,14 @@ func (r *MetallbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return result, err
 }
 
-func (r *MetallbReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1alpha1.Metallb) (ctrl.Result, string, error) {
+func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1alpha1.MetalLB) (ctrl.Result, string, error) {
 	err := r.syncMetalLBResources(instance)
 	if err != nil {
 		return ctrl.Result{}, status.ConditionDegraded, errors.Wrapf(err, "FailedToSyncMetalLBResources")
 	}
-	err = status.IsMetallbAvailable(context.TODO(), r.Client, req.NamespacedName.Namespace)
+	err = status.IsMetalLBAvailable(context.TODO(), r.Client, req.NamespacedName.Namespace)
 	if err != nil {
-		if _, ok := err.(status.MetallbResourcesNotReadyError); ok {
+		if _, ok := err.(status.MetalLBResourcesNotReadyError); ok {
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, status.ConditionProgressing, nil
 		}
 		return ctrl.Result{}, status.ConditionProgressing, err
@@ -115,13 +115,13 @@ func (r *MetallbReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetallbReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&metallbv1alpha1.Metallb{}).
+		For(&metallbv1alpha1.MetalLB{}).
 		Complete(r)
 }
 
-func (r *MetallbReconciler) syncMetalLBResources(config *metallbv1alpha1.Metallb) error {
+func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1alpha1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
 	data := render.MakeRenderData()
