@@ -23,45 +23,45 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// MetallbSpec defines the desired state of Metallb
-type MetallbSpec struct {
+// MetalLBSpec defines the desired state of MetalLB
+type MetalLBSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Metallb. Edit Metallb_types.go to remove/update
-	MetallbImage string `json:"image,omitempty"`
+	// Foo is an example field of MetalLB. Edit MetalLB_types.go to remove/update
+	MetalLBImage string `json:"image,omitempty"`
 }
 
-// MetallbStatus defines the observed state of Metallb
-type MetallbStatus struct {
+// MetalLBStatus defines the observed state of MetalLB
+type MetalLBStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Conditions show the current state of the metallb operator
+	// Conditions show the current state of the MetalLB Operator
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Metallb is the Schema for the metallbs API
-type Metallb struct {
+// MetalLB is the Schema for the metallbs API
+type MetalLB struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   MetallbSpec   `json:"spec,omitempty"`
-	Status MetallbStatus `json:"status,omitempty"`
+	Spec   MetalLBSpec   `json:"spec,omitempty"`
+	Status MetalLBStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// MetallbList contains a list of Metallb
-type MetallbList struct {
+// MetalLBList contains a list of MetalLB
+type MetalLBList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Metallb `json:"items"`
+	Items           []MetalLB `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Metallb{}, &MetallbList{})
+	SchemeBuilder.Register(&MetalLB{}, &MetalLBList{})
 }

@@ -1,5 +1,5 @@
 apiVersion: metallb.io/v1alpha1
-kind: Metallb
+kind: MetalLB
 metadata:
   name: metallb
   namespace: metallb-system

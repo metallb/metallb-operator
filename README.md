@@ -1,6 +1,6 @@
 # MetalLB Operator
 
-This is a WIP implementaton of a MetalLB operator, implementing the [operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
+This is a WIP implementaton of a MetalLB Operator, implementing the [operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 for deploying MetalLB on a kubernetes cluster, as described in the [related design proposal](https://github.com/metallb/metallb/blob/main/design/metallb-operator.md).
 
 ## Note that this is still work in progress and not ready for production by any means
@@ -16,7 +16,7 @@ Need to install the following packages
 
 ## Installation
 
-To install the Metallb Operator using a prebuilt image, run: 
+To install the MetalLB Operator using a prebuilt image, run: 
 
 ```shell
 make deploy
@@ -24,13 +24,13 @@ make deploy
 
 ## Usage
 
-Once the Metallb Operator is installed, you have to create a `metallb` custom resource to install Metallb. The operator will consume this resource, and create all required Metallb resources based on it. The `metallb` custom resource needs to be created inside the `metallb-system` namespace and be named `metallb`. Only one `metallb` resource can exist in a cluster.
+Once the MetalLB Operator is installed, you have to create a `MetalLB` custom resource to install MetalLB. The operator will consume this resource, and create all required MetalLB resources based on it. The `MetalLB` custom resource needs to be created inside the `metallb-system` namespace and be named `metallb`. Only one `MetalLB` resource can exist in a cluster.
 
-Below you can find an example of a `metallb` resource definition:
+Below you can find an example of a `MetalLB` resource definition:
 
 ```yaml
 apiVersion: metallb.io/v1alpha1
-kind: Metallb
+kind: MetalLB
 metadata:
   name: metallb
   namespace: metallb-system
@@ -85,21 +85,21 @@ make docker-build IMG=quay.io/example/metalllboperator
 make docker-push IMG=quay.io/example/metalllboperator
 ```
 
-Once the images are pushed to the repo, you can deploy metallb using your custom images by running:
+Once the images are pushed to the repo, you can deploy MetalLB using your custom images by running:
 ```shell
 make deploy IMG=<your image>
 
 ```
 
-### Create a metallb deployment
+### Create a MetalLB deployment
 
-To create a metallb deployment, a metallb operator configuration resource needs to be created.
+To create a MetalLB deployment, a MetalLB Operator configuration resource needs to be created.
 Run the following command to create it:
 
 ```shell
 cat << EOF | kubectl apply -f -
 apiVersion: metallb.io/v1alpha1
-kind: Metallb
+kind: MetalLB
 metadata:
   name: metallb
   namespace: metallb-system
@@ -124,7 +124,7 @@ spec:
     - 172.18.0.100-172.18.0.255
 ```
 
-When the adress pool is successfully added, it will be amended to the `config` ConfigMap used to configure metallb:
+When the adress pool is successfully added, it will be amended to the `config` ConfigMap used to configure MetalLB:
 
 ```yaml
 kind: ConfigMap
@@ -151,7 +151,7 @@ To run metallb-operator e2e tests, execute:
 ```shell
 make test-e2e
 ```
-The e2e test need a running cluster with a metallb-operator running.
+The e2e test need a running cluster with a MetalLB Operator running.
 
 
 ### Make

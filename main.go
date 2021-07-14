@@ -95,13 +95,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.MetallbReconciler{
+	if err = (&controllers.MetalLBReconciler{
 		Client:       mgr.GetClient(),
-		Log:          ctrl.Log.WithName("controllers").WithName("Metallb"),
+		Log:          ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Scheme:       mgr.GetScheme(),
 		PlatformInfo: platformInfo,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Metallb")
+		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)
 	}
 	if err = (&controllers.AddressPoolReconciler{

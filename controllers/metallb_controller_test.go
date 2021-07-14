@@ -18,10 +18,10 @@ import (
 
 var _ = Describe("MetalLB Controller", func() {
 	Context("syncMetalLB", func() {
-		metallb := &v1alpha1.Metallb{
+		metallb := &v1alpha1.MetalLB{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "metallb",
-				Namespace: consts.MetallbNameSpace,
+				Namespace: consts.MetalLBNameSpace,
 			},
 		}
 		AfterEach(func() {
@@ -41,14 +41,14 @@ var _ = Describe("MetalLB Controller", func() {
 			Expect(os.Setenv("SPEAKER_IMAGE", speakerImage)).To(Succeed())
 			Expect(os.Setenv("CONTROLLER_IMAGE", controllerImage)).To(Succeed())
 
-			By("Creating a Metallb resource")
+			By("Creating a MetalLB resource")
 			err := k8sClient.Create(context.Background(), metallb)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Validating that the variables were templated correctly")
 			controllerDeployment := &appsv1.Deployment{}
 			Eventually(func() error {
-				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetallbDeploymentName, Namespace: consts.MetallbNameSpace}, controllerDeployment)
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetalLBDeploymentName, Namespace: consts.MetalLBNameSpace}, controllerDeployment)
 				return err
 			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
 			Expect(controllerDeployment).NotTo(BeZero())
@@ -57,7 +57,7 @@ var _ = Describe("MetalLB Controller", func() {
 
 			speakerDaemonSet := &appsv1.DaemonSet{}
 			Eventually(func() error {
-				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetallbDaemonsetName, Namespace: consts.MetallbNameSpace}, speakerDaemonSet)
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: consts.MetalLBNameSpace}, speakerDaemonSet)
 				return err
 			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
 			Expect(speakerDaemonSet).NotTo(BeZero())
@@ -68,10 +68,10 @@ var _ = Describe("MetalLB Controller", func() {
 })
 
 func cleanTestNamespace() error {
-	err := k8sClient.DeleteAllOf(context.Background(), &appsv1.Deployment{}, client.InNamespace(consts.MetallbNameSpace))
+	err := k8sClient.DeleteAllOf(context.Background(), &appsv1.Deployment{}, client.InNamespace(consts.MetalLBNameSpace))
 	if err != nil {
 		return err
 	}
-	err = k8sClient.DeleteAllOf(context.Background(), &appsv1.DaemonSet{}, client.InNamespace(consts.MetallbNameSpace))
+	err = k8sClient.DeleteAllOf(context.Background(), &appsv1.DaemonSet{}, client.InNamespace(consts.MetalLBNameSpace))
 	return err
 }
