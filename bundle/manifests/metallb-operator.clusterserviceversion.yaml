@@ -160,6 +160,15 @@ spec:
         - apiGroups:
           - metallb.io
           resources:
+          - metallbs/finalizers
+          verbs:
+          - delete
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - metallb.io
+          resources:
           - metallbs/status
           verbs:
           - get
@@ -341,6 +350,14 @@ spec:
           - pods
           verbs:
           - list
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - privileged
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
         serviceAccountName: speaker
     strategy: deployment
   installModes:

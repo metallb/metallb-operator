@@ -1,4 +1,4 @@
-name: OLM
+name: General
 
 on:
   push:
@@ -12,12 +12,25 @@ defaults:
     working-directory: metallboperator
 
 jobs:
-  main:
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Verify
+      uses: golangci/golangci-lint-action@v2
+      with:
+        version: v1.41.1
+        args: --timeout=15m0s --verbose
+
+  unit:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
         go: [ '1.16' ]
-    name: Go ${{ matrix.go }}
+    name: Unit and Integration tests
     steps:
     - name: Checkout Metal LB Operator
       uses: actions/checkout@v2
@@ -37,26 +50,11 @@ jobs:
       run: |
         make fmt
         git diff --exit-code
-  
-    - name: Verify bundle manifests
+
+    - name: Verify manifests
       run: |
-        make bundle
+        make manifests
         git diff --exit-code
 
-    - name: Create and set up K8s Kind Cluster
-      run: |
-        ./scripts/kind-cluster-with-registry.sh
-        make deploy-olm
-
-    - name: Build bundle image
-      run: |
-        make build-and-push-bundle-images REPO=localhost:5000
-
-    - name: Deploy Metal LB Operator with OLM
-      run: |
-        make deploy-with-olm REPO=localhost:5000
-
-    - name: E2E Tests
-      run: |
-        export KUBECONFIG=${HOME}/.kube/config 
-        make test-e2e
+    - name: Unit and Integration Tests
+      run: make test

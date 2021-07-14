@@ -14,6 +14,6 @@ data:
       - {{ $address }}
       {{ end -}}
 
-      {{ $auto_assign := .AutoAssign }} {{ if ne $auto_assign true }}
+      {{ $auto_assign := .AutoAssign }} {{ if not $auto_assign }}
       auto-assign: {{ $auto_assign }}
       {{ end }}

@@ -34,6 +34,7 @@ import (
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/controllers"
+	"github.com/metallb/metallb-operator/pkg/platform"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -54,6 +55,9 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+// build is the git version of this program. It is set using build flags in the makefile.
+var build = "develop"
+
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -64,6 +68,8 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+
+	setupLog.Info("git commit:", "id", build)
 
 	watchNamepace := checkEnvVar("WATCH_NAMESPACE")
 	checkEnvVar("SPEAKER_IMAGE")
@@ -82,10 +88,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg := ctrl.GetConfigOrDie()
+	platformInfo, err := platform.GetPlatformInfo(cfg)
+	if err != nil {
+		setupLog.Error(err, "unable to get platform name")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.MetallbReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Metallb"),
-		Scheme: mgr.GetScheme(),
+		Client:       mgr.GetClient(),
+		Log:          ctrl.Log.WithName("controllers").WithName("Metallb"),
+		Scheme:       mgr.GetScheme(),
+		PlatformInfo: platformInfo,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Metallb")
 		os.Exit(1)

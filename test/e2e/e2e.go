@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
@@ -34,6 +36,14 @@ const (
 
 var autoAssign = false
 
+var TestIsOpenShift = false
+
+func init() {
+	if len(os.Getenv("IS_OPENSHIFT")) != 0 {
+		TestIsOpenShift = true
+	}
+}
+
 func RunE2ETests(t *testing.T) {
 	RegisterFailHandler(Fail)
 
@@ -43,6 +53,15 @@ func RunE2ETests(t *testing.T) {
 }
 
 var _ = Describe("validation", func() {
+	Context("Platform Check", func() {
+		It("should be either Kubernetes or OpenShift platform", func() {
+			cfg := ctrl.GetConfigOrDie()
+			platforminfo, err := platform.GetPlatformInfo(cfg)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(platforminfo.IsOpenShift()).Should(Equal(TestIsOpenShift))
+		})
+	})
+
 	Context("MetalLB", func() {
 		It("should have the MetalLB operator deployment in running state", func() {
 			Eventually(func() bool {
@@ -311,10 +330,7 @@ var _ = Describe("validation", func() {
 				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
 				Eventually(func() bool {
 					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
-					if errors.IsNotFound(err) {
-						return true
-					}
-					return false
+					return errors.IsNotFound(err)
 				}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
 			})
 			It("should not be reconciled", func() {
@@ -351,14 +367,11 @@ var _ = Describe("validation", func() {
 			})
 
 			AfterEach(func() {
-				testclient.Client.Delete(context.Background(), incorrect_metallb) // Ignore error, could be already deleted
+				_ = testclient.Client.Delete(context.Background(), incorrect_metallb) // Ignore error, could be already deleted
 				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
 				Eventually(func() bool {
 					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: incorrect_metallb.Namespace, Name: incorrect_metallb.Name}, incorrect_metallb)
-					if errors.IsNotFound(err) {
-						return true
-					}
-					return false
+					return errors.IsNotFound(err)
 				}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
 
 				err := testclient.Client.Delete(context.Background(), correct_metallb)
@@ -366,10 +379,7 @@ var _ = Describe("validation", func() {
 				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
 				Eventually(func() bool {
 					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: correct_metallb.Namespace, Name: correct_metallb.Name}, correct_metallb)
-					if errors.IsNotFound(err) {
-						return true
-					}
-					return false
+					return errors.IsNotFound(err)
 				}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
 			})
 			It("should have correct statuses", func() {
@@ -393,10 +403,7 @@ var _ = Describe("validation", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(func() bool {
 						err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: incorrect_metallb.Namespace, Name: incorrect_metallb.Name}, incorrect_metallb)
-						if errors.IsNotFound(err) {
-							return true
-						}
-						return false
+						return errors.IsNotFound(err)
 					}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
 
 					// Correctly named resource status should not change
