@@ -85,7 +85,7 @@ var _ = BeforeSuite(func() {
 
 	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: consts.MetallbNameSpace,
+			Name: consts.MetalLBNameSpace,
 		},
 	}
 
@@ -94,7 +94,7 @@ var _ = BeforeSuite(func() {
 
 	ManifestPath = strings.Replace(ManifestPath, ".", "..", 1) // This is needed as the tests need to reference a directory backward
 
-	err = (&MetallbReconciler{
+	err = (&MetalLBReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
 		Log:    ctrl.Log.WithName("controllers").WithName("MetalLB"),

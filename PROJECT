@@ -13,7 +13,7 @@ resources:
   controller: true
   domain: metallb.io
   group: metallb.io
-  kind: Metallb
+  kind: MetalLB
   path: metallb.io/api/v1alpha1
   version: v1alpha1
 - api:

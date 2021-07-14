@@ -179,11 +179,11 @@ else
 OPM=$(shell which opm)
 endif
 
-generate-metallb-manifests:  ## Generate metallb manifests
+generate-metallb-manifests:  ## Generate MetalLB manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
 
-validate-metallb-manifests:  ## Validate metallb manifests
+validate-metallb-manifests:  ## Validate MetalLB manifests
 	@echo "Comparing newly generated MetalLB manifests to existing ones"
 	hack/compare-gen-manifests.sh
 
