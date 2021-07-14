@@ -1,0 +1,15 @@
+
+updates:
+  - file: "{MAJOR}.{MINOR}/metallb-operator.v{MAJOR}.{MINOR}.0.clusterserviceversion.yaml" # relative to this file
+    update_list:
+    # replace metadata.name value
+    - search: "metallb-operator.v{MAJOR}.{MINOR}.0"
+      replace: "metallb-operator.{FULL_VER}"
+    - search: "version: {MAJOR}.{MINOR}.0"
+      replace: "version: {FULL_VER}"
+    - search: 'olm.skipRange: ">=4.8-0 <{MAJOR}.{MINOR}.0"'
+      replace: 'olm.skipRange: ">=4.8-0 <{FULL_VER}"'
+  - file: "metallb-operator.package.yaml"
+    update_list:
+    - search: "currentCSV: metallb-operator.v{MAJOR}.{MINOR}.0"
+      replace: "currentCSV: metallb-operator.{FULL_VER}"

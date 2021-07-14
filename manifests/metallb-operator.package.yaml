@@ -1,0 +1,4 @@
+packageName: metallb-operator
+channels:
+- name: "4.9"
+  currentCSV: metallb-operator.v4.9.0
