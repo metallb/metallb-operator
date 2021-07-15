@@ -100,14 +100,16 @@ func main() {
 		Log:          ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Scheme:       mgr.GetScheme(),
 		PlatformInfo: platformInfo,
+		Namespace:    watchNamepace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)
 	}
 	if err = (&controllers.AddressPoolReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("AddressPool"),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("AddressPool"),
+		Scheme:    mgr.GetScheme(),
+		Namespace: watchNamepace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AddressPool")
 		os.Exit(1)

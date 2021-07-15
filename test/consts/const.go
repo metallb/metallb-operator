@@ -1,8 +1,6 @@
 package consts
 
 const (
-	// MetalLBNameSpace contains the name of the MetalLB Operator  namespace
-	MetalLBNameSpace = "metallb-system"
 	// MetalLBOperatorDeploymentName contains the name of the MetalLB Operator deployment
 	MetalLBOperatorDeploymentName = "metallboperator-controller-manager"
 	// MetalLBOperatorDeploymentLabel contains the label of the MetalLB Operator deployment

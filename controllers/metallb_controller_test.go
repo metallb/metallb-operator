@@ -16,12 +16,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const MetalLBTestNameSpace = "metallb-test-namespace"
+
 var _ = Describe("MetalLB Controller", func() {
 	Context("syncMetalLB", func() {
 		metallb := &v1alpha1.MetalLB{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "metallb",
-				Namespace: consts.MetalLBNameSpace,
+				Namespace: MetalLBTestNameSpace,
 			},
 		}
 		AfterEach(func() {
@@ -34,12 +36,13 @@ var _ = Describe("MetalLB Controller", func() {
 			err = cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("Should create manifests with images overriden", func() {
+		It("Should create manifests with images and nsamespace overriden", func() {
 			speakerImage := "test-speaker:latest"
 			controllerImage := "test-controller:latest"
 			By("Setting the environment variables")
 			Expect(os.Setenv("SPEAKER_IMAGE", speakerImage)).To(Succeed())
 			Expect(os.Setenv("CONTROLLER_IMAGE", controllerImage)).To(Succeed())
+			Expect(os.Setenv("WATCH_NAMESPACE", MetalLBTestNameSpace)).To(Succeed())
 
 			By("Creating a MetalLB resource")
 			err := k8sClient.Create(context.Background(), metallb)
@@ -48,7 +51,7 @@ var _ = Describe("MetalLB Controller", func() {
 			By("Validating that the variables were templated correctly")
 			controllerDeployment := &appsv1.Deployment{}
 			Eventually(func() error {
-				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetalLBDeploymentName, Namespace: consts.MetalLBNameSpace}, controllerDeployment)
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetalLBDeploymentName, Namespace: MetalLBTestNameSpace}, controllerDeployment)
 				return err
 			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
 			Expect(controllerDeployment).NotTo(BeZero())
@@ -57,7 +60,7 @@ var _ = Describe("MetalLB Controller", func() {
 
 			speakerDaemonSet := &appsv1.DaemonSet{}
 			Eventually(func() error {
-				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: consts.MetalLBNameSpace}, speakerDaemonSet)
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: MetalLBTestNameSpace}, speakerDaemonSet)
 				return err
 			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
 			Expect(speakerDaemonSet).NotTo(BeZero())
@@ -68,10 +71,10 @@ var _ = Describe("MetalLB Controller", func() {
 })
 
 func cleanTestNamespace() error {
-	err := k8sClient.DeleteAllOf(context.Background(), &appsv1.Deployment{}, client.InNamespace(consts.MetalLBNameSpace))
+	err := k8sClient.DeleteAllOf(context.Background(), &appsv1.Deployment{}, client.InNamespace(MetalLBTestNameSpace))
 	if err != nil {
 		return err
 	}
-	err = k8sClient.DeleteAllOf(context.Background(), &appsv1.DaemonSet{}, client.InNamespace(consts.MetalLBNameSpace))
+	err = k8sClient.DeleteAllOf(context.Background(), &appsv1.DaemonSet{}, client.InNamespace(MetalLBTestNameSpace))
 	return err
 }

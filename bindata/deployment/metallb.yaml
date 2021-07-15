@@ -4,7 +4,7 @@ metadata:
   labels:
     app: metallb
   name: controller
-  namespace: metallb-system
+  namespace: '{{.NameSpace}}'
 spec:
   allowPrivilegeEscalation: false
   allowedCapabilities: []
@@ -46,7 +46,7 @@ metadata:
   labels:
     app: metallb
   name: speaker
-  namespace: metallb-system
+  namespace: '{{.NameSpace}}'
 spec:
   allowPrivilegeEscalation: false
   allowedCapabilities:
@@ -86,7 +86,7 @@ metadata:
     app: metallb
     component: speaker
   name: speaker
-  namespace: metallb-system
+  namespace: '{{.NameSpace}}'
 spec:
   selector:
     matchLabels:
@@ -166,7 +166,7 @@ metadata:
     app: metallb
     component: controller
   name: controller
-  namespace: metallb-system
+  namespace: '{{.NameSpace}}'
 spec:
   revisionHistoryLimit: 3
   selector:

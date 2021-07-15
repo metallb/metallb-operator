@@ -38,8 +38,9 @@ import (
 // AddressPoolReconciler reconciles a AddressPool object
 type AddressPoolReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	Namespace string
 }
 
 const (
@@ -74,12 +75,13 @@ func (r *AddressPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return ctrl.Result{}, nil
 }
 
-func renderObject(instance *metallbv1alpha1.AddressPool) ([]*unstructured.Unstructured, error) {
+func (r *AddressPoolReconciler) renderObject(instance *metallbv1alpha1.AddressPool) ([]*unstructured.Unstructured, error) {
 	data := render.MakeRenderData()
 	data.Data["Name"] = instance.Spec.Name
 	data.Data["Protocol"] = instance.Spec.Protocol
 	data.Data["AutoAssign"] = *instance.Spec.AutoAssign
 	data.Data["Addresses"] = instance.Spec.Addresses
+	data.Data["NameSpace"] = r.Namespace
 	objs, err := render.RenderDir(AddressPoolManifestPath, &data)
 	if err != nil {
 		return nil, fmt.Errorf("Fail to render address-pool manifest err %v", err)
@@ -93,7 +95,7 @@ func renderObject(instance *metallbv1alpha1.AddressPool) ([]*unstructured.Unstru
 }
 
 func (r *AddressPoolReconciler) syncMetalLBAddressPool(instance *metallbv1alpha1.AddressPool) error {
-	objs, err := renderObject(instance)
+	objs, err := r.renderObject(instance)
 
 	if err != nil {
 		return fmt.Errorf("Fail to render address-pool manifest %v", err)
@@ -136,7 +138,7 @@ func (r *AddressPoolReconciler) syncMetalLBAddressPools(req ctrl.Request) error 
 	}
 
 	for _, instance := range instanceList.Items {
-		objslist, err := renderObject(&instance)
+		objslist, err := r.renderObject(&instance)
 		if err != nil {
 			return fmt.Errorf("Failed to render address-pool manifest %v", err)
 		}
