@@ -16,8 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const MetalLBTestNameSpace = "metallb-test-namespace"
-
 var _ = Describe("MetalLB Controller", func() {
 	Context("syncMetalLB", func() {
 		metallb := &v1alpha1.MetalLB{
@@ -36,7 +34,7 @@ var _ = Describe("MetalLB Controller", func() {
 			err = cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("Should create manifests with images and nsamespace overriden", func() {
+		It("Should create manifests with images and namespace overriden", func() {
 			speakerImage := "test-speaker:latest"
 			controllerImage := "test-controller:latest"
 			By("Setting the environment variables")
