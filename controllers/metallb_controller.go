@@ -46,6 +46,7 @@ type MetalLBReconciler struct {
 	Log          logr.Logger
 	Scheme       *runtime.Scheme
 	PlatformInfo platform.PlatformInfo
+	Namespace    string
 }
 
 var ManifestPath = "./bindata/deployment"
@@ -129,6 +130,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1alpha1.MetalLB
 	data.Data["SpeakerImage"] = os.Getenv("SPEAKER_IMAGE")
 	data.Data["ControllerImage"] = os.Getenv("CONTROLLER_IMAGE")
 	data.Data["IsOpenShift"] = r.PlatformInfo.IsOpenShift()
+	data.Data["NameSpace"] = r.Namespace
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")

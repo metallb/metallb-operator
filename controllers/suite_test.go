@@ -36,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
-	"github.com/metallb/metallb-operator/test/consts"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -85,7 +84,7 @@ var _ = BeforeSuite(func() {
 
 	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: consts.MetalLBNameSpace,
+			Name: MetalLBTestNameSpace,
 		},
 	}
 
@@ -95,9 +94,10 @@ var _ = BeforeSuite(func() {
 	ManifestPath = strings.Replace(ManifestPath, ".", "..", 1) // This is needed as the tests need to reference a directory backward
 
 	err = (&MetalLBReconciler{
-		Client: k8sClient,
-		Scheme: scheme.Scheme,
-		Log:    ctrl.Log.WithName("controllers").WithName("MetalLB"),
+		Client:    k8sClient,
+		Scheme:    scheme.Scheme,
+		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
+		Namespace: MetalLBTestNameSpace,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
