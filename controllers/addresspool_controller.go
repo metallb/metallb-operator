@@ -43,10 +43,9 @@ type AddressPoolReconciler struct {
 	Namespace string
 }
 
-const (
-	AddressPoolManifestPath = "./bindata/configuration/address-pool"
-	RetryPeriod             = 5 * time.Minute
-)
+const RetryPeriod = 5 * time.Minute
+
+var AddressPoolManifestPath = "./bindata/configuration/address-pool"
 
 // +kubebuilder:rbac:groups=metallb.io,resources=addresspools,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=addresspools/status,verbs=get;update;patch
