@@ -20,6 +20,8 @@ RUN CGO_ENABLED=0 GO111MODULE=on go build -a -mod=vendor -o manager main.go
 
 FROM registry.ci.openshift.org/ocp/builder:rhel-8-base-openshift-4.9
 
+ENV IS_OPENSHIFT=1
+
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/bindata/deployment /bindata/deployment
