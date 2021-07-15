@@ -39,9 +39,15 @@ var autoAssign = false
 
 var TestIsOpenShift = false
 
+var OperatorNameSpace = consts.MetalLBNameSpace
+
 func init() {
 	if len(os.Getenv("IS_OPENSHIFT")) != 0 {
 		TestIsOpenShift = true
+	}
+
+	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
+		OperatorNameSpace = ns
 	}
 }
 
@@ -66,18 +72,18 @@ var _ = Describe("validation", func() {
 	Context("MetalLB", func() {
 		It("should have the MetalLB Operator deployment in running state", func() {
 			Eventually(func() bool {
-				deploy, err := testclient.Client.Deployments(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
+				deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
 				if err != nil {
 					return false
 				}
 				return deploy.Status.ReadyReplicas == deploy.Status.Replicas
 			}, timeout, interval).Should(BeTrue())
 
-			pods, err := testclient.Client.Pods(consts.MetalLBNameSpace).List(context.Background(), metav1.ListOptions{
+			pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("control-plane=%s", consts.MetalLBOperatorDeploymentLabel)})
 			Expect(err).ToNot(HaveOccurred())
 
-			deploy, err := testclient.Client.Deployments(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
+			deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(pods.Items)).To(Equal(int(deploy.Status.Replicas)))
 
@@ -120,7 +126,7 @@ var _ = Describe("validation", func() {
 
 		AfterEach(func() {
 			if !metallbCRExisted {
-				deployment, err := testclient.Client.Deployments(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+				deployment, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(deployment.OwnerReferences).ToNot(BeNil())
 				Expect(deployment.OwnerReferences[0].Kind).To(Equal("MetalLB"))
@@ -160,7 +166,7 @@ var _ = Describe("validation", func() {
 					return deploy.Status.ReadyReplicas == deploy.Status.Replicas
 				}, timeout, interval).Should(BeTrue())
 
-				pods, err := testclient.Client.Pods(consts.MetalLBNameSpace).List(context.Background(), metav1.ListOptions{
+				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
 					LabelSelector: "component=controller"})
 				Expect(err).ToNot(HaveOccurred())
 
@@ -182,7 +188,7 @@ var _ = Describe("validation", func() {
 					return daemonset.Status.DesiredNumberScheduled == daemonset.Status.NumberReady
 				}, timeout, interval).Should(BeTrue())
 
-				pods, err := testclient.Client.Pods(consts.MetalLBNameSpace).List(context.Background(), metav1.ListOptions{
+				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
 					LabelSelector: "component=speaker"})
 				Expect(err).ToNot(HaveOccurred())
 
@@ -236,7 +242,7 @@ var _ = Describe("validation", func() {
 
 			key := types.NamespacedName{
 				Name:      addressPoolName,
-				Namespace: consts.MetalLBNameSpace,
+				Namespace: OperatorNameSpace,
 			}
 			// Create addresspool resource
 			By("By checking AddressPool resource is created")
@@ -248,7 +254,7 @@ var _ = Describe("validation", func() {
 			// Checking ConfigMap is created
 			By("By checking ConfigMap is created match the expected configuration")
 			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
 				if err != nil {
 					return "", err
 				}
@@ -262,14 +268,14 @@ var _ = Describe("validation", func() {
 			}, timeout, interval).Should(BeTrue(), "Failed to delete AddressPool custom resource")
 
 			Eventually(func() bool {
-				_, err := testclient.Client.ConfigMaps(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
 				return errors.IsNotFound(err)
 			}, timeout, interval).Should(BeTrue())
 		},
 			table.Entry("Test AddressPool object with default auto assign", "addresspool1", &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool1",
-					Namespace: consts.MetalLBNameSpace,
+					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Name:     "test1",
@@ -291,7 +297,7 @@ var _ = Describe("validation", func() {
 			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool2",
-					Namespace: consts.MetalLBNameSpace,
+					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Name:     "test2",
@@ -424,7 +430,7 @@ var _ = Describe("validation", func() {
 			addresspool := &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool1",
-					Namespace: consts.MetalLBNameSpace,
+					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Name:     "test1",
@@ -440,7 +446,7 @@ var _ = Describe("validation", func() {
 
 			key := types.NamespacedName{
 				Name:      "addresspool1",
-				Namespace: consts.MetalLBNameSpace,
+				Namespace: OperatorNameSpace,
 			}
 			// Create addresspool resource
 			By("By checking AddressPool1 resource is created")
@@ -452,7 +458,7 @@ var _ = Describe("validation", func() {
 			// Checking ConfigMap is created
 			By("By checking ConfigMap is created and matches addresspool1 configuration")
 			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
 				if err != nil {
 					return "", err
 				}
@@ -473,7 +479,7 @@ var _ = Describe("validation", func() {
 			addresspool := &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool2",
-					Namespace: consts.MetalLBNameSpace,
+					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Name:     "test2",
@@ -490,7 +496,7 @@ var _ = Describe("validation", func() {
 
 			key := types.NamespacedName{
 				Name:      "addresspool2",
-				Namespace: consts.MetalLBNameSpace,
+				Namespace: OperatorNameSpace,
 			}
 			// Create addresspool resource
 			By("By checking AddressPool2 resource is created")
@@ -502,7 +508,7 @@ var _ = Describe("validation", func() {
 			// Checking ConfigMap is created
 			By("By checking ConfigMap is created and matches addresspool2 configuration")
 			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
 				if err != nil {
 					return "", err
 				}
@@ -530,7 +536,7 @@ var _ = Describe("validation", func() {
 			addresspool := &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool1",
-					Namespace: consts.MetalLBNameSpace,
+					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Name:     "test1",
@@ -548,7 +554,7 @@ var _ = Describe("validation", func() {
 
 			By("By checking ConfigMap matches the expected configuration")
 			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
 				if err != nil {
 					// if its notfound means that was the last addresspool and configmap is deleted
 					if errors.IsNotFound(err) {
@@ -574,7 +580,7 @@ var _ = Describe("validation", func() {
 			addresspool := &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool2",
-					Namespace: consts.MetalLBNameSpace,
+					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Name:     "test2",
@@ -592,7 +598,7 @@ var _ = Describe("validation", func() {
 
 			By("By checking ConfigMap matches the expected configuration")
 			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
 				if err != nil {
 					// if its notfound means that was the last addresspool and configmap is deleted
 					if errors.IsNotFound(err) {
@@ -609,7 +615,7 @@ var _ = Describe("validation", func() {
 		// Make sure Configmap is deleted at the end of this test
 		By("By checking ConfigMap is deleted at the end of the test")
 		Eventually(func() bool {
-			_, err := testclient.Client.ConfigMaps(consts.MetalLBNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+			_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
 			return errors.IsNotFound(err)
 		}, timeout, interval).Should(BeTrue())
 	})
@@ -651,6 +657,6 @@ func loadMetalLBFromFile(metallb *metallbv1alpha1.MetalLB, fileName string) erro
 }
 
 var _ = BeforeSuite(func() {
-	_, err := testclient.Client.Namespaces().Get(context.Background(), consts.MetalLBNameSpace, metav1.GetOptions{})
+	_, err := testclient.Client.Namespaces().Get(context.Background(), OperatorNameSpace, metav1.GetOptions{})
 	Expect(err).ToNot(HaveOccurred(), "Should have the MetalLB Operator namespace")
 })
