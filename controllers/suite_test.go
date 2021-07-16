@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -36,9 +35,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
-	"github.com/metallb/metallb-operator/test/consts"
 	// +kubebuilder:scaffold:imports
 )
+
+const MetalLBTestNameSpace = "metallb-test-namespace"
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
@@ -85,19 +85,29 @@ var _ = BeforeSuite(func() {
 
 	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: consts.MetalLBNameSpace,
+			Name: MetalLBTestNameSpace,
 		},
 	}
 
 	err = k8sClient.Create(context.Background(), testNamespace)
 	Expect(err).ToNot(HaveOccurred())
 
-	ManifestPath = strings.Replace(ManifestPath, ".", "..", 1) // This is needed as the tests need to reference a directory backward
+	ManifestPath = "../bindata/deployment" // This is needed as the tests need to reference a directory backward
 
 	err = (&MetalLBReconciler{
-		Client: k8sClient,
-		Scheme: scheme.Scheme,
-		Log:    ctrl.Log.WithName("controllers").WithName("MetalLB"),
+		Client:    k8sClient,
+		Scheme:    scheme.Scheme,
+		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
+		Namespace: MetalLBTestNameSpace,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	AddressPoolManifestPath = "../bindata/configuration/address-pool" // This is needed as the tests need to reference a directory backward
+	err = (&AddressPoolReconciler{
+		Client:    k8sClient,
+		Scheme:    scheme.Scheme,
+		Log:       ctrl.Log.WithName("controller").WithName("AddressPool"),
+		Namespace: MetalLBTestNameSpace,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -109,6 +119,9 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	// restore Manifestpaths for both controller to their original value
+	ManifestPath = "./bindata/deployment"
+	AddressPoolManifestPath = "./bindata/configuration/address-pool"
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })

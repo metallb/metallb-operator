@@ -39,7 +39,7 @@ var autoAssign = false
 
 var TestIsOpenShift = false
 
-var OperatorNameSpace = consts.MetalLBNameSpace
+var OperatorNameSpace = "metallb-system"
 
 func init() {
 	if len(os.Getenv("IS_OPENSHIFT")) != 0 {
