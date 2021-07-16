@@ -113,7 +113,7 @@ var _ = Describe("validation", func() {
 			metallb = &metallbv1alpha1.MetalLB{}
 			err := loadMetalLBFromFile(metallb, consts.MetalLBCRFile)
 			Expect(err).ToNot(HaveOccurred())
-
+			metallb.SetNamespace(OperatorNameSpace)
 			metallbCRExisted = true
 			err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
 			if errors.IsNotFound(err) {
@@ -126,7 +126,7 @@ var _ = Describe("validation", func() {
 
 		AfterEach(func() {
 			if !metallbCRExisted {
-				deployment, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+				deployment, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(deployment.OwnerReferences).ToNot(BeNil())
 				Expect(deployment.OwnerReferences[0].Kind).To(Equal("MetalLB"))
@@ -327,6 +327,7 @@ var _ = Describe("validation", func() {
 				metallb = &metallbv1alpha1.MetalLB{}
 				err := loadMetalLBFromFile(metallb, consts.MetalLBCRFile)
 				Expect(err).ToNot(HaveOccurred())
+				metallb.SetNamespace(OperatorNameSpace)
 				metallb.SetName("incorrectname")
 				Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
 			})
@@ -364,11 +365,13 @@ var _ = Describe("validation", func() {
 				correct_metallb = &metallbv1alpha1.MetalLB{}
 				err := loadMetalLBFromFile(correct_metallb, consts.MetalLBCRFile)
 				Expect(err).ToNot(HaveOccurred())
+				correct_metallb.SetNamespace(OperatorNameSpace)
 				Expect(testclient.Client.Create(context.Background(), correct_metallb)).Should(Succeed())
 
 				incorrect_metallb = &metallbv1alpha1.MetalLB{}
 				err = loadMetalLBFromFile(incorrect_metallb, consts.MetalLBCRFile)
 				Expect(err).ToNot(HaveOccurred())
+				incorrect_metallb.SetNamespace(OperatorNameSpace)
 				incorrect_metallb.SetName("incorrectname")
 				Expect(testclient.Client.Create(context.Background(), incorrect_metallb)).Should(Succeed())
 			})
