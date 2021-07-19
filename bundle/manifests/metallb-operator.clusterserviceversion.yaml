@@ -51,7 +51,7 @@ metadata:
           }
         },
         {
-          "apiVersion": "metallb.io/v1alpha1",
+          "apiVersion": "metallb.io/v1beta1",
           "kind": "MetalLB",
           "metadata": {
             "name": "metallb",
@@ -84,7 +84,7 @@ spec:
       displayName: MetalLB
       kind: MetalLB
       name: metallbs.metallb.io
-      version: v1alpha1
+      version: v1beta1
   description: An operator for deploying MetalLB on a kubernetes cluster.
   displayName: MetalLB Operator
   icon:

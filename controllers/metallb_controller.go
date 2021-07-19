@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/render"
@@ -64,7 +64,7 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	_ = context.Background()
 	logger := r.Log.WithValues("metallb", req.NamespacedName)
 
-	instance := &metallbv1alpha1.MetalLB{}
+	instance := &metallbv1beta1.MetalLB{}
 	err := r.Get(context.TODO(), req.NamespacedName, instance)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -101,7 +101,7 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return result, err
 }
 
-func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1alpha1.MetalLB) (ctrl.Result, string, error) {
+func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1beta1.MetalLB) (ctrl.Result, string, error) {
 	err := r.syncMetalLBResources(instance)
 	if err != nil {
 		return ctrl.Result{}, status.ConditionDegraded, errors.Wrapf(err, "FailedToSyncMetalLBResources")
@@ -118,11 +118,11 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 
 func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&metallbv1alpha1.MetalLB{}).
+		For(&metallbv1beta1.MetalLB{}).
 		Complete(r)
 }
 
-func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1alpha1.MetalLB) error {
+func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
 	data := render.MakeRenderData()

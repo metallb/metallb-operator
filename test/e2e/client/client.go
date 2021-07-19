@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/glog"
 	metallbv1alpha "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta "github.com/metallb/metallb-operator/api/v1beta1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	discovery "k8s.io/client-go/discovery"
@@ -76,6 +77,10 @@ func New(kubeconfig string) *ClientSet {
 	}
 
 	if err := metallbv1alpha.AddToScheme(myScheme); err != nil {
+		panic(err)
+	}
+
+	if err := metallbv1beta.AddToScheme(myScheme); err != nil {
 		panic(err)
 	}
 
