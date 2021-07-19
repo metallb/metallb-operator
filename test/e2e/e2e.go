@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
@@ -106,11 +107,11 @@ var _ = Describe("validation", func() {
 	})
 
 	Context("MetalLB deploy", func() {
-		var metallb *metallbv1alpha1.MetalLB
+		var metallb *metallbv1beta1.MetalLB
 		var metallbCRExisted bool
 
 		BeforeEach(func() {
-			metallb = &metallbv1alpha1.MetalLB{}
+			metallb = &metallbv1beta1.MetalLB{}
 			err := loadMetalLBFromFile(metallb, consts.MetalLBCRFile)
 			Expect(err).ToNot(HaveOccurred())
 			metallb.SetNamespace(OperatorNameSpace)
@@ -202,7 +203,7 @@ var _ = Describe("validation", func() {
 			})
 			By("checking MetalLB CR status is set", func() {
 				Eventually(func() bool {
-					config := &metallbv1alpha1.MetalLB{}
+					config := &metallbv1beta1.MetalLB{}
 					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, config)
 					Expect(err).ToNot(HaveOccurred())
 					if config.Status.Conditions == nil {
@@ -322,9 +323,9 @@ var _ = Describe("validation", func() {
 	Context("MetalLB contains incorrect data", func() {
 		Context("MetalLB has incorrect name", func() {
 
-			var metallb *metallbv1alpha1.MetalLB
+			var metallb *metallbv1beta1.MetalLB
 			BeforeEach(func() {
-				metallb = &metallbv1alpha1.MetalLB{}
+				metallb = &metallbv1beta1.MetalLB{}
 				err := loadMetalLBFromFile(metallb, consts.MetalLBCRFile)
 				Expect(err).ToNot(HaveOccurred())
 				metallb.SetNamespace(OperatorNameSpace)
@@ -344,7 +345,7 @@ var _ = Describe("validation", func() {
 			It("should not be reconciled", func() {
 				By("checking MetalLB resource status", func() {
 					Eventually(func() bool {
-						instance := &metallbv1alpha1.MetalLB{}
+						instance := &metallbv1beta1.MetalLB{}
 						err := testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, instance)
 						Expect(err).ToNot(HaveOccurred())
 						for _, condition := range instance.Status.Conditions {
@@ -359,16 +360,16 @@ var _ = Describe("validation", func() {
 		})
 
 		Context("Correct and incorrect MetalLB resources coexist", func() {
-			var correct_metallb *metallbv1alpha1.MetalLB
-			var incorrect_metallb *metallbv1alpha1.MetalLB
+			var correct_metallb *metallbv1beta1.MetalLB
+			var incorrect_metallb *metallbv1beta1.MetalLB
 			BeforeEach(func() {
-				correct_metallb = &metallbv1alpha1.MetalLB{}
+				correct_metallb = &metallbv1beta1.MetalLB{}
 				err := loadMetalLBFromFile(correct_metallb, consts.MetalLBCRFile)
 				Expect(err).ToNot(HaveOccurred())
 				correct_metallb.SetNamespace(OperatorNameSpace)
 				Expect(testclient.Client.Create(context.Background(), correct_metallb)).Should(Succeed())
 
-				incorrect_metallb = &metallbv1alpha1.MetalLB{}
+				incorrect_metallb = &metallbv1beta1.MetalLB{}
 				err = loadMetalLBFromFile(incorrect_metallb, consts.MetalLBCRFile)
 				Expect(err).ToNot(HaveOccurred())
 				incorrect_metallb.SetNamespace(OperatorNameSpace)
@@ -395,14 +396,14 @@ var _ = Describe("validation", func() {
 			It("should have correct statuses", func() {
 				By("checking MetalLB resource status", func() {
 					Eventually(func() bool {
-						instance := &metallbv1alpha1.MetalLB{}
+						instance := &metallbv1beta1.MetalLB{}
 						err := testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: incorrect_metallb.Namespace, Name: incorrect_metallb.Name}, instance)
 						Expect(err).ToNot(HaveOccurred())
 						return checkConditionStatus(instance) == status.ConditionDegraded
 					}, 30*time.Second, 5*time.Second).Should(BeTrue())
 
 					Eventually(func() bool {
-						instance := &metallbv1alpha1.MetalLB{}
+						instance := &metallbv1beta1.MetalLB{}
 						err := testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: correct_metallb.Namespace, Name: correct_metallb.Name}, instance)
 						Expect(err).ToNot(HaveOccurred())
 						return checkConditionStatus(instance) == status.ConditionAvailable
@@ -418,7 +419,7 @@ var _ = Describe("validation", func() {
 
 					// Correctly named resource status should not change
 					Eventually(func() bool {
-						instance := &metallbv1alpha1.MetalLB{}
+						instance := &metallbv1beta1.MetalLB{}
 						err := testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: correct_metallb.Namespace, Name: correct_metallb.Name}, instance)
 						Expect(err).ToNot(HaveOccurred())
 						return checkConditionStatus(instance) == status.ConditionAvailable
@@ -624,7 +625,7 @@ var _ = Describe("validation", func() {
 	})
 })
 
-func checkConditionStatus(instance *metallbv1alpha1.MetalLB) string {
+func checkConditionStatus(instance *metallbv1beta1.MetalLB) string {
 	availableStatus := false
 	degradedStatus := false
 	for _, condition := range instance.Status.Conditions {
@@ -649,7 +650,7 @@ func decodeYAML(r io.Reader, obj interface{}) error {
 	return decoder.Decode(obj)
 }
 
-func loadMetalLBFromFile(metallb *metallbv1alpha1.MetalLB, fileName string) error {
+func loadMetalLBFromFile(metallb *metallbv1beta1.MetalLB, fileName string) error {
 	f, err := os.Open(fmt.Sprintf("../../config/samples/%s", fileName))
 	if err != nil {
 		return err

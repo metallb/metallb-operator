@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -33,7 +33,7 @@ const (
 	ConditionUpgradeable = "Upgradeable"
 )
 
-func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1alpha1.MetalLB, condition string, reason string, message string) error {
+func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1beta1.MetalLB, condition string, reason string, message string) error {
 	conditions := getConditions(condition, reason, message)
 	if equality.Semantic.DeepEqual(conditions, metallb.Status.Conditions) {
 		return nil

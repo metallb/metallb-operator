@@ -8,14 +8,14 @@ projectName: metallb-operator
 repo: github.com/metallb/metallb-operator
 resources:
 - api:
-    crdVersion: v1alpha1
+    crdVersion: v1beta1
     namespaced: true
   controller: true
   domain: metallb.io
   group: metallb.io
   kind: MetalLB
-  path: metallb.io/api/v1alpha1
-  version: v1alpha1
+  path: metallb.io/api/v1beta1
+  version: v1beta1
 - api:
     crdVersion: v1beta1
     namespaced: true
