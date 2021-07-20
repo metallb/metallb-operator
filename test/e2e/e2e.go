@@ -278,7 +278,6 @@ var _ = Describe("validation", func() {
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
-					Name:     "test1",
 					Protocol: "layer2",
 					Addresses: []string{
 						"1.1.1.1",
@@ -286,7 +285,7 @@ var _ = Describe("validation", func() {
 					},
 				},
 			}, `address-pools:
-- name: test1
+- name: addresspool1
   protocol: layer2
   addresses:
 
@@ -300,7 +299,6 @@ var _ = Describe("validation", func() {
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
-					Name:     "test2",
 					Protocol: "layer2",
 					Addresses: []string{
 						"2.2.2.1",
@@ -309,7 +307,7 @@ var _ = Describe("validation", func() {
 					AutoAssign: &autoAssign,
 				},
 			}, `address-pools:
-- name: test2
+- name: addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
@@ -433,7 +431,6 @@ var _ = Describe("validation", func() {
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
-					Name:     "test1",
 					Protocol: "layer2",
 					Addresses: []string{
 						"1.1.1.1",
@@ -464,7 +461,7 @@ var _ = Describe("validation", func() {
 				}
 				return configmap.Data[consts.MetalLBConfigMapName], err
 			}, timeout, interval).Should(MatchYAML(`address-pools:
-- name: test1
+- name: addresspool1
   protocol: layer2
   addresses:
 
@@ -482,7 +479,6 @@ var _ = Describe("validation", func() {
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
-					Name:     "test2",
 					Protocol: "layer2",
 					Addresses: []string{
 						"2.2.2.1",
@@ -514,14 +510,14 @@ var _ = Describe("validation", func() {
 				}
 				return configmap.Data[consts.MetalLBConfigMapName], err
 			}, timeout, interval).Should(MatchYAML(`address-pools:
-- name: test1
+- name: addresspool1
   protocol: layer2
   addresses:
 
   - 1.1.1.1
   - 1.1.1.100
 
-- name: test2
+- name: addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
@@ -539,7 +535,6 @@ var _ = Describe("validation", func() {
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
-					Name:     "test1",
 					Protocol: "layer2",
 					Addresses: []string{
 						"1.1.1.1",
@@ -564,7 +559,7 @@ var _ = Describe("validation", func() {
 				}
 				return configmap.Data[consts.MetalLBConfigMapName], err
 			}, timeout, interval).Should(MatchYAML(`address-pools:
-- name: test2
+- name: addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
@@ -583,7 +578,6 @@ var _ = Describe("validation", func() {
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
-					Name:     "test2",
 					Protocol: "layer2",
 					Addresses: []string{
 						"2.2.2.1",
