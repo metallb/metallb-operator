@@ -223,7 +223,7 @@ spec:
           - use
         serviceAccountName: speaker
       deployments:
-      - name: metallboperator-controller-manager
+      - name: metallb-operator-controller-manager
         spec:
           replicas: 1
           selector:
