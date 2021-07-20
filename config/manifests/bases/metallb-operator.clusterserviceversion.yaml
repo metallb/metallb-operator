@@ -26,7 +26,7 @@ spec:
       displayName: MetalLB
       kind: MetalLB
       name: metallbs.metallb.io
-      version: v1alpha1
+      version: v1beta1
   description: An operator for deploying MetalLB on a kubernetes cluster.
   displayName: MetalLB Operator
   icon:

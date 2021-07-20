@@ -29,7 +29,7 @@ Once the MetalLB Operator is installed, you have to create a `MetalLB` custom re
 Below you can find an example of a `MetalLB` resource definition:
 
 ```yaml
-apiVersion: metallb.io/v1alpha1
+apiVersion: metallb.io/v1beta1
 kind: MetalLB
 metadata:
   name: metallb
@@ -98,7 +98,7 @@ Run the following command to create it:
 
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: metallb.io/v1alpha1
+apiVersion: metallb.io/v1beta1
 kind: MetalLB
 metadata:
   name: metallb

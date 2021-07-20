@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/test/consts"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,7 +18,7 @@ import (
 
 var _ = Describe("MetalLB Controller", func() {
 	Context("syncMetalLB", func() {
-		metallb := &v1alpha1.MetalLB{
+		metallb := &metallbv1beta1.MetalLB{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "metallb",
 				Namespace: MetalLBTestNameSpace,
