@@ -22,7 +22,6 @@ var _ = Describe("AddressPool Controller", func() {
 				Namespace: MetalLBTestNameSpace,
 			},
 			Spec: v1alpha1.AddressPoolSpec{
-				Name:     "test1",
 				Protocol: "layer2",
 				Addresses: []string{
 					"1.1.1.1",
@@ -58,7 +57,7 @@ var _ = Describe("AddressPool Controller", func() {
 				}
 				return configmap.Data[consts.MetalLBConfigMapName], err
 			}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML(`address-pools:
-- name: test1
+- name: test-addresspool
   protocol: layer2
   auto-assign: false
   addresses:

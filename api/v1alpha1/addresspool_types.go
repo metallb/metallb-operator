@@ -23,7 +23,7 @@ import (
 // AddressPoolSpec defines the desired state of AddressPool
 type AddressPoolSpec struct {
 	// Address Pool Name
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 
 	// Protocol can be used to select how the announcement is done,
 	// +kubebuilder:validation:Enum:=layer2; bgp
