@@ -76,7 +76,7 @@ func (r *AddressPoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 func (r *AddressPoolReconciler) renderObject(instance *metallbv1alpha1.AddressPool) ([]*unstructured.Unstructured, error) {
 	data := render.MakeRenderData()
-	data.Data["Name"] = instance.Spec.Name
+	data.Data["Name"] = instance.Name
 	data.Data["Protocol"] = instance.Spec.Protocol
 	data.Data["AutoAssign"] = *instance.Spec.AutoAssign
 	data.Data["Addresses"] = instance.Spec.Addresses
