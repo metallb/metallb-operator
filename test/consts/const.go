@@ -2,7 +2,7 @@ package consts
 
 const (
 	// MetalLBOperatorDeploymentName contains the name of the MetalLB Operator deployment
-	MetalLBOperatorDeploymentName = "metallboperator-controller-manager"
+	MetalLBOperatorDeploymentName = "metallb-operator-controller-manager"
 	// MetalLBOperatorDeploymentLabel contains the label of the MetalLB Operator deployment
 	MetalLBOperatorDeploymentLabel = "controller-manager"
 	// MetalLBOperatorCRDName contains the name of the MetalLB Operator CRD
