@@ -15,7 +15,6 @@ metadata:
             "addresses": [
               "172.18.0.100-172.18.0.255"
             ],
-            "name": "default",
             "protocol": "layer2"
           }
         },
@@ -31,7 +30,6 @@ metadata:
               "172.20.0.100/24"
             ],
             "autoAssign": false,
-            "name": "gold",
             "protocol": "layer2"
           }
         },
@@ -46,12 +44,11 @@ metadata:
             "addresses": [
               "2002:2:2::1-2002:2:2::100"
             ],
-            "name": "silver",
             "protocol": "layer2"
           }
         },
         {
-          "apiVersion": "metallb.io/v1alpha1",
+          "apiVersion": "metallb.io/v1beta1",
           "kind": "MetalLB",
           "metadata": {
             "name": "metallb",
@@ -85,7 +82,7 @@ spec:
       displayName: MetalLB
       kind: MetalLB
       name: metallbs.metallb.io
-      version: v1alpha1
+      version: v1beta1
   description: An operator for deploying MetalLB on a kubernetes cluster.
   displayName: MetalLB Operator
   icon:
@@ -224,7 +221,7 @@ spec:
           - use
         serviceAccountName: speaker
       deployments:
-      - name: metallboperator-controller-manager
+      - name: metallb-operator-controller-manager
         spec:
           replicas: 1
           selector:
