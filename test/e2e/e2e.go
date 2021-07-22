@@ -32,7 +32,7 @@ import (
 
 const (
 	// Timeout and Interval settings
-	timeout  = time.Minute * 3
+	timeout  = time.Minute * 5
 	interval = time.Second * 2
 )
 
