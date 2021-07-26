@@ -36,7 +36,8 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_URL=https://api.github.com/repos/operator-framework/operator-sdk/releases
+OPERATOR_SDK_VERSION=v1.8.1
+
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
@@ -154,8 +155,7 @@ operator-sdk:
 ifeq (, $(shell which operator-sdk))
 	@{ \
 	set -e ;\
-	operator_sdk_latest_version=$$(curl -s $(OPERATOR_SDK_URL) | grep tag_name | grep -v -- '-rc' | head -1 | awk -F': ' '{print $$2}' | sed 's/,//' | xargs) ;\
-	curl -Lk  https://github.com/operator-framework/operator-sdk/releases/download/$$operator_sdk_latest_version/operator-sdk_linux_amd64 > $(GOBIN)/operator-sdk ;\
+	curl -Lk  https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_linux_amd64 > $(GOBIN)/operator-sdk ;\
 	chmod u+x $(GOBIN)/operator-sdk ;\
 	}
 OPERATOR_SDK=$(GOBIN)/operator-sdk
