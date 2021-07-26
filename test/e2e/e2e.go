@@ -427,8 +427,9 @@ var _ = Describe("validation", func() {
 			})
 		})
 	})
-	Context("Testing create/delete Multiple AddressPools", func() {
-		By("Creating first addresspool object ", func() {
+	Context("Creating Multiple AddressPools", func() {
+		It("Testing create/delete Multiple AddressPools", func() {
+			By("Creating first addresspool object ")
 			addresspool := &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool1",
@@ -474,10 +475,8 @@ var _ = Describe("validation", func() {
 
 `))
 
-		})
-
-		By("Creating second addresspool object ", func() {
-			addresspool := &metallbv1alpha1.AddressPool{
+			By("Creating second addresspool object ")
+			addresspool = &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool2",
 					Namespace: OperatorNameSpace,
@@ -494,7 +493,7 @@ var _ = Describe("validation", func() {
 
 			Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
 
-			key := types.NamespacedName{
+			key = types.NamespacedName{
 				Name:      "addresspool2",
 				Namespace: OperatorNameSpace,
 			}
@@ -530,10 +529,9 @@ var _ = Describe("validation", func() {
   - 2.2.2.100
 
 `))
-		})
 
-		By("Deleteing the first addresspool object", func() {
-			addresspool := &metallbv1alpha1.AddressPool{
+			By("Deleteing the first addresspool object")
+			addresspool = &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool1",
 					Namespace: OperatorNameSpace,
@@ -573,10 +571,8 @@ var _ = Describe("validation", func() {
 
 `))
 
-		})
-
-		By("Deleteing the second addresspool object", func() {
-			addresspool := &metallbv1alpha1.AddressPool{
+			By("Deleteing the second addresspool object")
+			addresspool = &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool2",
 					Namespace: OperatorNameSpace,
@@ -608,14 +604,13 @@ var _ = Describe("validation", func() {
 			}, timeout, interval).Should(MatchYAML(`
 `))
 
+			// Make sure Configmap is deleted at the end of this test
+			By("By checking ConfigMap is deleted at the end of the test")
+			Eventually(func() bool {
+				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				return errors.IsNotFound(err)
+			}, timeout, interval).Should(BeTrue())
 		})
-
-		// Make sure Configmap is deleted at the end of this test
-		By("By checking ConfigMap is deleted at the end of the test")
-		Eventually(func() bool {
-			_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-			return errors.IsNotFound(err)
-		}, timeout, interval).Should(BeTrue())
 	})
 })
 
