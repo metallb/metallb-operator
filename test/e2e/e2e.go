@@ -428,43 +428,44 @@ var _ = Describe("validation", func() {
 		})
 	})
 	Context("Testing create/delete Multiple AddressPools", func() {
-		By("Creating first addresspool object ", func() {
-			addresspool := &metallbv1alpha1.AddressPool{
-				ObjectMeta: metav1.ObjectMeta{
+		It("should have created, merged and deleted resources correctly", func() {
+			By("Creating first addresspool object ", func() {
+				addresspool := &metallbv1alpha1.AddressPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "addresspool1",
+						Namespace: OperatorNameSpace,
+					},
+					Spec: metallbv1alpha1.AddressPoolSpec{
+						Protocol: "layer2",
+						Addresses: []string{
+							"1.1.1.1",
+							"1.1.1.100",
+						},
+					},
+				}
+
+				Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
+
+				key := types.NamespacedName{
 					Name:      "addresspool1",
 					Namespace: OperatorNameSpace,
-				},
-				Spec: metallbv1alpha1.AddressPoolSpec{
-					Protocol: "layer2",
-					Addresses: []string{
-						"1.1.1.1",
-						"1.1.1.100",
-					},
-				},
-			}
-
-			Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
-
-			key := types.NamespacedName{
-				Name:      "addresspool1",
-				Namespace: OperatorNameSpace,
-			}
-			// Create addresspool resource
-			By("By checking AddressPool1 resource is created")
-			Eventually(func() error {
-				err := testclient.Client.Get(context.Background(), key, addresspool)
-				return err
-			}, timeout, interval).Should(Succeed())
-
-			// Checking ConfigMap is created
-			By("By checking ConfigMap is created and matches addresspool1 configuration")
-			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					return "", err
 				}
-				return configmap.Data[consts.MetalLBConfigMapName], err
-			}, timeout, interval).Should(MatchYAML(`address-pools:
+				// Create addresspool resource
+				By("By checking AddressPool1 resource is created")
+				Eventually(func() error {
+					err := testclient.Client.Get(context.Background(), key, addresspool)
+					return err
+				}, timeout, interval).Should(Succeed())
+
+				// Checking ConfigMap is created
+				By("By checking ConfigMap is created and matches addresspool1 configuration")
+				Eventually(func() (string, error) {
+					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+					if err != nil {
+						return "", err
+					}
+					return configmap.Data[consts.MetalLBConfigMapName], err
+				}, timeout, interval).Should(MatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
@@ -474,148 +475,288 @@ var _ = Describe("validation", func() {
 
 `))
 
-		})
+			})
 
-		By("Creating second addresspool object ", func() {
-			addresspool := &metallbv1alpha1.AddressPool{
-				ObjectMeta: metav1.ObjectMeta{
+			By("Creating second addresspool object ", func() {
+				addresspool := &metallbv1alpha1.AddressPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "addresspool2",
+						Namespace: OperatorNameSpace,
+					},
+					Spec: metallbv1alpha1.AddressPoolSpec{
+						Protocol: "layer2",
+						Addresses: []string{
+							"2.2.2.1",
+							"2.2.2.100",
+						},
+						AutoAssign: &autoAssign,
+					},
+				}
+
+				Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
+
+				key := types.NamespacedName{
 					Name:      "addresspool2",
 					Namespace: OperatorNameSpace,
-				},
-				Spec: metallbv1alpha1.AddressPoolSpec{
+				}
+				// Create addresspool resource
+				By("By checking AddressPool2 resource is created")
+				Eventually(func() error {
+					err := testclient.Client.Get(context.Background(), key, addresspool)
+					return err
+				}, timeout, interval).Should(Succeed())
+
+				// Checking ConfigMap is created
+				By("By checking ConfigMap is created and matches addresspool2 configuration")
+				Eventually(func() (string, error) {
+					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+					if err != nil {
+						return "", err
+					}
+					return configmap.Data[consts.MetalLBConfigMapName], err
+				}, timeout, interval).Should(MatchYAML(`address-pools:
+- name: addresspool1
+  protocol: layer2
+  addresses:
+
+  - 1.1.1.1
+  - 1.1.1.100
+
+- name: addresspool2
+  protocol: layer2
+  auto-assign: false
+  addresses:
+
+  - 2.2.2.1
+  - 2.2.2.100
+
+`))
+			})
+
+			By("Deleteing the first addresspool object", func() {
+				addresspool := &metallbv1alpha1.AddressPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "addresspool1",
+						Namespace: OperatorNameSpace,
+					},
+					Spec: metallbv1alpha1.AddressPoolSpec{
+						Protocol: "layer2",
+						Addresses: []string{
+							"1.1.1.1",
+							"1.1.1.100",
+						},
+					},
+				}
+				Eventually(func() bool {
+					err := testclient.Client.Delete(context.Background(), addresspool)
+					return errors.IsNotFound(err)
+				}, timeout, interval).Should(BeTrue(), "Failed to delete AddressPool custom resource")
+
+				By("By checking ConfigMap matches the expected configuration")
+				Eventually(func() (string, error) {
+					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+					if err != nil {
+						// if its notfound means that was the last addresspool and configmap is deleted
+						if errors.IsNotFound(err) {
+							return "", nil
+						}
+						return "", err
+					}
+					return configmap.Data[consts.MetalLBConfigMapName], err
+				}, timeout, interval).Should(MatchYAML(`address-pools:
+- name: addresspool2
+  protocol: layer2
+  auto-assign: false
+  addresses:
+
+  - 2.2.2.1
+  - 2.2.2.100
+
+`))
+
+			})
+
+			By("Deleteing the second addresspool object", func() {
+				addresspool := &metallbv1alpha1.AddressPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "addresspool2",
+						Namespace: OperatorNameSpace,
+					},
+					Spec: metallbv1alpha1.AddressPoolSpec{
+						Protocol: "layer2",
+						Addresses: []string{
+							"2.2.2.1",
+							"2.2.2.100",
+						},
+					},
+				}
+				Eventually(func() bool {
+					err := testclient.Client.Delete(context.Background(), addresspool)
+					return errors.IsNotFound(err)
+				}, timeout, interval).Should(BeTrue(), "Failed to delete AddressPool custom resource")
+
+				By("By checking ConfigMap matches the expected configuration")
+				Eventually(func() (string, error) {
+					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+					if err != nil {
+						// if its notfound means that was the last addresspool and configmap is deleted
+						if errors.IsNotFound(err) {
+							return "", nil
+						}
+						return "", err
+					}
+					return configmap.Data[consts.MetalLBConfigMapName], err
+				}, timeout, interval).Should(MatchYAML(`
+`))
+
+			})
+
+			// Make sure Configmap is deleted at the end of this test
+			By("By checking ConfigMap is deleted at the end of the test")
+			Eventually(func() bool {
+				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				return errors.IsNotFound(err)
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+
+	Context("Testing Update AddressPool", func() {
+		It("should have created, update and finally delete addresspool correctly", func() {
+			By("Creating addresspool object ", func() {
+				addresspool := &metallbv1alpha1.AddressPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "addresspool1",
+						Namespace: OperatorNameSpace,
+					},
+					Spec: metallbv1alpha1.AddressPoolSpec{
+						Protocol: "layer2",
+						Addresses: []string{
+							"1.1.1.1",
+							"1.1.1.100",
+						},
+					},
+				}
+
+				Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
+
+				key := types.NamespacedName{
+					Name:      "addresspool1",
+					Namespace: OperatorNameSpace,
+				}
+				// Create addresspool resource
+				By("By checking AddressPool resource is created")
+				Eventually(func() error {
+					err := testclient.Client.Get(context.Background(), key, addresspool)
+					return err
+				}, timeout, interval).Should(Succeed())
+
+				// Checking ConfigMap is created
+				By("By checking ConfigMap is created and matches addresspool configuration")
+				Eventually(func() (string, error) {
+					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+					if err != nil {
+						return "", err
+					}
+					return configmap.Data[consts.MetalLBConfigMapName], err
+				}, timeout, interval).Should(MatchYAML(`address-pools:
+- name: addresspool1
+  protocol: layer2
+  addresses:
+
+  - 1.1.1.1
+  - 1.1.1.100
+
+`))
+
+			})
+
+			By("Update the same addresspool object with different range ", func() {
+				addresspool := &metallbv1alpha1.AddressPool{}
+				key := types.NamespacedName{
+					Name:      "addresspool1",
+					Namespace: OperatorNameSpace,
+				}
+				Eventually(func() error {
+					err := testclient.Client.Get(context.Background(), key, addresspool)
+					return err
+				}, timeout, interval).Should(Succeed())
+
+				addresspool.Spec = metallbv1alpha1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
-						"2.2.2.1",
-						"2.2.2.100",
+						"1.1.1.1",
+						"1.1.1.200",
 					},
 					AutoAssign: &autoAssign,
-				},
-			}
-
-			Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
-
-			key := types.NamespacedName{
-				Name:      "addresspool2",
-				Namespace: OperatorNameSpace,
-			}
-			// Create addresspool resource
-			By("By checking AddressPool2 resource is created")
-			Eventually(func() error {
-				err := testclient.Client.Get(context.Background(), key, addresspool)
-				return err
-			}, timeout, interval).Should(Succeed())
-
-			// Checking ConfigMap is created
-			By("By checking ConfigMap is created and matches addresspool2 configuration")
-			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					return "", err
 				}
-				return configmap.Data[consts.MetalLBConfigMapName], err
-			}, timeout, interval).Should(MatchYAML(`address-pools:
+
+				Eventually(func() error {
+					err := testclient.Client.Update(context.Background(), addresspool)
+					return err
+				}, timeout, interval).Should(Succeed())
+
+				// Checking ConfigMap is updated
+				By("By checking ConfigMap is created and matches updated configuration")
+				Eventually(func() (string, error) {
+					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+					if err != nil {
+						return "", err
+					}
+					return configmap.Data[consts.MetalLBConfigMapName], err
+				}, timeout, interval).Should(MatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
+  auto-assign: false
   addresses:
 
   - 1.1.1.1
-  - 1.1.1.100
-
-- name: addresspool2
-  protocol: layer2
-  auto-assign: false
-  addresses:
-
-  - 2.2.2.1
-  - 2.2.2.100
+  - 1.1.1.200
 
 `))
-		})
+			})
 
-		By("Deleteing the first addresspool object", func() {
-			addresspool := &metallbv1alpha1.AddressPool{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool1",
-					Namespace: OperatorNameSpace,
-				},
-				Spec: metallbv1alpha1.AddressPoolSpec{
-					Protocol: "layer2",
-					Addresses: []string{
-						"1.1.1.1",
-						"1.1.1.100",
+			By("Deleting the addresspool object", func() {
+				addresspool := &metallbv1alpha1.AddressPool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "addresspool1",
+						Namespace: OperatorNameSpace,
 					},
-				},
-			}
-			Eventually(func() bool {
-				err := testclient.Client.Delete(context.Background(), addresspool)
-				return errors.IsNotFound(err)
-			}, timeout, interval).Should(BeTrue(), "Failed to delete AddressPool custom resource")
-
-			By("By checking ConfigMap matches the expected configuration")
-			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					// if its notfound means that was the last addresspool and configmap is deleted
-					if errors.IsNotFound(err) {
-						return "", nil
-					}
-					return "", err
-				}
-				return configmap.Data[consts.MetalLBConfigMapName], err
-			}, timeout, interval).Should(MatchYAML(`address-pools:
-- name: addresspool2
-  protocol: layer2
-  auto-assign: false
-  addresses:
-
-  - 2.2.2.1
-  - 2.2.2.100
-
-`))
-
-		})
-
-		By("Deleteing the second addresspool object", func() {
-			addresspool := &metallbv1alpha1.AddressPool{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool2",
-					Namespace: OperatorNameSpace,
-				},
-				Spec: metallbv1alpha1.AddressPoolSpec{
-					Protocol: "layer2",
-					Addresses: []string{
-						"2.2.2.1",
-						"2.2.2.100",
+					Spec: metallbv1alpha1.AddressPoolSpec{
+						Protocol: "layer2",
+						Addresses: []string{
+							"1.1.1.1",
+							"1.1.1.200",
+						},
 					},
-				},
-			}
-			Eventually(func() bool {
-				err := testclient.Client.Delete(context.Background(), addresspool)
-				return errors.IsNotFound(err)
-			}, timeout, interval).Should(BeTrue(), "Failed to delete AddressPool custom resource")
-
-			By("By checking ConfigMap matches the expected configuration")
-			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					// if its notfound means that was the last addresspool and configmap is deleted
-					if errors.IsNotFound(err) {
-						return "", nil
-					}
-					return "", err
 				}
-				return configmap.Data[consts.MetalLBConfigMapName], err
-			}, timeout, interval).Should(MatchYAML(`
+				Eventually(func() bool {
+					err := testclient.Client.Delete(context.Background(), addresspool)
+					return errors.IsNotFound(err)
+				}, timeout, interval).Should(BeTrue(), "Failed to delete AddressPool custom resource")
+
+				By("Checking ConfigMap is deleted")
+				Eventually(func() (string, error) {
+					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+					if err != nil {
+						// if its notfound means that was the last addresspool and configmap is deleted
+						if errors.IsNotFound(err) {
+							return "", nil
+						}
+						return "", err
+					}
+					return configmap.Data[consts.MetalLBConfigMapName], err
+				}, timeout, interval).Should(MatchYAML(`
 `))
 
-		})
+			})
 
-		// Make sure Configmap is deleted at the end of this test
-		By("By checking ConfigMap is deleted at the end of the test")
-		Eventually(func() bool {
-			_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-			return errors.IsNotFound(err)
-		}, timeout, interval).Should(BeTrue())
+			// Make sure Configmap is deleted at the end of this test
+			By("Checking ConfigMap is deleted at the end of the test")
+			Eventually(func() bool {
+				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				return errors.IsNotFound(err)
+			}, timeout, interval).Should(BeTrue())
+		})
 	})
 })
 

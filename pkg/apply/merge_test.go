@@ -370,6 +370,10 @@ data:
       protocol: layer2
       addresses:
       - 172.10.0.100/24
+    - name: yellow
+      protocol: layer2
+      addresses:
+      - 172.30.0.100/16
     - name: blue
       protocol: layer2
       addresses:
@@ -392,7 +396,7 @@ data:
     - name: blue
       protocol: layer2
       addresses:
-      - 172.20.0.100/24
+      - 172.20.0.100/28
       auto-assign: false`)
 
 	err := MergeObjectForUpdate(cur, upd)
@@ -404,11 +408,6 @@ data:
   protocol: layer2
   addresses:
   - 172.10.0.100/24
-- name: blue
-  protocol: layer2
-  addresses:
-  - 172.20.0.100/24
-  auto-assign: false
 - name: yellow
   protocol: layer2
   addresses:
@@ -416,7 +415,7 @@ data:
 - name: blue
   protocol: layer2
   addresses:
-  - 172.20.0.100/24
+  - 172.20.0.100/28
   auto-assign: false
 `))
 }

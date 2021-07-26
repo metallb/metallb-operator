@@ -118,7 +118,6 @@ metadata:
   name: addresspool-sample1
   namespace: metallb-system
 spec:
-  name: default
   protocol: layer2
   addresses:
     - 172.18.0.100-172.18.0.255
@@ -132,7 +131,7 @@ apiVersion: v1
 data:
   config: |
     address-pools:
-    - name: default
+    - name: addresspool-sample1
       protocol: layer2
       addresses:
       - 172.18.0.100-172.18.0.255
