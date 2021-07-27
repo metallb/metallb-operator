@@ -239,6 +239,16 @@ func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
 	}
 
 	var mergedConfigMap configMapData
+
+	for i, a1 := range st1.AddressPools {
+		for j := len(st2.AddressPools) - 1; j >= 0; j-- {
+			if st2.AddressPools[j].Name == a1.Name {
+				st1.AddressPools[i] = *st2.AddressPools[j].DeepCopy()
+				st2.AddressPools = append(st2.AddressPools[:j], st2.AddressPools[j+1:]...)
+			}
+		}
+	}
+
 	mergedConfigMap.AddressPools = append(st1.AddressPools, st2.AddressPools...)
 
 	resData, err := yaml.Marshal(mergedConfigMap)
