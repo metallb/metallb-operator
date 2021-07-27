@@ -2,9 +2,11 @@ package e2e
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
@@ -20,6 +23,7 @@ import (
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
+	"github.com/metallb/metallb-operator/test/e2e/k8sreporter"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -27,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 )
 
 const (
@@ -42,6 +45,9 @@ var TestIsOpenShift = false
 
 var OperatorNameSpace = "metallb-system"
 
+var junitPath *string
+var reportPath *string
+
 func init() {
 	if len(os.Getenv("IS_OPENSHIFT")) != 0 {
 		TestIsOpenShift = true
@@ -50,14 +56,27 @@ func init() {
 	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
 		OperatorNameSpace = ns
 	}
+
+	junitPath = flag.String("junit", "", "the path for the junit format report")
+	reportPath = flag.String("report", "", "the path of the report file containing details for failed tests")
 }
 
 func RunE2ETests(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	rr := []Reporter{}
+	if *junitPath != "" {
+		junitFile := path.Join(*junitPath, "e2e_junit.xml")
+		rr = append(rr, reporters.NewJUnitReporter(junitFile))
+	}
+
+	clients := testclient.New("")
+
+	if *reportPath != "" {
+		rr = append(rr, k8sreporter.New(clients, OperatorNameSpace, *reportPath))
+	}
+
+	RunSpecsWithDefaultAndCustomReporters(t, "Metallb Operator Validation Suite", rr)
 }
 
 var _ = Describe("validation", func() {

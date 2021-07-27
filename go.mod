@@ -9,6 +9,7 @@ require (
 	github.com/go-logr/logr v0.3.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/kennygrant/sanitize v1.2.4
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
@@ -19,6 +20,7 @@ require (
 	k8s.io/apimachinery v0.20.4
 	k8s.io/client-go v0.20.4
 	k8s.io/kubernetes v1.21.1
+	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 	sigs.k8s.io/controller-runtime v0.7.0
 )
 

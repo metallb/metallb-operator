@@ -40,6 +40,8 @@ OPERATOR_SDK_VERSION=v1.8.1
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
+TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
+
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 test: generate fmt vet manifests ## Run unit and integration tests
 	mkdir -p ${ENVTEST_ASSETS_DIR}
@@ -49,7 +51,9 @@ test: generate fmt vet manifests ## Run unit and integration tests
 all: manager ## Default make target if no options specified
 
 test-e2e: generate fmt vet manifests  ## Run e2e tests
-	go test --tags=e2etests -v ./test/e2e -ginkgo.v
+	rm -rf ${TESTS_REPORTS_PATH}
+	mkdir -p ${TESTS_REPORTS_PATH}
+	go test --tags=e2etests -v ./test/e2e -ginkgo.v -junit $(TESTS_REPORTS_PATH) -report $(TESTS_REPORTS_PATH)
 
 manager: generate fmt vet  ## Build manager binary
 	go build -ldflags "-X main.build=$$(git rev-parse HEAD)" -o bin/manager main.go
