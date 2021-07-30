@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+"
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        go: ["1.16"]
+    name: Go ${{ matrix.go }}
+    steps:
+      - name: Checkout Metal LB Operator
+        uses: actions/checkout@v2
+        with:
+          path: metallboperator
+          fetch-depth: 0 # Fetch all history for all tags and branches
+
+      - uses: actions/setup-go@v2
+        id: go
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Verify modules
+        run: go mod verify
+
+      - name: Verify format
+        run: |
+          make fmt
+          git diff --exit-code
+
+      - name: Verify bundle manifests
+        run: |
+          make bundle
+          git diff --exit-code
+
+      - name: Create and set up K8s Kind Cluster
+        run: |
+          ./scripts/kind-cluster-with-registry.sh
+          make deploy-olm
+
+      - name: Build bundle image
+        run: |
+          make build-and-push-bundle-images REPO=localhost:5000
+
+      - name: Deploy Metal LB Operator with OLM
+        run: |
+          make deploy-with-olm REPO=localhost:5000
+
+      - name: E2E Tests
+        run: |
+          export KUBECONFIG=${HOME}/.kube/config 
+          make test-e2e
+
+      - name: Archive E2E Tests logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: test_e2e_logs
+          path: /tmp/test_e2e_logs/
+
+      - name: Export kind logs
+        if: ${{ failure() }}
+        run: |
+          kind export logs /tmp/kind_logs
+
+      - name: Archive kind logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: kind_logs
+          path: /tmp/kind_logs
+
+  release:
+    needs: [main]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{steps.build_changelog.outputs.changelog}}
+          draft: false
+          prerelease: false
