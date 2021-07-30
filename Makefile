@@ -194,6 +194,18 @@ lint: ## Run golangci-lint against code
 	@echo "Running golangci-lint"
 	hack/lint.sh
 
+fetch_metallb_version: ## Updates the versions of metallb under hack/metallb_version with the latest available tag
+	@echo "Bumping metallb to latest"
+	hack/fetch_latest_metallb.sh
+
+bump_versions: ## Updates the versions of the metallb-operator / metallb image with the content of hack/operator_version / metallb_version
+	@echo "Updating the operator version"
+	hack/bump_versions.sh
+
+check_generated: ## Checks if there are any different with the current checkout
+	@echo "Checking generated files"
+	hack/verify_generated.sh
+
 help:  ## Show this help
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -F -v grep | sed -e 's/\\$$//' \
 		| awk -F'[:#]' '{print $$1 = sprintf("%-30s", $$1), $$4}'
