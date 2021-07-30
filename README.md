@@ -157,3 +157,20 @@ The e2e test need a running cluster with a MetalLB Operator running.
 
 Most tasks in the project are automated using a Makefile.
 Please run `make help` to see the details.
+
+## Releasing
+
+The Operator assumes the same branching structure of MetalLB.
+Each minor version must have a corresponding branch where we tag releases out.
+Versioned branches must be pinned to specific metallb / operator images.
+
+The current version of the images is bumped under `hack/metallb_version.txt` and
+under `hack/operator_version.txt`.
+
+A convenience `make bump_versions` makefile rule will align the versions in the manifests to
+the content of those files.
+
+Another makefile rule `make fetch_metallb_version` will update `hack/metallb_version.txt` with the
+highest tag of metallb.
+
+In order to make a release, a tag must be done out of a release branch, pinning the relevant images.
