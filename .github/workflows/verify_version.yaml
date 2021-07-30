@@ -1,0 +1,24 @@
+name: Verify Release
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+"
+jobs:
+  verify_branch:
+    needs: [main]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Verify Version Bump
+        run: |
+          make bump_versions
+          make check_generated
