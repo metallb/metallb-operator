@@ -97,6 +97,7 @@ bundle: operator-sdk manifests ## Generate bundle manifests and metadata, then v
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
 	$(OPERATOR_SDK) bundle validate ./bundle
+	hack/bump_versions.sh
 
 build-bundle: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
