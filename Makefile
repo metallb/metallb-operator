@@ -97,6 +97,7 @@ bundle: operator-sdk manifests ## Generate bundle manifests and metadata, then v
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
 	$(OPERATOR_SDK) bundle validate ./bundle
+	hack/bump_versions.sh
 
 build-bundle: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
@@ -193,6 +194,18 @@ validate-metallb-manifests:  ## Validate MetalLB manifests
 lint: ## Run golangci-lint against code
 	@echo "Running golangci-lint"
 	hack/lint.sh
+
+fetch_metallb_version: ## Updates the versions of metallb under hack/metallb_version with the latest available tag
+	@echo "Bumping metallb to latest"
+	hack/fetch_latest_metallb.sh
+
+bump_versions: ## Updates the versions of the metallb-operator / metallb image with the content of hack/operator_version / metallb_version
+	@echo "Updating the operator version"
+	hack/bump_versions.sh
+
+check_generated: ## Checks if there are any different with the current checkout
+	@echo "Checking generated files"
+	hack/verify_generated.sh
 
 help:  ## Show this help
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -F -v grep | sed -e 's/\\$$//' \
