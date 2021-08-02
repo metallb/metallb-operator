@@ -101,11 +101,11 @@ bundle: operator-sdk manifests ## Generate bundle manifests and metadata, then v
 build-bundle: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
-deploy-olm: operator-sdk
+deploy-olm: operator-sdk ## deploys OLM on the cluster
 	operator-sdk olm install
 	operator-sdk olm status
 
-deploy-with-olm:
+deploy-with-olm: ## deploys the operator with OLM instead of manifests
 	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:latest#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
 	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
 	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
