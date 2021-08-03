@@ -552,7 +552,7 @@ var _ = Describe("validation", func() {
 `))
 			})
 
-			By("Deleteing the first addresspool object", func() {
+			By("Deleting the first addresspool object", func() {
 				addresspool := &metallbv1alpha1.AddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "addresspool1",
@@ -595,7 +595,7 @@ var _ = Describe("validation", func() {
 
 			})
 
-			By("Deleteing the second addresspool object", func() {
+			By("Deleting the second addresspool object", func() {
 				addresspool := &metallbv1alpha1.AddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "addresspool2",
