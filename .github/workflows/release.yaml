@@ -57,6 +57,7 @@ jobs:
           make test-e2e
 
       - name: Archive E2E Tests logs
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
           name: test_e2e_logs
