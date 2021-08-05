@@ -1,12 +1,16 @@
 SHELL := /bin/bash
 
 # Current Operator version
-VERSION ?= 0.1.0
+VERSION ?= latest
+CSV_VERSION = $(VERSION)
+ifeq ($(VERSION), latest)
+CSV_VERSION := 0.0.0
+endif
 # Default image repo
 REPO ?= quay.io/metallb
 
 # Image URL to use all building/pushing image targets
-IMG ?= $(REPO)/metallb-operator:latest
+IMG ?= $(REPO)/metallb-operator:$(VERSION)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,crdVersions=v1"
 # Which dir to use in deploy kustomize build
@@ -95,7 +99,7 @@ docker-push:  ## Push the docker image
 bundle: operator-sdk manifests ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests --interactive=false -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
 	$(OPERATOR_SDK) bundle validate ./bundle
 
 bundle-release: bundle bump_versions ## Generate the bundle manifests for a PR
@@ -111,7 +115,7 @@ deploy-with-olm: ## deploys the operator with OLM instead of manifests
 	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:latest#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
 	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
 	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
-	VERSION=$(VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
+	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
 
 bundle-index-build: opm  ## Build the bundle index image.
 	$(OPM) index add --bundles $(BUNDLE_IMG) --tag $(BUNDLE_INDEX_IMG) -c docker
