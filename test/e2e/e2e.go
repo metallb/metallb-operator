@@ -156,23 +156,7 @@ var _ = Describe("validation", func() {
 				Expect(daemonset.OwnerReferences).ToNot(BeNil())
 				Expect(daemonset.OwnerReferences[0].Kind).To(Equal("MetalLB"))
 
-				err = testclient.Client.Delete(context.Background(), metallb)
-				Expect(err).ToNot(HaveOccurred())
-				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
-				Eventually(func() bool {
-					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
-					return errors.IsNotFound(err)
-				}, timeout, interval).Should(BeTrue(), "Failed to delete MetalLB custom resource")
-
-				Eventually(func() bool {
-					_, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
-					return errors.IsNotFound(err)
-				}, timeout, interval).Should(BeTrue())
-
-				Eventually(func() bool {
-					_, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
-					return errors.IsNotFound(err)
-				}, timeout, interval).Should(BeTrue())
+				deleteMetalLB(metallb)
 			}
 		})
 
@@ -351,13 +335,7 @@ var _ = Describe("validation", func() {
 			})
 
 			AfterEach(func() {
-				err := testclient.Client.Delete(context.Background(), metallb)
-				Expect(err).ToNot(HaveOccurred())
-				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
-				Eventually(func() bool {
-					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
-					return errors.IsNotFound(err)
-				}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
+				deleteMetalLB(metallb)
 			})
 			It("should not be reconciled", func() {
 				By("checking MetalLB resource status", func() {
@@ -395,20 +373,8 @@ var _ = Describe("validation", func() {
 			})
 
 			AfterEach(func() {
-				_ = testclient.Client.Delete(context.Background(), incorrect_metallb) // Ignore error, could be already deleted
-				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
-				Eventually(func() bool {
-					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: incorrect_metallb.Namespace, Name: incorrect_metallb.Name}, incorrect_metallb)
-					return errors.IsNotFound(err)
-				}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
-
-				err := testclient.Client.Delete(context.Background(), correct_metallb)
-				Expect(err).ToNot(HaveOccurred())
-				// Check the MetalLB custom resource is deleted to avoid status leak in between tests.
-				Eventually(func() bool {
-					err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: correct_metallb.Namespace, Name: correct_metallb.Name}, correct_metallb)
-					return errors.IsNotFound(err)
-				}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
+				deleteMetalLB(incorrect_metallb)
+				deleteMetalLB(correct_metallb)
 			})
 			It("should have correct statuses", func() {
 				By("checking MetalLB resource status", func() {
@@ -441,7 +407,6 @@ var _ = Describe("validation", func() {
 						Expect(err).ToNot(HaveOccurred())
 						return checkConditionStatus(instance) == status.ConditionAvailable
 					}, 30*time.Second, 5*time.Second).Should(BeTrue())
-
 				})
 			})
 		})
@@ -552,7 +517,7 @@ var _ = Describe("validation", func() {
 `))
 			})
 
-			By("Deleteing the first addresspool object", func() {
+			By("Deleting the first addresspool object", func() {
 				addresspool := &metallbv1alpha1.AddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "addresspool1",
@@ -595,7 +560,7 @@ var _ = Describe("validation", func() {
 
 			})
 
-			By("Deleteing the second addresspool object", func() {
+			By("Deleting the second addresspool object", func() {
 				addresspool := &metallbv1alpha1.AddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "addresspool2",
@@ -812,6 +777,42 @@ func loadMetalLBFromFile(metallb *metallbv1beta1.MetalLB, fileName string) error
 	defer f.Close()
 
 	return decodeYAML(f, metallb)
+}
+
+// Delete and check the MetalLB custom resource is deleted to avoid status leak in between tests.
+func deleteMetalLB(metallb *metallbv1beta1.MetalLB) {
+	err := testclient.Client.Delete(context.Background(), metallb)
+	if errors.IsNotFound(err) { // Ignore err, could be already deleted.
+		return
+	}
+	Expect(err).ToNot(HaveOccurred())
+
+	Eventually(func() bool {
+		err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
+		return errors.IsNotFound(err)
+	}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete MetalLB custom resource")
+
+	Eventually(func() bool {
+		_, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+		return errors.IsNotFound(err)
+	}, timeout, interval).Should(BeTrue())
+
+	Eventually(func() bool {
+		_, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+		return errors.IsNotFound(err)
+	}, timeout, interval).Should(BeTrue())
+
+	Eventually(func() bool {
+		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("component=%s", consts.MetalLBDeploymentName)})
+		return len(pods.Items) == 0
+	}, timeout, interval).Should(BeTrue())
+
+	Eventually(func() bool {
+		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("component=%s", consts.MetalLBDaemonsetName)})
+		return len(pods.Items) == 0
+	}, timeout, interval).Should(BeTrue())
 }
 
 var _ = BeforeSuite(func() {
