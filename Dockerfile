@@ -16,6 +16,7 @@ COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY bindata/deployment/ bindata/deployment/
 COPY bindata/configuration/address-pool/ bindata/configuration/address-pool/
+COPY bindata/configuration/bgp-community/ bindata/configuration/bgp-community/
 COPY .git/ .git/
 COPY Makefile Makefile
 
@@ -29,6 +30,7 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/bindata/deployment /bindata/deployment
 COPY --from=builder /workspace/bindata/configuration/address-pool/ /bindata/configuration/address-pool
+COPY --from=builder /workspace/bindata/configuration/bgp-community/ /bindata/configuration/bgp-community
 
 USER nonroot:nonroot
 

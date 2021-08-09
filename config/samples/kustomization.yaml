@@ -2,4 +2,5 @@
 resources:
 - metallb.io_v1alpha1_addresspool.yaml
 - metallb.yaml
+- metallb.io_v1alpha1_bgpcommunity.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

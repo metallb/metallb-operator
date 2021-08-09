@@ -137,6 +137,20 @@ data:
       - 172.18.0.100-172.18.0.255
 ```
 
+### Create a BGP Community object
+
+To create a BGP community, a BGPCommunity needs to be created.
+An example of BGPCommunity resource is shown below
+```yaml
+apiVersion: metallb.io/v1alpha1
+kind: BGPCommunity
+metadata:
+  name: bgpcommunity-sample1
+spec:
+  accept-sig: 7002:007
+  accept-sig_data: 7018:007
+```
+
 ### Running tests
 
 To run metallb-operator unit tests (no cluster required), execute:

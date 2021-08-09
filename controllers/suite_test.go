@@ -114,6 +114,15 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	BGPCommunityManifestPath = "../bindata/configuration/bgp-community"
+	err = (&BGPCommunityReconciler{
+		Client:    k8sClient,
+		Scheme:    scheme.Scheme,
+		Log:       ctrl.Log.WithName("controller").WithName("BGPCommunity"),
+		Namespace: MetalLBTestNameSpace,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	go func() {
 		err = k8sManager.Start(ctrl.SetupSignalHandler())
 		Expect(err).ToNot(HaveOccurred())
@@ -125,6 +134,7 @@ var _ = AfterSuite(func() {
 	// restore Manifestpaths for both controller to their original value
 	ManifestPath = "./bindata/deployment"
 	AddressPoolManifestPath = "./bindata/configuration/address-pool"
+	BGPCommunityManifestPath = "./bindata/configuration/bgp-community"
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })

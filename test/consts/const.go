@@ -15,6 +15,8 @@ const (
 	MetalLBDaemonsetName = "speaker"
 	// MetalLBAddressPoolCRDName contains the name of MetallB AddressPool CRD
 	MetalLBAddressPoolCRDName = "addresspools.metallb.io"
+	// MetalLBBGPCommunityCRDName contains the name of MetallB BGPCommunity CRD
+	MetalLBBGPCommunityCRDName = "bgpcommunities.metallb.io"
 	// MetalLBConfigMapName contains created configmap
 	MetalLBConfigMapName = "config"
 )
