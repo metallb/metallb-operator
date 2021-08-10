@@ -48,6 +48,26 @@ metadata:
           }
         },
         {
+          "apiVersion": "metallb.io/v1alpha1",
+          "kind": "BGPCommunity",
+          "metadata": {
+            "name": "bgpcommunity-sample1"
+          },
+          "spec": {
+            "accept-oam": "7003:007"
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1alpha1",
+          "kind": "BGPCommunity",
+          "metadata": {
+            "name": "bgpcommunity-sample2"
+          },
+          "spec": {
+            "accept-sig": "7002:007"
+          }
+        },
+        {
           "apiVersion": "metallb.io/v1beta1",
           "kind": "MetalLB",
           "metadata": {
@@ -76,6 +96,9 @@ spec:
         displayName: Address Pool
         kind: AddressPool
         name: addresspools.metallb.io
+        version: v1alpha1
+      - kind: BGPCommunity
+        name: bgpcommunities.metallb.io
         version: v1alpha1
       - description: MetalLB is the Schema for the metallbs API
         displayName: MetalLB
@@ -138,6 +161,26 @@ spec:
                 - metallb.io
               resources:
                 - addresspools/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgpcommunities
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgpcommunities/status
               verbs:
                 - get
                 - patch
