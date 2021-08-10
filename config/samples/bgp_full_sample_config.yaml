@@ -1,0 +1,54 @@
+
+---
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-sample1
+  namespace: metallb-system
+spec:
+  protocol: bgp
+  addresses:
+    - 172.18.0.100-172.18.0.255
+  bgpAdvertisements:
+  - communities:
+    - acceptOAM
+    - noAdvertise
+---
+apiVersion: metallb.io/v1alpha1
+kind: BGPPeer
+metadata:
+  name: peer-sample1
+  namespace: metallb-system
+spec:
+  peerAddress: 10.0.0.1
+  peerASN: 64501
+  myASN: 64500
+  routerID: 10.10.10.10
+
+---
+apiVersion: metallb.io/v1alpha1
+kind: BGPPeer
+metadata:
+  name: peer-sample2
+  namespace: metallb-system
+spec:
+  peerAddress: 11.0.0.1
+  peerASN: 64502
+  myASN: 64000
+  routerID: 20.20.20.20
+
+---
+apiVersion: metallb.io/v1alpha1
+kind: BGPCommunity
+metadata:
+  name: bgpcommunity-sample1
+spec:
+  acceptOAM: 7003:007
+
+---
+apiVersion: metallb.io/v1alpha1
+kind: BGPCommunity
+metadata:
+  name: bgpcommunity-sample2
+spec:
+  noAdvertise: 65535:65282
