@@ -4,13 +4,11 @@ metadata:
   name: bgpcommunity-sample1
 spec:
   accept-oam: 7003:007
-  no-advertise: 65535:65282
 
 ---
 apiVersion: metallb.io/v1alpha1
 kind: BGPCommunity
 metadata:
-  name: bgpcommunity-sample1
+  name: bgpcommunity-sample2
 spec:
   accept-sig: 7002:007
-  accept-sig_data: 7018:007

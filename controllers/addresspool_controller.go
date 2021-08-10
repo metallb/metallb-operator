@@ -81,6 +81,7 @@ func (r *AddressPoolReconciler) renderObject(instance *metallbv1alpha1.AddressPo
 	data.Data["AutoAssign"] = *instance.Spec.AutoAssign
 	data.Data["Addresses"] = instance.Spec.Addresses
 	data.Data["NameSpace"] = r.Namespace
+	data.Data["BgpAdvertisements"] = instance.Spec.BGPAdvertisements
 	objs, err := render.RenderDir(AddressPoolManifestPath, &data)
 	if err != nil {
 		return nil, fmt.Errorf("Fail to render address-pool manifest err %v", err)
