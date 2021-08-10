@@ -9,7 +9,7 @@ yq e --inplace '.spec.template.spec.containers[0].env[] |= select (.name=="SPEAK
 yq e --inplace '.spec.template.spec.containers[0].env[] |= select (.name=="CONTROLLER_IMAGE").value|="quay.io/metallb/controller:'$metallb_version'"' config/manager/env.yaml
 
 operator_version=$(cat hack/operator_version.txt)
-csv_version=$operator_version
+csv_version=$(echo "$operator_version" | sed 's/v//')
 if [ $operator_version = "latest" ]; then # operator sdk doesn't like string versions, if we are on main we don't care about the version in the csv
     csv_version="0.0.0" 
 fi
