@@ -28,3 +28,22 @@ spec:
   protocol: layer2
   addresses:
     - 2002:2:2::1-2002:2:2::100
+
+---
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-sample4
+  namespace: metallb-system
+spec:
+  protocol: bgp
+  addresses:
+    - 172.30.0.100-172.30.0.255
+  bgpAdvertisements:
+  - communities:
+    - 65535:65282
+    aggregationLength: 32
+    localPref: 100
+  - communities:
+    - 8000:800
+    aggregationLength: 24

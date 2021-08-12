@@ -49,6 +49,29 @@ spec:
                 description: AutoAssign flag used to prevent MetallB from automatic
                   allocation for a pool.
                 type: boolean
+              bgpAdvertisements:
+                description: When an IP is allocated from this pool, how should it
+                  be translated into BGP announcements?
+                items:
+                  properties:
+                    aggregationLength:
+                      description: The aggregation-length advertisement option lets
+                        you “roll up” the /32s into a larger prefix.
+                      minimum: 1
+                      type: integer
+                    communities:
+                      description: BGP communities
+                      items:
+                        type: string
+                      type: array
+                    localPref:
+                      description: BGP LOCAL_PREF attribute which is used by BGP best
+                        path algorithm, Path with higher localpref is preferred over
+                        one with lower localpref.
+                      format: int32
+                      type: integer
+                  type: object
+                type: array
               name:
                 description: Address Pool Name
                 type: string

@@ -49,6 +49,35 @@ metadata:
         },
         {
           "apiVersion": "metallb.io/v1alpha1",
+          "kind": "AddressPool",
+          "metadata": {
+            "name": "addresspool-sample4",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "addresses": [
+              "172.30.0.100-172.30.0.255"
+            ],
+            "bgpAdvertisements": [
+              {
+                "aggregationLength": 32,
+                "communities": [
+                  "65535:65282"
+                ],
+                "localPref": 100
+              },
+              {
+                "aggregationLength": 24,
+                "communities": [
+                  "8000:800"
+                ]
+              }
+            ],
+            "protocol": "bgp"
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1alpha1",
           "kind": "BGPPeer",
           "metadata": {
             "name": "peer-sample1",
