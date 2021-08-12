@@ -479,7 +479,7 @@ data:
 `))
 }
 
-func TestMergeAddressPoolandBGPPeerSingleObject(t *testing.T) {
+func TestMergeAddressPoolAndBGPPeerWithBGPAdvObject(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cur := UnstructuredFromYaml(t, `
@@ -491,11 +491,20 @@ metadata:
 data:
   config: |
     address-pools:
-    - name: silver
+    - name: gold
       protocol: bgp
       addresses:
-      - 172.22.0.100/24
+      - 172.20.0.100/24
       auto-assign: false
+      bgp-advertisements:
+      - communities:
+        - 65535:65282
+        aggregation-length: 32
+        localpref: 100
+      - 
+        communities:
+        - 8000:800
+        aggregation-length: 24
     peers:
     - peer-address: 20.0.0.1
       peer-asn: 64000
@@ -514,11 +523,17 @@ metadata:
 data:
   config: |
     address-pools:
-    - name: gold
+    - name: silver
       protocol: bgp
       addresses:
-      - 172.20.0.100/24
+      - 172.22.0.100/24
       auto-assign: false
+      bgp-advertisements:
+      - communities:
+        - 7007:007
+        - 7018:007
+        aggregation-length: 16
+        localpref: 200
     peers:
     - peer-address: 20.0.0.2
       peer-asn: 64001
@@ -533,16 +548,30 @@ data:
 	configmap, _, err := uns.NestedStringMap(upd.Object, "data")
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(configmap[MetalLBConfigMap]).Should(MatchYAML(`address-pools:
-- name: silver
-  protocol: bgp
-  addresses:
-  - 172.22.0.100/24
-  auto-assign: false
 - name: gold
   protocol: bgp
   addresses:
   - 172.20.0.100/24
   auto-assign: false
+  bgp-advertisements:
+  - communities:
+    - 65535:65282
+    aggregation-length: 32
+    localpref: 100
+  - communities:
+    - 8000:800
+    aggregation-length: 24
+- name: silver
+  protocol: bgp
+  addresses:
+  - 172.22.0.100/24
+  auto-assign: false
+  bgp-advertisements:
+  - communities:
+    - 7007:007
+    - 7018:007
+    aggregation-length: 16
+    localpref: 200
 peers:
 - peer-address: 20.0.0.1
   peer-asn: 64000

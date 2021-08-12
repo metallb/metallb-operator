@@ -162,19 +162,7 @@ var _ = Describe("AddressPool Controller", func() {
 		}
 
 		AfterEach(func() {
-			err := k8sClient.Delete(context.Background(), addressPool)
-			if err != nil {
-				if !apierrors.IsNotFound(err) {
-					Fail(err.Error())
-				}
-			}
-			err = k8sClient.Delete(context.Background(), configmap)
-			if err != nil {
-				if !apierrors.IsNotFound(err) {
-					Fail(err.Error())
-				}
-			}
-			err = cleanTestNamespace()
+			err := cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("Should create AddressPool Object", func() {
