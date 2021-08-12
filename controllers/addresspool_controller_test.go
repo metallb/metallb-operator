@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("AddressPool Controller", func() {
-	Context("Creating AddressPool object", func() {
+	Context("Creating AddressPool object Layer2 Config", func() {
 		autoAssign := false
 		configmap := &corev1.ConfigMap{}
 
@@ -130,6 +130,81 @@ var _ = Describe("AddressPool Controller", func() {
 				}
 				return false
 			}, 2*time.Second, 200*time.Millisecond).Should(BeTrue())
+		})
+	})
+
+	Context("Creating AddressPool object BGP Config", func() {
+		autoAssign := false
+		configmap := &corev1.ConfigMap{}
+		addressPool := &v1alpha1.AddressPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-addresspool-bgp",
+				Namespace: MetalLBTestNameSpace,
+			},
+			Spec: v1alpha1.AddressPoolSpec{
+				Protocol: "bgp",
+				Addresses: []string{
+					"2.2.2.2",
+					"2.2.2.100",
+				},
+				AutoAssign: &autoAssign,
+				BGPAdvertisements: []v1alpha1.BgpAdvertisement{
+					{
+						AggregationLength: 24,
+						LocalPref:         100,
+						Communities: []string{
+							"65535:65282",
+							"7003:007",
+						},
+					},
+				},
+			},
+		}
+
+		AfterEach(func() {
+			err := k8sClient.Delete(context.Background(), addressPool)
+			if err != nil {
+				if !apierrors.IsNotFound(err) {
+					Fail(err.Error())
+				}
+			}
+			err = k8sClient.Delete(context.Background(), configmap)
+			if err != nil {
+				if !apierrors.IsNotFound(err) {
+					Fail(err.Error())
+				}
+			}
+			err = cleanTestNamespace()
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("Should create AddressPool Object", func() {
+
+			By("Creating a AddressPool resource")
+			err := k8sClient.Create(context.Background(), addressPool)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Checking ConfigMap is created
+			By("Checking ConfigMap is created and matches test-addresspool-bgp configuration")
+			Eventually(func() (string, error) {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: apply.MetalLBConfigMap, Namespace: MetalLBTestNameSpace}, configmap)
+				if err != nil {
+					return "", err
+				}
+				return configmap.Data[apply.MetalLBConfigMap], err
+			}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML(`address-pools:
+- name: test-addresspool-bgp
+  protocol: bgp
+  auto-assign: false
+  addresses:
+  - 2.2.2.2
+  - 2.2.2.100
+  bgp-advertisements: 
+  - communities:
+    - 65535:65282
+    - 7003:007
+    aggregation-length: 24
+    localpref: 100
+`))
 		})
 	})
 })
