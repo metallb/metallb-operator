@@ -225,7 +225,46 @@ var _ = Describe("metallb", func() {
   addresses:
   - 2.2.2.1
   - 2.2.2.100
-`))
+`),
+			table.Entry("Test AddressPool object with bgp-advertisements", "addresspool3", &metallbv1alpha1.AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "addresspool3",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1alpha1.AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"3.3.3.1",
+						"3.3.3.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []metallbv1alpha1.BgpAdvertisement{
+						{
+							AggregationLength: 24,
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			}, `address-pools:
+- name: addresspool3
+  protocol: bgp
+  auto-assign: false
+  addresses:
+
+  - 3.3.3.1
+  - 3.3.3.100
+  bgp-advertisements: 
+  - communities: 
+    - 65535:65282
+    - 7003:007
+    aggregation-length: 24
+    localpref: 100
+`),
+		)
 	})
 	Context("MetalLB contains incorrect data", func() {
 		Context("MetalLB has incorrect name", func() {
