@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -69,6 +70,9 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	leaseDuration := 30 * time.Second
+	renewDeadline := 20 * time.Second
+
 	setupLog.Info("git commit:", "id", build)
 
 	watchNamepace := checkEnvVar("WATCH_NAMESPACE")
@@ -81,6 +85,8 @@ func main() {
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "metallb.io.metallboperator",
+		LeaseDuration:      &leaseDuration,
+		RenewDeadline:      &renewDeadline,
 		Namespace:          watchNamepace,
 	})
 	if err != nil {
