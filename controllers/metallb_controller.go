@@ -38,7 +38,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-const defaultMetalLBCrName = "metallb"
+const (
+	defaultMetalLBCrName          = "metallb"
+	MetalLBManifestPathController = "./bindata/deployment"
+)
 
 // MetalLBReconciler reconciles a MetalLB object
 type MetalLBReconciler struct {
@@ -49,7 +52,7 @@ type MetalLBReconciler struct {
 	Namespace    string
 }
 
-var ManifestPath = "./bindata/deployment"
+var ManifestPath = MetalLBManifestPathController
 
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
