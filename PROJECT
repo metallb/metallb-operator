@@ -25,6 +25,10 @@ resources:
   kind: AddressPool
   path: github.com/metallb/metallb-operator/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1beta1
 - api:
     crdVersion: v1beta1
     namespaced: true
