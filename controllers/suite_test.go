@@ -39,7 +39,12 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const MetalLBTestNameSpace = "metallb-test-namespace"
+const (
+	MetalLBTestNameSpace                  = "metallb-test-namespace"
+	MetalLBManifestPathControllerTest     = "../bindata/deployment"
+	AddressPoolManifestPathControllerTest = "../bindata/configuration/address-pool"
+	BGPPeerManifestPathContollerTest      = "../bindata/configuration/bgp-peer"
+)
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
@@ -75,6 +80,7 @@ var _ = BeforeSuite(func() {
 
 	err = metallbv1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -95,7 +101,7 @@ var _ = BeforeSuite(func() {
 	err = k8sClient.Create(context.Background(), testNamespace)
 	Expect(err).ToNot(HaveOccurred())
 
-	ManifestPath = "../bindata/deployment" // This is needed as the tests need to reference a directory backward
+	ManifestPath = MetalLBManifestPathControllerTest // This is needed as the tests need to reference a directory backward
 
 	err = (&MetalLBReconciler{
 		Client:    k8sClient,
@@ -105,11 +111,20 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	AddressPoolManifestPath = "../bindata/configuration/address-pool" // This is needed as the tests need to reference a directory backward
+	AddressPoolManifestPath = AddressPoolManifestPathControllerTest // This is needed as the tests need to reference a directory backward
 	err = (&AddressPoolReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
 		Log:       ctrl.Log.WithName("controller").WithName("AddressPool"),
+		Namespace: MetalLBTestNameSpace,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	BGPPeerManifestPath = BGPPeerManifestPathContollerTest // This is needed as the tests need to reference a directory backward
+	err = (&BGPPeerReconciler{
+		Client:    k8sClient,
+		Scheme:    scheme.Scheme,
+		Log:       ctrl.Log.WithName("controller").WithName("BGPPeer"),
 		Namespace: MetalLBTestNameSpace,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
@@ -123,8 +138,9 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// restore Manifestpaths for both controller to their original value
-	ManifestPath = "./bindata/deployment"
-	AddressPoolManifestPath = "./bindata/configuration/address-pool"
+	ManifestPath = MetalLBManifestPathController
+	AddressPoolManifestPath = AddressPoolManifestPathController
+	BGPPeerManifestPath = BGPPeerManifestPathContoller
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
