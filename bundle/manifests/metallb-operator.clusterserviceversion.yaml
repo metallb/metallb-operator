@@ -48,6 +48,38 @@ metadata:
           }
         },
         {
+          "apiVersion": "metallb.io/v1alpha1",
+          "kind": "BGPPeer",
+          "metadata": {
+            "name": "peer-sample1",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "holdTime": 10,
+            "myASN": 64500,
+            "nodeSelectors": [
+              {
+                "matchExpressions": [
+                  {
+                    "key": "kubernetes.io/hostname",
+                    "operator": "In",
+                    "values": [
+                      "hostA",
+                      "hostB"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "password": "test",
+            "peerASN": 64501,
+            "peerAddress": "10.0.0.1",
+            "peerPort": 1,
+            "routerID": "10.10.10.10",
+            "sourceAddress": "1.1.1.1"
+          }
+        },
+        {
           "apiVersion": "metallb.io/v1beta1",
           "kind": "MetalLB",
           "metadata": {
@@ -76,6 +108,9 @@ spec:
         displayName: Address Pool
         kind: AddressPool
         name: addresspools.metallb.io
+        version: v1alpha1
+      - kind: BGPPeer
+        name: bgppeers.metallb.io
         version: v1alpha1
       - description: MetalLB is the Schema for the metallbs API
         displayName: MetalLB
@@ -138,6 +173,26 @@ spec:
                 - metallb.io
               resources:
                 - addresspools/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgppeers
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgppeers/status
               verbs:
                 - get
                 - patch
