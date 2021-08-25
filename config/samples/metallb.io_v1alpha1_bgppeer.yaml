@@ -1,0 +1,20 @@
+
+apiVersion: metallb.io/v1alpha1
+kind: BGPPeer
+metadata:
+  name: peer-sample1
+  namespace: metallb-system
+spec:
+  peerAddress: 10.0.0.1
+  peerASN: 64501
+  myASN: 64500
+  routerID: 10.10.10.10
+  peerPort: 1
+  holdTime: 10
+  sourceAddress: 1.1.1.1
+  password: test
+  nodeSelectors:
+  - matchExpressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values: [hostA, hostB]

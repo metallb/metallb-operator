@@ -29,6 +29,26 @@ rules:
 - apiGroups:
   - metallb.io
   resources:
+  - bgppeers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - metallb.io
+  resources:
+  - bgppeers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - metallb.io
+  resources:
   - metallbs
   verbs:
   - create
