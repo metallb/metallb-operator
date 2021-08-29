@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"time"
+
 	"github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	. "github.com/onsi/ginkgo"
@@ -10,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"time"
 )
 
 var _ = Describe("AddressPool Controller", func() {
@@ -31,8 +32,7 @@ var _ = Describe("AddressPool Controller", func() {
 				Spec: v1alpha1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
-						"1.1.1.1",
-						"1.1.1.100",
+						"1.1.1.1-1.1.1.100",
 					},
 					AutoAssign: &autoAssign,
 				},
@@ -45,8 +45,7 @@ var _ = Describe("AddressPool Controller", func() {
 				Spec: v1alpha1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
-						"2.2.2.2",
-						"2.2.2.100",
+						"2.2.2.2-2.2.2.100",
 					},
 					AutoAssign: &autoAssign,
 				},
@@ -67,8 +66,7 @@ var _ = Describe("AddressPool Controller", func() {
   protocol: layer2
   auto-assign: false
   addresses:
-  - 1.1.1.1
-  - 1.1.1.100
+  - 1.1.1.1-1.1.1.100
 `))
 			By("Creating 2nd AddressPool resource")
 			err = k8sClient.Create(context.Background(), addressPool2)
@@ -86,14 +84,12 @@ var _ = Describe("AddressPool Controller", func() {
   protocol: layer2
   auto-assign: false
   addresses:
-  - 1.1.1.1
-  - 1.1.1.100
+  - 1.1.1.1-1.1.1.100
 - name: test-addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
-  - 2.2.2.2
-  - 2.2.2.100
+  - 2.2.2.2-2.2.2.100
 `))
 			By("Deleting 1st AddressPool resource")
 			err = k8sClient.Delete(context.Background(), addressPool1)
@@ -111,8 +107,7 @@ var _ = Describe("AddressPool Controller", func() {
   protocol: layer2
   auto-assign: false
   addresses:
-  - 2.2.2.2
-  - 2.2.2.100
+  - 2.2.2.2-2.2.2.100
 
 `))
 			By("Deleting 2nd AddressPool resource")
