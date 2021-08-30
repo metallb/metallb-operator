@@ -80,7 +80,11 @@ install: manifests kustomize  ## Install CRDs into a cluster
 uninstall: manifests kustomize  ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-deploy: manifests kustomize  ## Deploy controller in the configured cluster
+configure-operator-webhook:
+	KUSTOMIZE=$(KUSTOMIZE) hack/configure_operator_webhook.sh
+
+deploy: export ENABLE_OPERATOR_WEBHOOK?=false
+deploy: manifests kustomize configure-operator-webhook ## Deploy controller in the configured cluster
 	cd config/manager && kustomize edit set image controller=${IMG}
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
@@ -105,7 +109,8 @@ docker-build:  ## Build the docker image
 docker-push:  ## Push the docker image
 	docker push ${IMG}
 
-bundle: operator-sdk manifests ## Generate bundle manifests and metadata, then validate generated files.
+bundle: export ENABLE_OPERATOR_WEBHOOK?=true
+bundle: operator-sdk manifests configure-operator-webhook ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests --interactive=false -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
