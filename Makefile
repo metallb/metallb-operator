@@ -43,6 +43,7 @@ endif
 OPERATOR_SDK_VERSION=v1.8.1
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
+CERT_MANAGER_URL=https://github.com/jetstack/cert-manager/releases
 
 TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
 VALIDATION_TESTS_REPORTS_PATH ?= /tmp/test_validation_logs/
@@ -83,8 +84,17 @@ uninstall: manifests kustomize  ## Uninstall CRDs from a cluster
 configure-operator-webhook:
 	KUSTOMIZE=$(KUSTOMIZE) hack/configure_operator_webhook.sh
 
+deploy-cert-manager:
+	set -e ;\
+	cert_manager_latest_version=$$(curl -s $(CERT_MANAGER_URL)| grep "title\=\"v" | head -1 | awk -F' ' '{print $$5}' | awk -F'=' '{print $$2}' | xargs) ;\
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$$cert_manager_latest_version/cert-manager.yaml ;\
+	hack/wait_for_cert_manager.sh ;\
+
 deploy: export ENABLE_OPERATOR_WEBHOOK?=false
 deploy: manifests kustomize configure-operator-webhook ## Deploy controller in the configured cluster
+ifeq ($(ENABLE_OPERATOR_WEBHOOK), true)
+	$(MAKE) deploy-cert-manager
+endif
 	cd config/manager && kustomize edit set image controller=${IMG}
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
