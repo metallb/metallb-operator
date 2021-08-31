@@ -23,4 +23,6 @@ const (
 	MetalLBConfigMapName = apply.MetalLBConfigMap
 	// DefaultOperatorNameSpace is the default operator namespace
 	DefaultOperatorNameSpace = "metallb-system"
+	// AddressPoolValidationWebhookName contains the name of the AddressPool validation webhook
+	AddressPoolValidationWebhookName = "addresspoolvalidationwebhook.metallb.io"
 )
