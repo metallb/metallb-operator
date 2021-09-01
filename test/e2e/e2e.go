@@ -42,6 +42,7 @@ const (
 var autoAssign = false
 
 var TestIsOpenShift = false
+var UseMetallbResourcesFromFile = false
 
 var OperatorNameSpace = "metallb-system"
 
@@ -51,6 +52,10 @@ var reportPath *string
 func init() {
 	if len(os.Getenv("IS_OPENSHIFT")) != 0 {
 		TestIsOpenShift = true
+	}
+
+	if len(os.Getenv("USE_LOCAL_RESOURCES")) != 0 {
+		UseMetallbResourcesFromFile = true
 	}
 
 	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
@@ -79,8 +84,12 @@ func RunE2ETests(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Metallb Operator Validation Suite", rr)
 }
 
-var _ = Describe("validation", func() {
+var _ = Describe("metallb", func() {
 	Context("Platform Check", func() {
+		It("Should have the MetalLB Operator namespace", func() {
+			_, err := testclient.Client.Namespaces().Get(context.Background(), OperatorNameSpace, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred(), "Should have the MetalLB Operator namespace")
+		})
 		It("should be either Kubernetes or OpenShift platform", func() {
 			cfg := ctrl.GetConfigOrDie()
 			platforminfo, err := platform.GetPlatformInfo(cfg)
@@ -130,10 +139,9 @@ var _ = Describe("validation", func() {
 		var metallbCRExisted bool
 
 		BeforeEach(func() {
-			metallb = &metallbv1beta1.MetalLB{}
-			err := loadMetalLBFromFile(metallb, consts.MetalLBCRFile)
+			var err error
+			metallb, err = getMetalLB()
 			Expect(err).ToNot(HaveOccurred())
-			metallb.SetNamespace(OperatorNameSpace)
 			metallbCRExisted = true
 			err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
 			if errors.IsNotFound(err) {
@@ -326,10 +334,9 @@ var _ = Describe("validation", func() {
 
 			var metallb *metallbv1beta1.MetalLB
 			BeforeEach(func() {
-				metallb = &metallbv1beta1.MetalLB{}
-				err := loadMetalLBFromFile(metallb, consts.MetalLBCRFile)
+				var err error
+				metallb, err = getMetalLB()
 				Expect(err).ToNot(HaveOccurred())
-				metallb.SetNamespace(OperatorNameSpace)
 				metallb.SetName("incorrectname")
 				Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
 			})
@@ -358,16 +365,13 @@ var _ = Describe("validation", func() {
 			var correct_metallb *metallbv1beta1.MetalLB
 			var incorrect_metallb *metallbv1beta1.MetalLB
 			BeforeEach(func() {
-				correct_metallb = &metallbv1beta1.MetalLB{}
-				err := loadMetalLBFromFile(correct_metallb, consts.MetalLBCRFile)
+				var err error
+				correct_metallb, err = getMetalLB()
 				Expect(err).ToNot(HaveOccurred())
-				correct_metallb.SetNamespace(OperatorNameSpace)
 				Expect(testclient.Client.Create(context.Background(), correct_metallb)).Should(Succeed())
 
-				incorrect_metallb = &metallbv1beta1.MetalLB{}
-				err = loadMetalLBFromFile(incorrect_metallb, consts.MetalLBCRFile)
+				incorrect_metallb, err = getMetalLB()
 				Expect(err).ToNot(HaveOccurred())
-				incorrect_metallb.SetNamespace(OperatorNameSpace)
 				incorrect_metallb.SetName("incorrectname")
 				Expect(testclient.Client.Create(context.Background(), incorrect_metallb)).Should(Succeed())
 			})
@@ -815,7 +819,14 @@ func deleteMetalLB(metallb *metallbv1beta1.MetalLB) {
 	}, timeout, interval).Should(BeTrue())
 }
 
-var _ = BeforeSuite(func() {
-	_, err := testclient.Client.Namespaces().Get(context.Background(), OperatorNameSpace, metav1.GetOptions{})
-	Expect(err).ToNot(HaveOccurred(), "Should have the MetalLB Operator namespace")
-})
+func getMetalLB() (*metallbv1beta1.MetalLB, error) {
+	if !UseMetallbResourcesFromFile {
+		return &metallbv1beta1.MetalLB{ObjectMeta: metav1.ObjectMeta{Name: "metallb", Namespace: OperatorNameSpace}}, nil
+	}
+	metallb := &metallbv1beta1.MetalLB{}
+	if err := loadMetalLBFromFile(metallb, consts.MetalLBCRFile); err != nil {
+		return nil, err
+	}
+	metallb.SetNamespace(OperatorNameSpace)
+	return metallb, nil
+}

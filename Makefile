@@ -57,7 +57,7 @@ all: manager ## Default make target if no options specified
 test-e2e: generate fmt vet manifests  ## Run e2e tests
 	rm -rf ${TESTS_REPORTS_PATH}
 	mkdir -p ${TESTS_REPORTS_PATH}
-	go test --tags=e2etests -v ./test/e2e -ginkgo.v -junit $(TESTS_REPORTS_PATH) -report $(TESTS_REPORTS_PATH)
+	USE_LOCAL_RESOURCES=true go test --tags=e2etests -v ./test/e2e -ginkgo.v -junit $(TESTS_REPORTS_PATH) -report $(TESTS_REPORTS_PATH)
 
 manager: generate fmt vet  ## Build manager binary
 	go build -ldflags "-X main.build=$$(git rev-parse HEAD)" -o bin/manager main.go
