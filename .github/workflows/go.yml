@@ -62,7 +62,8 @@ jobs:
 
     - name: E2E Tests
       run: |
-        export KUBECONFIG=${HOME}/.kube/config 
+        export KUBECONFIG=${HOME}/.kube/config
+        make test-validation
         make test-e2e
 
     - name: Archive E2E Tests logs

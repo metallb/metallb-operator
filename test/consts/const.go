@@ -17,4 +17,6 @@ const (
 	MetalLBAddressPoolCRDName = "addresspools.metallb.io"
 	// MetalLBConfigMapName contains created configmap
 	MetalLBConfigMapName = "config"
+	// DefaultOperatorNameSpace is the default operator namespace
+	DefaultOperatorNameSpace = "metallb-system"
 )
