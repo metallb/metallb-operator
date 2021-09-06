@@ -1,24 +1,19 @@
-package validation
+package tests
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
-	"path"
-	"testing"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
-	"github.com/metallb/metallb-operator/test/e2e/k8sreporter"
-	"github.com/metallb/metallb-operator/test/metallb"
+	"github.com/metallb/metallb-operator/test/e2e/metallb"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,9 +24,6 @@ var TestIsOpenShift = false
 
 var OperatorNameSpace = consts.DefaultOperatorNameSpace
 
-var junitPath *string
-var reportPath *string
-
 func init() {
 	if len(os.Getenv("IS_OPENSHIFT")) != 0 {
 		TestIsOpenShift = true
@@ -40,27 +32,6 @@ func init() {
 	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
 		OperatorNameSpace = ns
 	}
-
-	junitPath = flag.String("junit", "", "the path for the junit format report")
-	reportPath = flag.String("report", "", "the path of the report file containing details for failed tests")
-}
-
-func RunValidationTests(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	rr := []Reporter{}
-	if *junitPath != "" {
-		junitFile := path.Join(*junitPath, "validation_junit.xml")
-		rr = append(rr, reporters.NewJUnitReporter(junitFile))
-	}
-
-	clients := testclient.New("")
-
-	if *reportPath != "" {
-		rr = append(rr, k8sreporter.New(clients, OperatorNameSpace, *reportPath))
-	}
-
-	RunSpecsWithDefaultAndCustomReporters(t, "Metallb Operator Validation Suite", rr)
 }
 
 var _ = Describe("metallb", func() {

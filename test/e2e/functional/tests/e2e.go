@@ -1,16 +1,12 @@
-package e2e
+package tests
 
 import (
 	"context"
-	"flag"
 	"os"
-	"path"
-	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
-	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
@@ -18,8 +14,7 @@ import (
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
-	"github.com/metallb/metallb-operator/test/e2e/k8sreporter"
-	metallbutils "github.com/metallb/metallb-operator/test/metallb"
+	metallbutils "github.com/metallb/metallb-operator/test/e2e/metallb"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,9 +28,6 @@ var UseMetallbResourcesFromFile = false
 
 var OperatorNameSpace = consts.DefaultOperatorNameSpace
 
-var junitPath *string
-var reportPath *string
-
 func init() {
 	if len(os.Getenv("USE_LOCAL_RESOURCES")) != 0 {
 		UseMetallbResourcesFromFile = true
@@ -44,27 +36,6 @@ func init() {
 	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
 		OperatorNameSpace = ns
 	}
-
-	junitPath = flag.String("junit", "", "the path for the junit format report")
-	reportPath = flag.String("report", "", "the path of the report file containing details for failed tests")
-}
-
-func RunE2ETests(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	rr := []Reporter{}
-	if *junitPath != "" {
-		junitFile := path.Join(*junitPath, "e2e_junit.xml")
-		rr = append(rr, reporters.NewJUnitReporter(junitFile))
-	}
-
-	clients := testclient.New("")
-
-	if *reportPath != "" {
-		rr = append(rr, k8sreporter.New(clients, OperatorNameSpace, *reportPath))
-	}
-
-	RunSpecsWithDefaultAndCustomReporters(t, "Metallb Operator E2E Suite", rr)
 }
 
 var _ = Describe("metallb", func() {
