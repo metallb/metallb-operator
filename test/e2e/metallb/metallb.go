@@ -101,7 +101,7 @@ func decodeYAML(r io.Reader, obj interface{}) error {
 }
 
 func loadFromFile(metallb *metallbv1beta1.MetalLB, fileName string) error {
-	f, err := os.Open(fmt.Sprintf("../../config/samples/%s", fileName))
+	f, err := os.Open(fmt.Sprintf("../../../config/samples/%s", fileName))
 	if err != nil {
 		return err
 	}
