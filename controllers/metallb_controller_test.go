@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"github.com/metallb/metallb-operator/api/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	"os"
 	"time"
 
@@ -10,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,13 +26,7 @@ var _ = Describe("MetalLB Controller", func() {
 			},
 		}
 		AfterEach(func() {
-			err := k8sClient.Delete(context.Background(), metallb)
-			if err != nil {
-				if !apierrors.IsNotFound(err) {
-					Fail(err.Error())
-				}
-			}
-			err = cleanTestNamespace()
+			err := cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("Should create manifests with images and namespace overriden", func() {
@@ -69,7 +64,23 @@ var _ = Describe("MetalLB Controller", func() {
 })
 
 func cleanTestNamespace() error {
-	err := k8sClient.DeleteAllOf(context.Background(), &appsv1.Deployment{}, client.InNamespace(MetalLBTestNameSpace))
+	err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.AddressPool{}, client.InNamespace(MetalLBTestNameSpace))
+	if err != nil {
+		return err
+	}
+	err = k8sClient.DeleteAllOf(context.Background(), &v1alpha1.BGPPeer{}, client.InNamespace(MetalLBTestNameSpace))
+	if err != nil {
+		return err
+	}
+	err = k8sClient.DeleteAllOf(context.Background(), &v1.ConfigMap{}, client.InNamespace(MetalLBTestNameSpace))
+	if err != nil {
+		return err
+	}
+	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.MetalLB{}, client.InNamespace(MetalLBTestNameSpace))
+	if err != nil {
+		return err
+	}
+	err = k8sClient.DeleteAllOf(context.Background(), &appsv1.Deployment{}, client.InNamespace(MetalLBTestNameSpace))
 	if err != nil {
 		return err
 	}

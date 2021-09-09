@@ -106,10 +106,10 @@ metadata:
 EOF
 ```
 
-### Create an address pool
+### Create an Address Pool object
 
-To create an adress pool, an AdressPool resource needs to be created.
-An example of an AdressPool resource is shown below:
+To create an address pool, an AddressPool resource needs to be created.
+An example of an AddressPool resource is shown below:
 
 ```yaml
 apiVersion: metallb.io/v1alpha1
@@ -123,7 +123,7 @@ spec:
     - 172.18.0.100-172.18.0.255
 ```
 
-When the adress pool is successfully added, it will be amended to the `config` ConfigMap used to configure MetalLB:
+When the address pool is successfully added, it will be amended to the `config` ConfigMap used to configure MetalLB:
 
 ```yaml
 kind: ConfigMap
@@ -135,6 +135,58 @@ data:
       protocol: layer2
       addresses:
       - 172.18.0.100-172.18.0.255
+```
+
+### Create a BGP Peer object
+
+To create a BGP peer, a BGPPeer resource needs to be created.
+An example of a BGPPeer resource is shown below:
+
+```yaml
+apiVersion: metallb.io/v1alpha1
+kind: BGPPeer
+metadata:
+  name: peer-sample1
+  namespace: metallb-system
+spec:
+  peerAddress: 10.0.0.1
+  peerASN: 64501
+  myASN: 64500
+  routerID: 10.10.10.10
+  peerPort: 1
+  holdTime: 10
+  sourceAddress: "1.1.1.1"
+  password: "test"
+  nodeSelectors:
+  - matchExpressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values: [hostA, hostB]
+```
+
+### Sample MetalLB BGP configuration
+
+```yaml
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-bgp-sample
+  namespace: metallb-system
+spec:
+  protocol: bgp
+  addresses:
+    - 172.18.0.100-172.18.0.255
+---
+apiVersion: metallb.io/v1alpha1
+kind: BGPPeer
+metadata:
+  name: peer-sample
+  namespace: metallb-system
+spec:
+  peerAddress: 10.0.0.1
+  peerASN: 64501
+  myASN: 64500
+  routerID: 10.10.10.10
 ```
 
 ### Running tests

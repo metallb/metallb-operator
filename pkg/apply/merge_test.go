@@ -303,7 +303,7 @@ func UnstructuredFromYaml(t *testing.T, obj string) *uns.Unstructured {
 	return &u
 }
 
-func TestMergeConfigMapSingleObject(t *testing.T) {
+func TestMergeAddressPoolSingleObject(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cur := UnstructuredFromYaml(t, `
@@ -340,7 +340,7 @@ data:
 	g.Expect(err).NotTo(HaveOccurred())
 	configmap, _, err := uns.NestedStringMap(upd.Object, "data")
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(configmap[AddressPoolConfigMap]).Should(MatchYAML(`address-pools:
+	g.Expect(configmap[MetalLBConfigMap]).Should(MatchYAML(`address-pools:
 - name: gold
   protocol: layer2
   addresses:
@@ -354,7 +354,7 @@ data:
 `))
 }
 
-func TestMergeConfigMapMultipleObjects(t *testing.T) {
+func TestMergeAddressPoolMultipleObjects(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cur := UnstructuredFromYaml(t, `
@@ -403,7 +403,7 @@ data:
 	g.Expect(err).NotTo(HaveOccurred())
 	configmap, _, err := uns.NestedStringMap(upd.Object, "data")
 	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(configmap[AddressPoolConfigMap]).Should(MatchYAML(`address-pools:
+	g.Expect(configmap[MetalLBConfigMap]).Should(MatchYAML(`address-pools:
 - name: green
   protocol: layer2
   addresses:
@@ -417,5 +417,146 @@ data:
   addresses:
   - 172.20.0.100/28
   auto-assign: false
+`))
+}
+
+func TestMergeBGPPeerSingleObject(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cur := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    peers:
+    - peer-address: 10.0.0.1
+      peer-asn: 64501
+      my-asn: 64500
+      router-id: 10.10.10.10
+      source-address: 11.0.0.1
+      peer-port: 1
+      hold-time: 10ns `)
+
+	upd := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    peers:
+    - peer-address: 10.0.0.2
+      peer-asn: 64502
+      my-asn: 64502
+      router-id: 20.20.20.20
+      source-address: 12.0.0.1
+      peer-port: 2
+      hold-time: 20ns `)
+
+	err := MergeObjectForUpdate(cur, upd)
+	g.Expect(err).NotTo(HaveOccurred())
+	configmap, _, err := uns.NestedStringMap(upd.Object, "data")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(configmap[MetalLBConfigMap]).Should(MatchYAML(`peers:
+- peer-address: 10.0.0.1
+  peer-asn: 64501
+  my-asn: 64500
+  router-id: 10.10.10.10
+  source-address: 11.0.0.1
+  peer-port: 1
+  hold-time: 10ns
+- peer-address: 10.0.0.2
+  peer-asn: 64502
+  my-asn: 64502
+  router-id: 20.20.20.20
+  source-address: 12.0.0.1
+  peer-port: 2
+  hold-time: 20ns
+`))
+}
+
+func TestMergeAddressPoolandBGPPeerSingleObject(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cur := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: silver
+      protocol: bgp
+      addresses:
+      - 172.22.0.100/24
+      auto-assign: false
+    peers:
+    - peer-address: 20.0.0.1
+      peer-asn: 64000
+      my-asn: 65000
+      router-id: 10.10.10.10
+      source-address: 11.0.0.1
+      peer-port: 1
+      hold-time: 10ns `)
+
+	upd := UnstructuredFromYaml(t, `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: gold
+      protocol: bgp
+      addresses:
+      - 172.20.0.100/24
+      auto-assign: false
+    peers:
+    - peer-address: 20.0.0.2
+      peer-asn: 64001
+      my-asn: 65001
+      router-id: 20.20.20.20
+      source-address: 12.0.0.1
+      peer-port: 2
+      hold-time: 20ns `)
+
+	err := MergeObjectForUpdate(cur, upd)
+	g.Expect(err).NotTo(HaveOccurred())
+	configmap, _, err := uns.NestedStringMap(upd.Object, "data")
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(configmap[MetalLBConfigMap]).Should(MatchYAML(`address-pools:
+- name: silver
+  protocol: bgp
+  addresses:
+  - 172.22.0.100/24
+  auto-assign: false
+- name: gold
+  protocol: bgp
+  addresses:
+  - 172.20.0.100/24
+  auto-assign: false
+peers:
+- peer-address: 20.0.0.1
+  peer-asn: 64000
+  my-asn: 65000
+  router-id: 10.10.10.10
+  source-address: 11.0.0.1
+  peer-port: 1
+  hold-time: 10ns
+- peer-address: 20.0.0.2
+  peer-asn: 64001
+  my-asn: 65001
+  router-id: 20.20.20.20
+  source-address: 12.0.0.1
+  peer-port: 2
+  hold-time: 20ns
 `))
 }

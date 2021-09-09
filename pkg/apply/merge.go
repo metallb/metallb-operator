@@ -7,6 +7,12 @@ import (
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// ConfigMap structure
+type ConfigMapData struct {
+	AddressPools []metallbv1alpha.AddressPoolSpec `yaml:"address-pools,omitempty"`
+	Peers        []metallbv1alpha.BGPPeerSpec     `yaml:"peers,omitempty"`
+}
+
 // MergeMetadataForUpdate merges the read-only fields of metadata.
 // This is to be able to do a a meaningful comparison in apply,
 // since objects created on runtime do not have these fields populated.
@@ -26,7 +32,7 @@ func mergeMetadataForUpdate(current, updated *uns.Unstructured) error {
 }
 
 const (
-	AddressPoolConfigMap = "config"
+	MetalLBConfigMap = "config"
 )
 
 // MergeObjectForUpdate prepares a "desired" object to be updated.
@@ -210,25 +216,23 @@ func mergeLabels(current, updated *uns.Unstructured) {
 }
 
 func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
-	type configMapData struct {
-		AddressPools []metallbv1alpha.AddressPoolSpec `yaml:"address-pools"`
-	}
+	var dataMap = make(map[string]string)
 
 	if gvk := updated.GroupVersionKind(); gvk.Kind != "ConfigMap" || gvk.Group != "" {
 		return nil
 	}
 
-	s1, ok, err := uns.NestedString(current.Object, "data", AddressPoolConfigMap)
+	s1, ok, err := uns.NestedString(current.Object, "data", MetalLBConfigMap)
 	if !ok || err != nil {
 		return err
 	}
 
-	s2, ok, err := uns.NestedString(updated.Object, "data", AddressPoolConfigMap)
+	s2, ok, err := uns.NestedString(updated.Object, "data", MetalLBConfigMap)
 	if !ok || err != nil {
 		return err
 	}
 
-	st1, st2 := configMapData{}, configMapData{}
+	st1, st2 := ConfigMapData{}, ConfigMapData{}
 
 	if err := yaml.Unmarshal([]byte(s1), &st1); err != nil {
 		return err
@@ -238,8 +242,7 @@ func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
 		return err
 	}
 
-	var mergedConfigMap configMapData
-
+	var mergedConfigMap ConfigMapData
 	for i, a1 := range st1.AddressPools {
 		for j := len(st2.AddressPools) - 1; j >= 0; j-- {
 			if st2.AddressPools[j].Name == a1.Name {
@@ -250,15 +253,23 @@ func mergeConfigMapForUpdate(current, updated *uns.Unstructured) error {
 	}
 
 	mergedConfigMap.AddressPools = append(st1.AddressPools, st2.AddressPools...)
+	for i, p1 := range st1.Peers {
+		for j := len(st2.Peers) - 1; j >= 0; j-- {
+			if st2.Peers[j].MyASN == p1.MyASN && st2.Peers[j].Address == p1.Address {
+				st1.Peers[i] = *st2.Peers[j].DeepCopy()
+				st2.Peers = append(st2.Peers[:j], st2.Peers[j+1:]...)
+			}
+		}
+	}
 
+	mergedConfigMap.Peers = append(st1.Peers, st2.Peers...)
 	resData, err := yaml.Marshal(mergedConfigMap)
 	if err != nil {
 		return err
 	}
 
-	data := make(map[string]string)
-	data[AddressPoolConfigMap] = string(resData)
-	err = uns.SetNestedStringMap(updated.Object, data, "data")
+	dataMap[MetalLBConfigMap] = string(resData)
+	err = uns.SetNestedStringMap(updated.Object, dataMap, "data")
 	return err
 }
 

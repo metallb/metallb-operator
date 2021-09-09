@@ -1,5 +1,7 @@
 package consts
 
+import "github.com/metallb/metallb-operator/pkg/apply"
+
 const (
 	// MetalLBOperatorDeploymentName contains the name of the MetalLB Operator deployment
 	MetalLBOperatorDeploymentName = "metallb-operator-controller-manager"
@@ -15,8 +17,10 @@ const (
 	MetalLBDaemonsetName = "speaker"
 	// MetalLBAddressPoolCRDName contains the name of MetallB AddressPool CRD
 	MetalLBAddressPoolCRDName = "addresspools.metallb.io"
+	// MetalLBPeerCRDName contains the name of MetallB BGP Peer CRD
+	MetalLBPeerCRDName = "bgppeers.metallb.io"
 	// MetalLBConfigMapName contains created configmap
-	MetalLBConfigMapName = "config"
+	MetalLBConfigMapName = apply.MetalLBConfigMap
 	// DefaultOperatorNameSpace is the default operator namespace
 	DefaultOperatorNameSpace = "metallb-system"
 )
