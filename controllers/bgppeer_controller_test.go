@@ -173,6 +173,16 @@ var _ = Describe("Peer Controller", func() {
 						"1.1.1.100",
 					},
 					AutoAssign: &autoAssign,
+					BGPAdvertisements: []v1alpha1.BgpAdvertisement{
+						{
+							AggregationLength: 24,
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
 				},
 			}
 			addressPool2 := &v1alpha1.AddressPool{
@@ -232,6 +242,12 @@ var _ = Describe("Peer Controller", func() {
   - 1.1.1.1
   - 1.1.1.100
   auto-assign: false
+  bgp-advertisements: 
+  - communities: 
+    - 65535:65282
+    - 7003:007
+    aggregation-length: 24
+    localpref: 100
 `))
 			By("Creating 1st BGPPeer resource")
 			err = k8sClient.Create(context.Background(), Peer1)
@@ -252,6 +268,12 @@ var _ = Describe("Peer Controller", func() {
   - 1.1.1.1
   - 1.1.1.100
   auto-assign: false
+  bgp-advertisements: 
+  - communities: 
+    - 65535:65282
+    - 7003:007
+    aggregation-length: 24
+    localpref: 100
 peers:
 - my-asn: 64500
   peer-address: 10.0.0.1
@@ -276,6 +298,12 @@ peers:
   - 1.1.1.1
   - 1.1.1.100
   auto-assign: false
+  bgp-advertisements: 
+  - communities: 
+    - 65535:65282
+    - 7003:007
+    localpref: 100
+    aggregation-length: 24
 - name: test-addresspool2
   protocol: bgp
   addresses:
@@ -306,6 +334,12 @@ peers:
   - 1.1.1.1
   - 1.1.1.100
   auto-assign: false
+  bgp-advertisements: 
+  - communities: 
+    - 65535:65282
+    - 7003:007
+    localpref: 100
+    aggregation-length: 24
 - name: test-addresspool2
   protocol: bgp
   addresses:
@@ -341,6 +375,12 @@ peers:
   - 1.1.1.1
   - 1.1.1.100
   auto-assign: false
+  bgp-advertisements: 
+  - communities: 
+    - 65535:65282
+    - 7003:007
+    localpref: 100
+    aggregation-length: 24
 - name: test-addresspool2
   protocol: bgp
   addresses:
