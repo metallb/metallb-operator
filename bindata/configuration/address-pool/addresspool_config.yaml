@@ -17,3 +17,20 @@ data:
       {{ $auto_assign := .AutoAssign }} {{ if not $auto_assign }}
       auto-assign: {{ $auto_assign }}
       {{ end }}
+      {{ $advlen := len .BgpAdvertisements }} {{ if and (gt $advlen 0) (eq .Protocol "bgp") }}
+      bgp-advertisements:
+      {{ range $adv := .BgpAdvertisements -}}
+        {{ $commlen := len $adv.Communities }} {{ if gt $commlen 0 }}
+      - communities:
+          {{ range $comm := $adv.Communities -}}
+        - {{ $comm }}
+          {{ end -}}
+        {{ end }}
+        {{ if ne $adv.AggregationLength 0 }}
+        aggregation-length: {{ $adv.AggregationLength }}
+        {{ end }}
+        {{ if ne $adv.LocalPref 0 }}
+        localpref: {{ $adv.LocalPref }}
+        {{ end }}
+      {{ end -}}
+      {{ end -}}
