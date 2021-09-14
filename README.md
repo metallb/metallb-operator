@@ -14,12 +14,22 @@ Need to install the following packages
      go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0
 ```
 
+## AddressPool Validation Webhook
+
+When the AddressPool Validation Webhook is enabled a request to apply an AddressPool with an already defined IP range will be denied.
+
 ## Installation
 
 To install the MetalLB Operator using a prebuilt image, run: 
 
 ```shell
 make deploy
+```
+
+To install the MetalLB Operator using a prebuilt image and enable the AddressPool Validation Webhook, run: 
+
+```shell
+ENABLE_OPERATOR_WEBHOOK=true make deploy
 ```
 
 ## Usage
@@ -42,6 +52,8 @@ metadata:
 ### Quick local installation
 
 A quick, local installation can be done using a kind cluster using a local registry. Follow the steps below to run a locally built metallb-operator on kind.
+
+To enable the AddressPool Validation Webhook set `ENABLE_OPERATOR_WEBHOOK=true`.
 
 **Install and run kind**
 

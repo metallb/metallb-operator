@@ -2,7 +2,9 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -15,6 +17,7 @@ import (
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 	metallbutils "github.com/metallb/metallb-operator/test/e2e/metallb"
+	admv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -194,16 +197,14 @@ var _ = Describe("metallb", func() {
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
-						"1.1.1.1",
-						"1.1.1.100",
+						"1.1.1.1-1.1.1.100",
 					},
 				},
 			}, `address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
-  - 1.1.1.1
-  - 1.1.1.100
+  - 1.1.1.1-1.1.1.100
 `),
 			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
@@ -213,8 +214,7 @@ var _ = Describe("metallb", func() {
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
-						"2.2.2.1",
-						"2.2.2.100",
+						"2.2.2.1-2.2.2.100",
 					},
 					AutoAssign: &autoAssign,
 				},
@@ -223,8 +223,7 @@ var _ = Describe("metallb", func() {
   protocol: layer2
   auto-assign: false
   addresses:
-  - 2.2.2.1
-  - 2.2.2.100
+  - 2.2.2.1-2.2.2.100
 `),
 			table.Entry("Test AddressPool object with bgp-advertisements", "addresspool3", &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
@@ -234,8 +233,7 @@ var _ = Describe("metallb", func() {
 				Spec: metallbv1alpha1.AddressPoolSpec{
 					Protocol: "bgp",
 					Addresses: []string{
-						"3.3.3.1",
-						"3.3.3.100",
+						"3.3.3.1-3.3.3.100",
 					},
 					AutoAssign: &autoAssign,
 					BGPAdvertisements: []metallbv1alpha1.BgpAdvertisement{
@@ -254,9 +252,7 @@ var _ = Describe("metallb", func() {
   protocol: bgp
   auto-assign: false
   addresses:
-
-  - 3.3.3.1
-  - 3.3.3.100
+  - 3.3.3.1-3.3.3.100
   bgp-advertisements: 
   - communities: 
     - 65535:65282
@@ -363,8 +359,7 @@ var _ = Describe("metallb", func() {
 					Spec: metallbv1alpha1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
-							"1.1.1.1",
-							"1.1.1.100",
+							"1.1.1.1-1.1.1.100",
 						},
 					},
 				}
@@ -392,8 +387,7 @@ var _ = Describe("metallb", func() {
 - name: addresspool1
   protocol: layer2
   addresses:
-  - 1.1.1.1
-  - 1.1.1.100
+  - 1.1.1.1-1.1.1.100
 `))
 
 			})
@@ -407,8 +401,7 @@ var _ = Describe("metallb", func() {
 					Spec: metallbv1alpha1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
-							"2.2.2.1",
-							"2.2.2.100",
+							"2.2.2.1-2.2.2.100",
 						},
 						AutoAssign: &autoAssign,
 					},
@@ -437,14 +430,12 @@ var _ = Describe("metallb", func() {
 - name: addresspool1
   protocol: layer2
   addresses:
-  - 1.1.1.1
-  - 1.1.1.100
+  - 1.1.1.1-1.1.1.100
 - name: addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
-  - 2.2.2.1
-  - 2.2.2.100
+  - 2.2.2.1-2.2.2.100
 `))
 			})
 
@@ -457,8 +448,7 @@ var _ = Describe("metallb", func() {
 					Spec: metallbv1alpha1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
-							"1.1.1.1",
-							"1.1.1.100",
+							"1.1.1.1-1.1.1.100",
 						},
 					},
 				}
@@ -481,8 +471,7 @@ var _ = Describe("metallb", func() {
   protocol: layer2
   auto-assign: false
   addresses:
-  - 2.2.2.1
-  - 2.2.2.100
+  - 2.2.2.1-2.2.2.100
 `))
 
 			})
@@ -496,8 +485,7 @@ var _ = Describe("metallb", func() {
 					Spec: metallbv1alpha1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
-							"2.2.2.1",
-							"2.2.2.100",
+							"2.2.2.1-2.2.2.100",
 						},
 					},
 				}
@@ -525,8 +513,7 @@ var _ = Describe("metallb", func() {
 					Spec: metallbv1alpha1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
-							"1.1.1.1",
-							"1.1.1.100",
+							"1.1.1.1-1.1.1.100",
 						},
 					},
 				}
@@ -554,8 +541,7 @@ var _ = Describe("metallb", func() {
 - name: addresspool1
   protocol: layer2
   addresses:
-  - 1.1.1.1
-  - 1.1.1.100
+  - 1.1.1.1-1.1.1.100
 `))
 
 			})
@@ -574,8 +560,7 @@ var _ = Describe("metallb", func() {
 				addresspool.Spec = metallbv1alpha1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
-						"1.1.1.1",
-						"1.1.1.200",
+						"1.1.1.1-1.1.1.200",
 					},
 					AutoAssign: &autoAssign,
 				}
@@ -597,8 +582,7 @@ var _ = Describe("metallb", func() {
   protocol: layer2
   auto-assign: false
   addresses:
-  - 1.1.1.1
-  - 1.1.1.200
+  - 1.1.1.1-1.1.1.200
 `))
 			})
 
@@ -611,8 +595,7 @@ var _ = Describe("metallb", func() {
 					Spec: metallbv1alpha1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
-							"1.1.1.1",
-							"1.1.1.200",
+							"1.1.1.1-1.1.1.200",
 						},
 					},
 				}
@@ -737,5 +720,123 @@ var _ = Describe("metallb", func() {
   peer-asn: 60501
   router-id: 11.11.11.11 
 `))
+	})
+
+	Context("Validate AddressPool Webhook", func() {
+		BeforeEach(func() {
+			By("Checking if validation webhook is enabled")
+			deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			isValidationWebhookEnabled := false
+			for _, container := range deploy.Spec.Template.Spec.Containers {
+				if container.Name == "manager" {
+					for _, env := range container.Env {
+						if env.Name == "ENABLE_OPERATOR_WEBHOOK" {
+							if env.Value == "true" {
+								isValidationWebhookEnabled = true
+							}
+						}
+					}
+				}
+			}
+
+			if !isValidationWebhookEnabled {
+				Skip("AddressPool webhook is disabled")
+			}
+
+			By("Checking if validation webhook is running")
+			// Can't just check the ValidatingWebhookConfiguration name as it's changing between different deployment methods.
+			// Need to check the webhook name in the webhooks definition of the ValidatingWebhookConfiguration.
+			validateCfgList := &admv1.ValidatingWebhookConfigurationList{}
+			err = testclient.Client.List(context.TODO(), validateCfgList, &goclient.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			isValidationWebhookRunning := false
+			for _, validateCfg := range validateCfgList.Items {
+				for _, webhook := range validateCfg.Webhooks {
+					if webhook.Name == consts.AddressPoolValidationWebhookName {
+						isValidationWebhookRunning = true
+					}
+				}
+			}
+			Expect(isValidationWebhookRunning).To(BeTrue(), "AddressPool webhook is not running")
+		})
+		It("Should recognize overlapping addresses in two AddressPools", func() {
+			By("Creating first AddressPool resource")
+			autoAssign := false
+			firstAddressPool := &metallbv1alpha1.AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1alpha1.AddressPoolSpec{
+					Protocol: "layer2",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+					AutoAssign: &autoAssign,
+				},
+			}
+			err := testclient.Client.Create(context.Background(), firstAddressPool)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Creating second AddressPool resource with overlapping addresses defined by address range")
+			secondAdressPool := &metallbv1alpha1.AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool2",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1alpha1.AddressPoolSpec{
+					Protocol: "layer2",
+					Addresses: []string{
+						"1.1.1.15-1.1.1.20",
+					},
+					AutoAssign: &autoAssign,
+				},
+			}
+
+			err = testclient.Client.Create(context.Background(), secondAdressPool)
+			Expect(err).ToNot(BeNil())
+			if !strings.Contains(fmt.Sprint(err), "overlaps with already defined CIDR") {
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			By("Creating second valid AddressPool resource")
+			secondAdressPool.Spec.Addresses = []string{
+				"1.1.1.101-1.1.1.200",
+			}
+			err = testclient.Client.Create(context.Background(), secondAdressPool)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Updating second AddressPool addresses to overlapping addresses defined by network prefix")
+			secondAdressPool.Spec.Addresses = []string{
+				"1.1.1.0/24",
+			}
+			err = testclient.Client.Update(context.Background(), secondAdressPool)
+			Expect(err).ToNot(BeNil())
+			if !strings.Contains(fmt.Sprint(err), "overlaps with already defined CIDR") {
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			By("Deleting first AddressPool resource")
+			err = testclient.Client.Delete(context.Background(), firstAddressPool)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: firstAddressPool.Namespace, Name: firstAddressPool.Name}, firstAddressPool)
+				return errors.IsNotFound(err)
+			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete first AddressPool resource")
+
+			By("Deleting second AddressPool resource")
+			err = testclient.Client.Delete(context.Background(), secondAdressPool)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: secondAdressPool.Namespace, Name: secondAdressPool.Name}, secondAdressPool)
+				return errors.IsNotFound(err)
+			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete second AddressPool resource")
+
+		})
 	})
 })

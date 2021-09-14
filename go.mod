@@ -10,6 +10,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/kennygrant/sanitize v1.2.4
+	github.com/mikioh/ipaddr v0.0.0-20190404000644-d465c8ab6721
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2

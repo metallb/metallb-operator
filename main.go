@@ -125,6 +125,13 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "BGPPeer")
 		os.Exit(1)
 	}
+
+	if os.Getenv("ENABLE_OPERATOR_WEBHOOK") == "true" {
+		if err = (&metallbv1alpha1.AddressPool{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
+			os.Exit(1)
+		}
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

@@ -1,24 +1,15 @@
-# Adds namespace to all resources.
-namespace: metallb-system
+#!/bin/bash
 
-# Value of this field is prepended to the
-# names of all resources, e.g. a deployment named
-# "wordpress" becomes "alices-wordpress".
-# Note that it should also match with the prefix (text before '-') of the namespace
-# field above.
-namePrefix: metallb-operator-
+ENABLE_OPERATOR_WEBHOOK="${ENABLE_OPERATOR_WEBHOOK:-true}"
+WEBHOOK_CONFIG_FILE="${WEBHOOK_CONFIG_FILE:-config/default/kustomization.yaml}"
+KUSTOMIZE="${KUSTOMIZE:-kustomize}"
 
-# Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+HAS_WEBHOOK_CONFIGURATION=$(${KUSTOMIZE} build config/default | grep "ValidatingWebhookConfiguration")
 
-# the following config is for teaching kustomize how to do var substitution
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-- ../crd
-- ../rbac
-- ../manager
+if [ "${ENABLE_OPERATOR_WEBHOOK}" = "true" ]; then
+  # if webhook is not configured, add webhook configuration
+  if [ -z "${HAS_WEBHOOK_CONFIGURATION}" ]; then
+    cat >> "${WEBHOOK_CONFIG_FILE}" << EOF
 - ../webhook
 - ../certmanager
 
@@ -55,3 +46,14 @@ vars:
     kind: Service
     version: v1
     name: webhook-service
+EOF
+  fi
+else
+  # if webhook is configured, remove webhook configuration
+  if [ -n "${HAS_WEBHOOK_CONFIGURATION}" ]; then
+    webhook_config_first_line=$(grep --text -n "webhook" "${WEBHOOK_CONFIG_FILE}" | cut -f1 -d: | sort -n | head -n1)
+    sed -i ''"${webhook_config_first_line}"',$d' "${WEBHOOK_CONFIG_FILE}"
+  fi
+fi
+
+yq e --inplace '.spec.template.spec.containers[0].env[] |= select (.name=="ENABLE_OPERATOR_WEBHOOK").value|="'${ENABLE_OPERATOR_WEBHOOK}'"' config/manager/env.yaml
