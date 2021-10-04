@@ -82,5 +82,11 @@ var _ = Describe("metallb", func() {
 			err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Name: consts.MetalLBAddressPoolCRDName}, crd)
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		It("should have the MetalLB BGPPeer CRD available in the cluster", func() {
+			crd := &apiext.CustomResourceDefinition{}
+			err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Name: consts.MetalLBPeerCRDName}, crd)
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })
