@@ -81,7 +81,8 @@ var _ = Describe("Peer Controller", func() {
     - key: kubernetes.io/hostname
       operator: In
       values:
-      - hostA hostB
+      - hostA
+      - hostB
   peer-address: 10.0.0.1
   peer-asn: 64501
   router-id: 10.10.10.10
@@ -105,7 +106,8 @@ var _ = Describe("Peer Controller", func() {
     - key: kubernetes.io/hostname
       operator: In
       values:
-      - hostA hostB
+      - hostA
+      - hostB
   peer-address: 10.0.0.1
   peer-asn: 64501
   router-id: 10.10.10.10
@@ -120,13 +122,14 @@ var _ = Describe("Peer Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking ConfigMap matches bgp-peer2 configuration")
-			Eventually(func() (string, error) {
+			Eventually(func() string {
 				err := k8sClient.Get(context.Background(),
 					types.NamespacedName{Name: apply.MetalLBConfigMap, Namespace: MetalLBTestNameSpace}, configmap)
 				if err != nil {
-					return "", err
+					return ""
 				}
-				return configmap.Data[apply.MetalLBConfigMap], err
+				res := configmap.Data[apply.MetalLBConfigMap]
+				return res
 			}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML(`peers:
 - my-asn: 64000
   peer-address: 11.0.0.1
@@ -137,7 +140,7 @@ var _ = Describe("Peer Controller", func() {
 			err = k8sClient.Delete(context.Background(), Peer2)
 			Expect(err).ToNot(HaveOccurred())
 
-			By("Checking ConfigMap deleted")
+			By("Checking the ConfigMap is cleared")
 			Eventually(func() (string, error) {
 				err := k8sClient.Get(context.Background(),
 					types.NamespacedName{Name: apply.MetalLBConfigMap, Namespace: MetalLBTestNameSpace}, configmap)
@@ -149,7 +152,7 @@ var _ = Describe("Peer Controller", func() {
 					return "", err
 				}
 				return configmap.Data[apply.MetalLBConfigMap], err
-			}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML(``))
+			}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML("{}"))
 		})
 	})
 
@@ -433,17 +436,12 @@ peers:
 			err = k8sClient.Delete(context.Background(), addressPool2)
 			Expect(err).ToNot(HaveOccurred())
 
-			By("Checking ConfigMap is deleted")
-			Eventually(func() bool {
+			By("Checking ConfigMap is cleared")
+			Eventually(func() string {
 				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: apply.MetalLBConfigMap, Namespace: MetalLBTestNameSpace}, configmap)
-				if err != nil {
-					// if its notfound means that was the last object and configmap is deleted
-					if errors.IsNotFound(err) {
-						return true
-					}
-				}
-				return false
-			}, 2*time.Second, 200*time.Millisecond).Should(BeTrue())
+				Expect(err).ToNot(HaveOccurred())
+				return configmap.Data[apply.MetalLBConfigMap]
+			}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML("{}"))
 		})
 	})
 })
