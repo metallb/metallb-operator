@@ -38,10 +38,6 @@ type BGPPeerReconciler struct {
 	Namespace string
 }
 
-const BGPPeerManifestPathContoller = "./bindata/configuration/bgp-peer"
-
-var BGPPeerManifestPath = BGPPeerManifestPathContoller
-
 //+kubebuilder:rbac:groups=metallb.io,resources=bgppeers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=metallb.io,resources=bgppeers/status,verbs=get;update;patch
 

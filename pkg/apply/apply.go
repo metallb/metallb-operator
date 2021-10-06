@@ -3,46 +3,16 @@ package apply
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	"log"
 
-	"gopkg.in/yaml.v2"
+	"github.com/pkg/errors"
+
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-func UpdateConfigMapObjs(ctx context.Context, client k8sclient.Client, configMapModifier func(m *ConfigMapData), namespace string) error {
-	cur := ConfigMapData{}
-	var configMap corev1.ConfigMap
-
-	if err := client.Get(ctx, k8sclient.ObjectKey{Name: MetalLBConfigMap, Namespace: namespace}, &configMap); err != nil {
-		return nil
-	}
-	if err := yaml.Unmarshal([]byte(configMap.Data[MetalLBConfigMap]), &cur); err != nil {
-		return err
-	}
-	configMapModifier(&cur)
-	resData, err := yaml.Marshal(cur)
-	if err != nil {
-		return err
-	}
-	configMap.Data[MetalLBConfigMap] = string(resData)
-	// If there is no more any objects then its safe to delete the configmap
-	if len(cur.AddressPools) == 0 && len(cur.Peers) == 0 {
-		if err := client.Delete(ctx, &configMap); err != nil {
-			return fmt.Errorf("Failed to delete configmap err %s", err)
-		}
-	} else {
-		if err := client.Update(ctx, &configMap); err != nil {
-			return fmt.Errorf("could not update configmap err %s", err)
-		}
-	}
-	return nil
-}
 
 func getExistingObject(ctx context.Context, client k8sclient.Client, obj *uns.Unstructured) (*uns.Unstructured, string, error) {
 	name := obj.GetName()
