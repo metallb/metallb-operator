@@ -84,7 +84,7 @@ var _ = Describe("metallb", func() {
 						return false
 					}
 					return deploy.Status.ReadyReplicas == deploy.Status.Replicas
-				}, metallbutils.Timeout, metallbutils.Interval).Should(BeTrue())
+				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
 					LabelSelector: "component=controller"})
@@ -106,7 +106,7 @@ var _ = Describe("metallb", func() {
 						return false
 					}
 					return daemonset.Status.DesiredNumberScheduled == daemonset.Status.NumberReady
-				}, metallbutils.Timeout, metallbutils.Interval).Should(BeTrue())
+				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
 					LabelSelector: "component=speaker"})
