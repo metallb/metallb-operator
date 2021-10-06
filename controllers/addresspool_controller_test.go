@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -114,17 +113,12 @@ var _ = Describe("AddressPool Controller", func() {
 			err = k8sClient.Delete(context.Background(), addressPool2)
 			Expect(err).ToNot(HaveOccurred())
 
-			By("Checking ConfigMap is deleted")
-			Eventually(func() bool {
+			By("Checking ConfigMap is empty")
+			Eventually(func() string {
 				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: apply.MetalLBConfigMap, Namespace: MetalLBTestNameSpace}, configmap)
-				if err != nil {
-					// if its notfound means that was the last object and configmap is deleted
-					if errors.IsNotFound(err) {
-						return true
-					}
-				}
-				return false
-			}, 2*time.Second, 200*time.Millisecond).Should(BeTrue())
+				Expect(err).ToNot(HaveOccurred())
+				return configmap.Data["config"]
+			}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML("{}"))
 		})
 	})
 
