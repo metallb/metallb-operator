@@ -180,14 +180,15 @@ var _ = Describe("metallb", func() {
 				return configmap.Data[consts.MetalLBConfigMapName], err
 			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(expectedConfigMap))
 
-			By("Checking AddressPool resource and ConfigMap are deleted")
+			By("Checking AddressPool resource is deleted and ConfigMap is cleared")
 			err := testclient.Client.Delete(context.Background(), addresspool)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() bool {
-				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				return errors.IsNotFound(err)
-			}, metallbutils.Timeout, metallbutils.Interval).Should(BeTrue())
+			Eventually(func() string {
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				return configmap.Data[consts.MetalLBConfigMapName]
+			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
 		},
 			table.Entry("Test AddressPool object with default auto assign", "addresspool1", &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
@@ -494,11 +495,12 @@ var _ = Describe("metallb", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			By("Checking ConfigMap is deleted at the end of the test")
-			Eventually(func() bool {
-				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				return errors.IsNotFound(err)
-			}, metallbutils.Timeout, metallbutils.Interval).Should(BeTrue())
+			By("Checking ConfigMap is cleared at the end of the test")
+			Eventually(func() string {
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				return configmap.Data[consts.MetalLBConfigMapName]
+			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
 		})
 	})
 
@@ -603,12 +605,13 @@ var _ = Describe("metallb", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			// Make sure Configmap is deleted at the end of this test
-			By("Checking ConfigMap is deleted at the end of the test")
-			Eventually(func() bool {
-				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				return errors.IsNotFound(err)
-			}, metallbutils.Timeout, metallbutils.Interval).Should(BeTrue())
+			By("Checking ConfigMap is cleared at the end of the test")
+			// Make sure Configmap is cleared at the end of this test
+			Eventually(func() string {
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				return configmap.Data[consts.MetalLBConfigMapName]
+			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
 		})
 	})
 
@@ -638,14 +641,15 @@ var _ = Describe("metallb", func() {
 				return configmap.Data[consts.MetalLBConfigMapName], err
 			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(expectedConfigMap))
 
-			By("Checking BGP Peer resource and ConfigMap are deleted")
+			By("Checking the ConfigMap is cleared")
 			err := testclient.Client.Delete(context.Background(), peer)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() bool {
-				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				return errors.IsNotFound(err)
-			}, metallbutils.Timeout, metallbutils.Interval).Should(BeTrue())
+			Eventually(func() string {
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				return configmap.Data[consts.MetalLBConfigMapName]
+			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
 		},
 			table.Entry("Test BGP Peer object", "peer1", &metallbv1alpha1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
@@ -679,7 +683,8 @@ var _ = Describe("metallb", func() {
     - key: kubernetes.io/hostname
       operator: In
       values:
-      - hostA hostB
+      - hostA
+      - hostB
   peer-address: 10.0.0.1
   peer-asn: 64501
   router-id: 10.10.10.10 
