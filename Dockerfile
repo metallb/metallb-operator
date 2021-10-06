@@ -15,8 +15,6 @@ COPY api/ api/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY bindata/deployment/ bindata/deployment/
-COPY bindata/configuration/address-pool/ bindata/configuration/address-pool/
-COPY bindata/configuration/bgp-peer/ bindata/configuration/bgp-peer/
 COPY .git/ .git/
 COPY Makefile Makefile
 
@@ -29,8 +27,6 @@ FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/bindata/deployment /bindata/deployment
-COPY --from=builder /workspace/bindata/configuration/address-pool/ /bindata/configuration/address-pool
-COPY --from=builder /workspace/bindata/configuration/bgp-peer/ /bindata/configuration/bgp-peer
 
 USER nonroot:nonroot
 
