@@ -1,0 +1,16 @@
+address-pools:
+- protocol: layer2
+  name: test-addresspool1
+  addresses:
+  - 1.1.1.1-1.1.1.100
+  auto-assign: false
+- protocol: layer2
+  name: test-addresspool2
+  addresses:
+  - 2.2.2.2-2.2.2.100
+  - 2.2.3.2-2.2.3.100
+- protocol: layer2
+  name: test-addresspool3
+  addresses:
+  - 2.2.2.2-2.2.2.100
+  - 2.2.3.2-2.2.3.100
