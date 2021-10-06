@@ -21,8 +21,9 @@ import (
 
 const (
 	// Timeout and Interval settings
-	Timeout  = time.Minute * 3
-	Interval = time.Second * 2
+	Timeout       = time.Second * 5
+	DeployTimeout = time.Minute * 3
+	Interval      = time.Second * 2
 )
 
 // Delete and check the MetalLB custom resource is deleted to avoid status leak in between tests.
@@ -41,24 +42,24 @@ func Delete(metallb *metallbv1beta1.MetalLB) {
 	Eventually(func() bool {
 		_, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
 		return errors.IsNotFound(err)
-	}, Timeout, Interval).Should(BeTrue())
+	}, DeployTimeout, Interval).Should(BeTrue())
 
 	Eventually(func() bool {
 		_, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
 		return errors.IsNotFound(err)
-	}, Timeout, Interval).Should(BeTrue())
+	}, DeployTimeout, Interval).Should(BeTrue())
 
 	Eventually(func() bool {
 		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("component=%s", consts.MetalLBDeploymentName)})
 		return len(pods.Items) == 0
-	}, Timeout, Interval).Should(BeTrue())
+	}, DeployTimeout, Interval).Should(BeTrue())
 
 	Eventually(func() bool {
 		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("component=%s", consts.MetalLBDaemonsetName)})
 		return len(pods.Items) == 0
-	}, Timeout, Interval).Should(BeTrue())
+	}, DeployTimeout, Interval).Should(BeTrue())
 }
 
 func Get(operatorNamespace string, useMetallbResourcesFromFile bool) (*metallbv1beta1.MetalLB, error) {
