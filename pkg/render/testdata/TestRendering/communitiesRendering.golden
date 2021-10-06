@@ -1,0 +1,22 @@
+address-pools:
+- protocol: bgp
+  name: test-addresspool1
+  addresses:
+  - 1.1.1.1-1.1.1.100
+  auto-assign: false
+  bgp-advertisements:
+  - aggregation-length: 58
+    localpref: 43
+    communities:
+    - foo
+    - bar
+  - aggregation-length: 58
+    localpref: 43
+    communities:
+    - foo1
+    - bar1
+- protocol: bgp
+  name: test-addresspool2
+  addresses:
+  - 2.2.2.2-2.2.2.100
+  - 2.2.3.2-2.2.3.100
