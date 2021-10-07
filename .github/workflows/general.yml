@@ -60,4 +60,6 @@ jobs:
         git diff --exit-code
 
     - name: Unit and Integration Tests
-      run: make test
+      run: |
+        METALLB_BGP_TYPE=native make test
+        METALLB_BGP_TYPE=frr make test

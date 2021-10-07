@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -101,12 +102,13 @@ var _ = BeforeSuite(func() {
 
 	ManifestPath = MetalLBManifestPathControllerTest // This is needed as the tests need to reference a directory backward
 
+	bgpType := os.Getenv("METALLB_BGP_TYPE")
 	err = (&MetalLBReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
 		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager)
+	}).SetupWithManager(k8sManager, bgpType)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&AddressPoolReconciler{

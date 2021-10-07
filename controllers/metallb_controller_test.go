@@ -2,16 +2,17 @@ package controllers
 
 import (
 	"context"
-	"github.com/metallb/metallb-operator/api/v1alpha1"
-	v1 "k8s.io/api/core/v1"
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/test/consts"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,10 +33,25 @@ var _ = Describe("MetalLB Controller", func() {
 		It("Should create manifests with images and namespace overriden", func() {
 			speakerImage := "test-speaker:latest"
 			controllerImage := "test-controller:latest"
+			frrImage := "test-frr:latest"
 			By("Setting the environment variables")
 			Expect(os.Setenv("SPEAKER_IMAGE", speakerImage)).To(Succeed())
 			Expect(os.Setenv("CONTROLLER_IMAGE", controllerImage)).To(Succeed())
 			Expect(os.Setenv("WATCH_NAMESPACE", MetalLBTestNameSpace)).To(Succeed())
+			Expect(os.Setenv("FRR_IMAGE", frrImage)).To(Succeed())
+
+			speakerContainers := map[string]string{
+				"speaker":     speakerImage,
+				"frr":         frrImage,
+				"reloader":    frrImage,
+				"frr-metrics": frrImage,
+			}
+
+			speakerInitContainers := map[string]string{
+				"cp-frr-files": frrImage,
+				"cp-reloader":  speakerImage,
+				"cp-metrics":   speakerImage,
+			}
 
 			By("Creating a MetalLB resource")
 			err := k8sClient.Create(context.Background(), metallb)
@@ -58,7 +74,16 @@ var _ = Describe("MetalLB Controller", func() {
 			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
 			Expect(speakerDaemonSet).NotTo(BeZero())
 			Expect(len(speakerDaemonSet.Spec.Template.Spec.Containers)).To(BeNumerically(">", 0))
-			Expect(speakerDaemonSet.Spec.Template.Spec.Containers[0].Image).To(Equal(speakerImage))
+			for _, c := range speakerDaemonSet.Spec.Template.Spec.Containers {
+				image, ok := speakerContainers[c.Name]
+				Expect(ok).To(BeTrue(), fmt.Sprintf("container %s not found in %s", c.Name, speakerContainers))
+				Expect(c.Image).To(Equal(image))
+			}
+			for _, c := range speakerDaemonSet.Spec.Template.Spec.InitContainers {
+				image, ok := speakerInitContainers[c.Name]
+				Expect(ok).To(BeTrue(), fmt.Sprintf("init container %s not found in %s", c.Name, speakerInitContainers))
+				Expect(c.Image).To(Equal(image))
+			}
 
 			By("Specify the SpeakerNodeSelector")
 			metallb.Spec.SpeakerNodeSelector = map[string]string{"node-role.kubernetes.io/worker": "true"}
@@ -75,7 +100,16 @@ var _ = Describe("MetalLB Controller", func() {
 			}, 2*time.Second, 200*time.Millisecond).Should(Equal(metallb.Spec.SpeakerNodeSelector))
 			Expect(speakerDaemonSet).NotTo(BeZero())
 			Expect(len(speakerDaemonSet.Spec.Template.Spec.Containers)).To(BeNumerically(">", 0))
-			Expect(speakerDaemonSet.Spec.Template.Spec.Containers[0].Image).To(Equal(speakerImage))
+			for _, c := range speakerDaemonSet.Spec.Template.Spec.Containers {
+				image, ok := speakerContainers[c.Name]
+				Expect(ok).To(BeTrue(), fmt.Sprintf("container %s not found in %s", c.Name, speakerContainers))
+				Expect(c.Image).To(Equal(image))
+			}
+			for _, c := range speakerDaemonSet.Spec.Template.Spec.InitContainers {
+				image, ok := speakerInitContainers[c.Name]
+				Expect(ok).To(BeTrue(), fmt.Sprintf("init container %s not found in %s", c.Name, speakerInitContainers))
+				Expect(c.Image).To(Equal(image))
+			}
 		})
 	})
 })
