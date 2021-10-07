@@ -1,0 +1,7 @@
+apiVersion: metallb.io.metallb.io/v1alpha1
+kind: BFDProfile
+metadata:
+  name: bfdprofile-sample
+spec:
+  # Add fields here
+  foo: bar
