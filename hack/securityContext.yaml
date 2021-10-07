@@ -1,4 +1,4 @@
-  runAsNonRoot: true
-  {{ if not .IsOpenShift }}
-  runAsUser: 65534
-  {{ end }}
+runAsNonRoot: true
+{{ if not .IsOpenShift }}
+runAsUser: 65534
+{{ end }}
