@@ -100,7 +100,7 @@ endif
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
-manifests: controller-gen  ## Generate manifests e.g. CRD, RBAC etc.
+manifests: controller-gen generate-metallb-manifests  ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 fmt:  ## Run go fmt against code
