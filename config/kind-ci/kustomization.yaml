@@ -1,5 +1,5 @@
 bases:
-  - ../default
+  - ../webhook-with-certmanager
 
 patchesStrategicMerge:
 - imagePullPolicyNever.yaml
