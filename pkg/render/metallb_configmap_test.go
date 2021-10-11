@@ -185,6 +185,88 @@ func TestRendering(t *testing.T) {
 			ConfigMapName: "config",
 			NameSpace:     "namespace",
 		},
+		"peersBfd": {
+			ConfigMapName: "config",
+			NameSpace:     "namespace",
+			Pools: []metallbv1alpha1.AddressPool{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-addresspool1",
+						Namespace: "namespace",
+					},
+					Spec: metallbv1alpha1.AddressPoolSpec{
+						Protocol: "bgp",
+						Addresses: []string{
+							"1.1.1.1-1.1.1.100",
+						},
+					},
+				},
+			},
+			Peers: []metallbv1alpha1.BGPPeer{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-peer1",
+						Namespace: "namespace",
+					},
+					Spec: metallbv1alpha1.BGPPeerSpec{
+						MyASN:      23,
+						ASN:        24,
+						Address:    "192.168.1.1",
+						SrcAddress: "192.168.1.2",
+						Port:       1234,
+						HoldTime:   time.Second,
+						RouterID:   "abcd",
+						NodeSelectors: []metallbv1alpha1.NodeSelector{
+							{
+								MatchLabels: map[string]string{
+									"foo": "bar",
+								},
+								MatchExpressions: []metallbv1alpha1.MatchExpression{
+
+									{
+
+										Key:      "k1",
+										Operator: "op1",
+										Values:   []string{"val1", "val2", "val3"},
+									},
+								},
+							}, {
+								MatchLabels: map[string]string{
+									"foo1": "bar1",
+								},
+							},
+						},
+						Password:   "topsecret",
+						BFDProfile: "test-profile1",
+					},
+				},
+			},
+			BFDProfiles: []metallbv1alpha1.BFDProfile{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-profile1",
+						Namespace: "namespace",
+					},
+					Spec: metallbv1alpha1.BFDProfileSpec{
+						ReceiveInterval:      uint32Ptr(12),
+						TransmitInterval:     uint32Ptr(13),
+						DetectMultiplier:     uint32Ptr(14),
+						EchoReceiveInterval:  pointer.StringPtr("45"),
+						EchoTransmitInterval: uint32Ptr(15),
+						EchoMode:             pointer.BoolPtr(true),
+						PassiveMode:          pointer.BoolPtr(true),
+						MinimumTTL:           uint32Ptr(16),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-profile2",
+						Namespace: "namespace",
+					},
+					Spec: metallbv1alpha1.BFDProfileSpec{},
+				},
+			},
+		},
 	}
 
 	for name, data := range tests {
@@ -251,4 +333,8 @@ func updateGolden(t *testing.T, configFile, goldenFile string) {
 
 func renderedNames(t *testing.T) (string, string) {
 	return filepath.Join("testdata", filepath.FromSlash(t.Name())), filepath.Join("testdata", filepath.FromSlash(t.Name())+".golden")
+}
+
+func uint32Ptr(n uint32) *uint32 {
+	return &n
 }

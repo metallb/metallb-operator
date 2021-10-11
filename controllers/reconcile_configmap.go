@@ -49,25 +49,32 @@ func reconcileConfigMap(ctx context.Context, c client.Client, log logr.Logger, n
 
 func operatorConfig(ctx context.Context, c client.Client) (*render.OperatorConfig, error) {
 	addressPools := &metallbv1alpha1.AddressPoolList{}
-	bgpPeers := &metallbv1alpha1.BGPPeerList{}
-
 	err := c.List(ctx, addressPools, &client.ListOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, errors.Wrap(err, "failed to fetch address pools")
 	}
 
+	bgpPeers := &metallbv1alpha1.BGPPeerList{}
 	err = c.List(ctx, bgpPeers, &client.ListOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, errors.Wrap(err, "failed to fetch bgp peers")
 	}
+
+	bfdProfiles := &metallbv1alpha1.BFDProfileList{}
+	err = c.List(ctx, bfdProfiles, &client.ListOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return nil, errors.Wrap(err, "failed to fetch bfd profiles")
+	}
 	res := &render.OperatorConfig{}
 	res.Pools = addressPools.DeepCopy().Items
 	res.Peers = bgpPeers.DeepCopy().Items
+	res.BFDProfiles = bfdProfiles.DeepCopy().Items
 
 	// sorting to make the result stable in case the api server returns the list in
 	// a different order.
 	sort.Slice(res.Pools, func(i, j int) bool { return res.Pools[i].Name < res.Pools[j].Name })
 	sort.Slice(res.Peers, func(i, j int) bool { return res.Peers[i].Name < res.Peers[j].Name })
+	sort.Slice(res.BFDProfiles, func(i, j int) bool { return res.BFDProfiles[i].Name < res.BFDProfiles[j].Name })
 
 	res.DataField = ConfigDataField
 	return res, nil

@@ -7,6 +7,7 @@ type configFile struct {
 	Peers          []peer            `yaml:"peers,omitempty"`
 	BGPCommunities map[string]string `yaml:"bgp-communities,omitempty"` // TODO this is missing from crds
 	Pools          []addressPool     `yaml:"address-pools,omitempty"`
+	BFDProfiles    []bfdProfile      `yaml:"bfd-profiles,omitempty"`
 }
 
 type peer struct {
@@ -19,6 +20,7 @@ type peer struct {
 	RouterID      string         `yaml:"router-id,omitempty"`
 	NodeSelectors []nodeSelector `yaml:"node-selectors,omitempty"`
 	Password      string         `yaml:"password,omitempty"`
+	BFDProfile    string         `yaml:"bfd-profile,omitempty"`
 }
 
 type nodeSelector struct {
@@ -46,4 +48,16 @@ type bgpAdvertisement struct {
 	AggregationLengthV6 *int32 `yaml:"aggregation-length-v6"`
 	LocalPref           *uint32
 	Communities         []string
+}
+
+type bfdProfile struct {
+	Name                 string  `yaml:"name"`
+	ReceiveInterval      *uint32 `yaml:"receive-interval,omitempty"`
+	TransmitInterval     *uint32 `yaml:"transmit-interval,omitempty"`
+	DetectMultiplier     *uint32 `yaml:"detect-multiplier,omitempty"`
+	EchoReceiveInterval  *string `yaml:"echo-receive-interval,omitempty"`
+	EchoTransmitInterval *uint32 `yaml:"echo-transmit-interval,omitempty"`
+	EchoMode             *bool   `yaml:"echo-mode,omitempty"`
+	PassiveMode          *bool   `yaml:"passive-mode,omitempty"`
+	MinimumTTL           *uint32 `yaml:"minimum-ttl,omitempty"`
 }
