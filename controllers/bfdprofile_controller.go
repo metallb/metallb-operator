@@ -18,6 +18,8 @@ package controllers
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,33 +27,33 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metallbiov1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	"github.com/metallb/metallb-operator/pkg/render"
 )
 
 // BFDProfileReconciler reconciles a BFDProfile object
 type BFDProfileReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log       logr.Logger
+	Scheme    *runtime.Scheme
+	Namespace string
 }
 
 //+kubebuilder:rbac:groups=metallb.io,resources=bfdprofiles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=metallb.io,resources=bfdprofiles/status,verbs=get;update;patch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the BFDProfile object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.6.4/pkg/reconcile
-func (r *BFDProfileReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("bfdprofile", req.NamespacedName)
+func (r *BFDProfileReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	r.Log.Info(fmt.Sprintf("Starting BFD Profile reconcile loop for %v", req.NamespacedName))
+	defer r.Log.Info(fmt.Sprintf("Finish BFD Profile reconcile loop for %v", req.NamespacedName))
 
-	// your logic here
-
+	err := reconcileConfigMap(ctx, r.Client, r.Log, r.Namespace)
+	if errors.As(err, &render.RenderingFailed{}) {
+		r.Log.Error(err, "configmap rendering failed", "controller", "bfdprofile")
+		return ctrl.Result{}, nil
+	}
+	if err != nil {
+		r.Log.Error(err, "failed to reconcile configmap", "controller", "bfdprofile")
+		return ctrl.Result{RequeueAfter: RetryPeriod}, err
+	}
 	return ctrl.Result{}, nil
 }
 

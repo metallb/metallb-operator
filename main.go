@@ -32,7 +32,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	metallbiov1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
@@ -55,7 +54,6 @@ func init() {
 	utilruntime.Must(policyv1beta1.AddToScheme(scheme))
 	utilruntime.Must(rbacv1.AddToScheme(scheme))
 
-	utilruntime.Must(metallbiov1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -139,9 +137,10 @@ func main() {
 		}
 	}
 	if err = (&controllers.BFDProfileReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("BFDProfile"),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("BFDProfile"),
+		Scheme:    mgr.GetScheme(),
+		Namespace: watchNamepace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "BFDProfile")
 		os.Exit(1)
