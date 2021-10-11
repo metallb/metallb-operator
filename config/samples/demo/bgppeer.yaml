@@ -1,0 +1,14 @@
+apiVersion: metallb.io/v1alpha1
+kind: BGPPeer
+metadata:
+  name: peer-bfd
+  namespace: metallb-system
+spec:
+  peerAddress: 10.0.0.2
+  peerASN: 64501
+  myASN: 64500
+  routerID: 10.10.10.10
+  peerPort: 1
+  holdTime: 10
+  sourceAddress: 1.1.1.1
+  bfdProfile: bfdprofilefull

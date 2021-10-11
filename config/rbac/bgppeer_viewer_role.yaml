@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - metallb.io.metallb.io
+  - metallb.io
   resources:
   - bgppeers/status
   verbs:

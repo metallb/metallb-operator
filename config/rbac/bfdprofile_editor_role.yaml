@@ -5,7 +5,7 @@ metadata:
   name: bfdprofile-editor-role
 rules:
 - apiGroups:
-  - metallb.io.metallb.io
+  - metallb.io
   resources:
   - bfdprofiles
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - metallb.io.metallb.io
+  - metallb.io
   resources:
   - bfdprofiles/status
   verbs:

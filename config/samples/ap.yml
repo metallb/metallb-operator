@@ -1,0 +1,17 @@
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-sample4
+  namespace: metallb-system
+spec:
+  protocol: bgp
+  addresses:
+    - 172.30.0.100-172.30.0.255
+  bgpAdvertisements:
+  - communities:
+    - 65535:65282
+    aggregationLength: 32
+    localPref: 100
+  - communities:
+    - 8000:800
+    aggregationLength: 24

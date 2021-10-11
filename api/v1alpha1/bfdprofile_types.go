@@ -20,22 +20,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // BFDProfileSpec defines the desired state of BFDProfile
 type BFDProfileSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of BFDProfile. Edit bfdprofile_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	ReceiveInterval  *uint32 `json:"receiveInterval,omitempty"`
+	TransmitInterval *uint32 `json:"transmitInterval,omitempty"`
+	DetectMultiplier *uint32 `json:"detectMultiplier,omitempty"`
+	EchoInterval     *uint32 `json:"echoInterval,omitempty"`
+	EchoMode         *bool   `json:"echoMode,omitempty"`
+	PassiveMode      *bool   `json:"passiveMode,omitempty"`
+	MinimumTTL       *uint32 `json:"minimumTtl,omitempty"`
 }
 
 // BFDProfileStatus defines the observed state of BFDProfile
 type BFDProfileStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true
