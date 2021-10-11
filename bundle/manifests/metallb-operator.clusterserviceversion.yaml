@@ -139,6 +139,9 @@ spec:
         kind: AddressPool
         name: addresspools.metallb.io
         version: v1alpha1
+      - kind: BFDProfile
+        name: bfdprofiles.metallb.io
+        version: v1alpha1
       - kind: BGPPeer
         name: bgppeers.metallb.io
         version: v1alpha1
@@ -203,6 +206,26 @@ spec:
                 - metallb.io
               resources:
                 - addresspools/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bfdprofiles
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bfdprofiles/status
               verbs:
                 - get
                 - patch

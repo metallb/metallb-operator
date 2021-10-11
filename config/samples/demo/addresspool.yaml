@@ -1,0 +1,9 @@
+apiVersion: metallb.io/v1alpha1
+kind: AddressPool
+metadata:
+  name: addresspool-sample4
+  namespace: metallb-system
+spec:
+  protocol: bgp
+  addresses:
+    - 172.30.0.100-172.30.0.255
