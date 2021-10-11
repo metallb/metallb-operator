@@ -37,24 +37,40 @@ spec:
               detectMultiplier:
                 format: int32
                 type: integer
+                minimum: 2
+                maximum: 255
               echoMode:
                 type: boolean
               echoReceiveInterval:
-                type: string
+                x-kubernetes-int-or-string: true
+                anyOf:
+                - type: integer
+                  minimum: 10
+                  maximum: 60000
+                - type: string
+                  pattern: "disabled"
               echoTransmitInterval:
                 format: int32
                 type: integer
+                minimum: 10
+                maximum: 60000
               minimumTtl:
                 format: int32
                 type: integer
+                minimum: 1
+                maximum: 254
               passiveMode:
                 type: boolean
               receiveInterval:
                 format: int32
                 type: integer
+                minimum: 10
+                maximum: 60000
               transmitInterval:
                 format: int32
                 type: integer
+                minimum: 10
+                maximum: 60000
             type: object
           status:
             description: BFDProfileStatus defines the observed state of BFDProfile

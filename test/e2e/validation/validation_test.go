@@ -1,3 +1,4 @@
+//go:build validationtests
 // +build validationtests
 
 package validation

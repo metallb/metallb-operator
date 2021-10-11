@@ -130,7 +130,7 @@ var _ = Describe("BFD Controller", func() {
 					AutoAssign: &autoAssign,
 					BGPAdvertisements: []v1alpha1.BgpAdvertisement{
 						{
-							AggregationLength: 24,
+							AggregationLength: pointer.Int32Ptr(24),
 							LocalPref:         100,
 							Communities: []string{
 								"65535:65282",
