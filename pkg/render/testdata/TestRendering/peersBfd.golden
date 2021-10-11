@@ -1,0 +1,38 @@
+peers:
+- my-asn: 23
+  peer-asn: 24
+  peer-address: 192.168.1.1
+  source-address: 192.168.1.2
+  peer-port: 1234
+  hold-time: 1s
+  router-id: abcd
+  node-selectors:
+  - match-labels:
+      foo: bar
+    match-expressions:
+    - key: k1
+      operator: op1
+      values:
+      - val1
+      - val2
+      - val3
+  - match-labels:
+      foo1: bar1
+  password: topsecret
+  bfd-profile: test-profile1
+address-pools:
+- protocol: bgp
+  name: test-addresspool1
+  addresses:
+  - 1.1.1.1-1.1.1.100
+bfd-profiles:
+- name: test-profile1
+  receive-interval: 12
+  transmit-interval: 13
+  detect-multiplier: 14
+  echo-receive-interval: "45"
+  echo-transmit-interval: 15
+  echo-mode: true
+  passive-mode: true
+  minimum-ttl: 16
+- name: test-profile2

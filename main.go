@@ -135,9 +135,10 @@ func main() {
 		}
 	}
 	if err = (&controllers.BFDProfileReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("BFDProfile"),
-		Scheme: mgr.GetScheme(),
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("BFDProfile"),
+		Scheme:    mgr.GetScheme(),
+		Namespace: watchNamepace,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "BFDProfile")
 		os.Exit(1)
