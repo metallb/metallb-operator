@@ -34,7 +34,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	metallbiov1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	// +kubebuilder:scaffold:imports
@@ -80,9 +79,6 @@ var _ = BeforeSuite(func() {
 	err = metallbv1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = metallbiov1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -125,6 +121,14 @@ var _ = BeforeSuite(func() {
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
 		Log:       ctrl.Log.WithName("controller").WithName("BGPPeer"),
+		Namespace: MetalLBTestNameSpace,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&BFDProfileReconciler{
+		Client:    k8sClient,
+		Scheme:    scheme.Scheme,
+		Log:       ctrl.Log.WithName("controller").WithName("BFDProfile"),
 		Namespace: MetalLBTestNameSpace,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
