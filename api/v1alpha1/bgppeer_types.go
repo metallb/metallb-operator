@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type MatchExpression struct {
@@ -78,6 +79,7 @@ type BGPPeerSpec struct {
 	// +optional
 	Password string `json:"password,omitempty" yaml:"password,omitempty"`
 
+	BFDProfile string `json:"bfdProfile,omitempty" yaml:"bfdprofile,omitempty"`
 	// Add future BGP configuration here
 }
 
