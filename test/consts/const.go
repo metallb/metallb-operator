@@ -25,4 +25,6 @@ const (
 	DefaultOperatorNameSpace = "metallb-system"
 	// AddressPoolValidationWebhookName contains the name of the AddressPool validation webhook
 	AddressPoolValidationWebhookName = "addresspoolvalidationwebhook.metallb.io"
+	// BGPPeerValidationWebhookName contains the name of the BGPPeer validation webhook
+	BGPPeerValidationWebhookName = "bgppeervalidationwebhook.metallb.io"
 )
