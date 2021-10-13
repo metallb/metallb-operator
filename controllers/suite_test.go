@@ -40,10 +40,8 @@ import (
 )
 
 const (
-	MetalLBTestNameSpace                  = "metallb-test-namespace"
-	MetalLBManifestPathControllerTest     = "../bindata/deployment"
-	AddressPoolManifestPathControllerTest = "../bindata/configuration/address-pool"
-	BGPPeerManifestPathContollerTest      = "../bindata/configuration/bgp-peer"
+	MetalLBTestNameSpace              = "metallb-test-namespace"
+	MetalLBManifestPathControllerTest = "../bindata/deployment"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -111,7 +109,6 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	AddressPoolManifestPath = AddressPoolManifestPathControllerTest // This is needed as the tests need to reference a directory backward
 	err = (&AddressPoolReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
@@ -120,7 +117,6 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	BGPPeerManifestPath = BGPPeerManifestPathContollerTest // This is needed as the tests need to reference a directory backward
 	err = (&BGPPeerReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
@@ -139,8 +135,6 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// restore Manifestpaths for both controller to their original value
 	ManifestPath = MetalLBManifestPathController
-	AddressPoolManifestPath = AddressPoolManifestPathController
-	BGPPeerManifestPath = BGPPeerManifestPathContoller
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
