@@ -40,7 +40,7 @@ jobs:
 
       - name: Create and set up K8s Kind Cluster
         run: |
-          ./scripts/kind-cluster-with-registry.sh
+          ./hack/kind-cluster-with-registry.sh
           make deploy-olm
 
       - name: Build bundle image
