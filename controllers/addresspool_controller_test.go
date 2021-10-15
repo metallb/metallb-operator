@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/utils/pointer"
 	"time"
 
 	"github.com/metallb/metallb-operator/api/v1alpha1"
@@ -139,8 +140,9 @@ var _ = Describe("AddressPool Controller", func() {
 				AutoAssign: &autoAssign,
 				BGPAdvertisements: []v1alpha1.BgpAdvertisement{
 					{
-						AggregationLength: 24,
-						LocalPref:         100,
+						AggregationLength:   pointer.Int32Ptr(24),
+						AggregationLengthV6: pointer.Int32Ptr(124),
+						LocalPref:           100,
 						Communities: []string{
 							"65535:65282",
 							"7003:007",
@@ -180,6 +182,7 @@ var _ = Describe("AddressPool Controller", func() {
     - 65535:65282
     - 7003:007
     aggregation-length: 24
+    aggregation-length-v6: 124
     localpref: 100
 `))
 		})

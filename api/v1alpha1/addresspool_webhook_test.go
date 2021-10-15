@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 const (
@@ -177,7 +178,7 @@ func TestValidateAddressPool(t *testing.T) {
 					AutoAssign: &autoAssign,
 					BGPAdvertisements: []BgpAdvertisement{
 						{
-							AggregationLength: 24,
+							AggregationLength: pointer.Int32Ptr(24),
 							LocalPref:         100,
 							Communities: []string{
 								"65535:65282",
