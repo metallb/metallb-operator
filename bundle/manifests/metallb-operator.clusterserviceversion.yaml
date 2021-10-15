@@ -68,6 +68,7 @@ metadata:
               },
               {
                 "aggregationLength": 24,
+                "aggregationLengthV6": 120,
                 "communities": [
                   "8000:800"
                 ]
