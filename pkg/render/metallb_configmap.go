@@ -79,8 +79,11 @@ func poolToMetalLB(p metallbv1alpha1.AddressPool) addressPool {
 	}
 	res.BGPAdvertisements = make([]bgpAdvertisement, len(p.Spec.BGPAdvertisements))
 	for i, b := range p.Spec.BGPAdvertisements {
-		if b.AggregationLength > 0 {
-			res.BGPAdvertisements[i].AggregationLength = &b.AggregationLength
+		if b.AggregationLength != nil && *b.AggregationLength > 0 {
+			res.BGPAdvertisements[i].AggregationLength = b.AggregationLength
+		}
+		if b.AggregationLengthV6 != nil && *b.AggregationLengthV6 > 0 {
+			res.BGPAdvertisements[i].AggregationLengthV6 = b.AggregationLengthV6
 		}
 		if b.LocalPref > 0 {
 			res.BGPAdvertisements[i].LocalPref = &b.LocalPref
