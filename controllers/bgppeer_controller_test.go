@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/utils/pointer"
 	"time"
 
 	"github.com/metallb/metallb-operator/api/v1alpha1"
@@ -178,8 +179,9 @@ var _ = Describe("Peer Controller", func() {
 					AutoAssign: &autoAssign,
 					BGPAdvertisements: []v1alpha1.BgpAdvertisement{
 						{
-							AggregationLength: 24,
-							LocalPref:         100,
+							AggregationLength:   pointer.Int32Ptr(24),
+							AggregationLengthV6: pointer.Int32Ptr(128),
+							LocalPref:           100,
 							Communities: []string{
 								"65535:65282",
 								"7003:007",
@@ -248,6 +250,7 @@ var _ = Describe("Peer Controller", func() {
     - 65535:65282
     - 7003:007
     aggregation-length: 24
+    aggregation-length-v6: 128
     localpref: 100
 `))
 			By("Creating 1st BGPPeer resource")
@@ -273,6 +276,7 @@ var _ = Describe("Peer Controller", func() {
     - 65535:65282
     - 7003:007
     aggregation-length: 24
+    aggregation-length-v6: 128
     localpref: 100
 peers:
 - my-asn: 64500
@@ -303,6 +307,7 @@ peers:
     - 7003:007
     localpref: 100
     aggregation-length: 24
+    aggregation-length-v6: 128
 - name: test-addresspool2
   protocol: bgp
   addresses:
@@ -337,6 +342,7 @@ peers:
     - 7003:007
     localpref: 100
     aggregation-length: 24
+    aggregation-length-v6: 128
 - name: test-addresspool2
   protocol: bgp
   addresses:
@@ -376,6 +382,7 @@ peers:
     - 7003:007
     localpref: 100
     aggregation-length: 24
+    aggregation-length-v6: 128
 - name: test-addresspool2
   protocol: bgp
   addresses:
