@@ -81,6 +81,13 @@ func (addressPool *AddressPool) validateAddressPool(isNewAddressPool bool, exist
 		return errors.Wrapf(err, "Failed to parse addresses for %s", addressPool.Name)
 	}
 
+	// Check protocol is BGP when BGPAdvertisement is used.
+	if len(addressPool.Spec.BGPAdvertisements) != 0 {
+		if addressPool.Spec.Protocol != "bgp" {
+			return fmt.Errorf("bgpadvertisement config not valid for protocol %s", addressPool.Spec.Protocol)
+		}
+	}
+
 	for _, existingAddressPool := range existingAddressPoolList.Items {
 		if existingAddressPool.Name == addressPool.Name {
 			// Check that the pool isn't already defined.
