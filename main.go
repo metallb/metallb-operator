@@ -131,6 +131,10 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
 			os.Exit(1)
 		}
+		if err = (&metallbv1alpha1.BGPPeer{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "BGPPeer")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 
