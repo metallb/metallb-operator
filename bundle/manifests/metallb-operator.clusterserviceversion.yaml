@@ -480,7 +480,6 @@ spec:
   webhookdefinitions:
     - admissionReviewVersions:
         - v1
-        - vibeta1
       containerPort: 443
       deploymentName: metallb-operator-controller-manager
       failurePolicy: Fail
@@ -499,3 +498,23 @@ spec:
       targetPort: 9443
       type: ValidatingAdmissionWebhook
       webhookPath: /validate-metallb-io-v1alpha1-addresspool
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-controller-manager
+      failurePolicy: Fail
+      generateName: bgppeervalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1alpha1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - bgppeers
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1alpha1-bgppeer

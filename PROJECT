@@ -28,7 +28,7 @@ resources:
   webhooks:
     defaulting: true
     validation: true
-    webhookVersion: v1beta1
+    webhookVersion: v1
 - api:
     crdVersion: v1beta1
     namespaced: true
@@ -38,4 +38,8 @@ resources:
   kind: BGPPeer
   path: github.com/metallb/metallb-operator/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"

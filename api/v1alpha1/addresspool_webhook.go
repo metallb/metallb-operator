@@ -41,7 +41,8 @@ func (addressPool *AddressPool) SetupWebhookWithManager(mgr ctrl.Manager) error 
 		Complete()
 }
 
-//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1alpha1-addresspool,mutating=false,failurePolicy=fail,groups=metallb.io,resources=addresspools,versions=v1alpha1,name=addresspoolvalidationwebhook.metallb.io
+//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1alpha1-addresspool,mutating=false,failurePolicy=fail,groups=metallb.io,resources=addresspools,versions=v1alpha1,name=addresspoolvalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
+
 var _ webhook.Validator = &AddressPool{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for AddressPool.

@@ -12,7 +12,7 @@ REPO ?= quay.io/metallb
 # Image URL to use all building/pushing image targets
 IMG ?= $(REPO)/metallb-operator:$(VERSION)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true,crdVersions=v1"
+CRD_OPTIONS ?= "crd:crdVersions=v1"
 # Which dir to use in deploy kustomize build
 KUSTOMIZE_DEPLOY_DIR ?= config/default
 
@@ -158,7 +158,7 @@ ifeq (, $(shell which controller-gen))
 	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
 	cd $$CONTROLLER_GEN_TMP_DIR ;\
 	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0 ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0 ;\
 	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
 	}
 CONTROLLER_GEN=$(GOBIN)/controller-gen
