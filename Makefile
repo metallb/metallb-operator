@@ -96,6 +96,8 @@ ifeq ($(ENABLE_OPERATOR_WEBHOOK), true)
 	$(MAKE) deploy-cert-manager
 endif
 	cd config/manager && kustomize edit set image controller=${IMG}
+	cd $(KUSTOMIZE_DEPLOY_DIR) && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
+	cd config/metallb_rbac && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
