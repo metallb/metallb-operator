@@ -132,7 +132,6 @@ spec:
                   key: secretkey
           image: '{{.SpeakerImage}}'
           name: speaker
-          command: ["/speaker"]
           ports:
             - containerPort: 7472
               name: monitoring
@@ -149,6 +148,8 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
+          command:
+            - /speaker
       hostNetwork: true
       nodeSelector:
         kubernetes.io/os: linux
@@ -193,7 +194,6 @@ spec:
               value: controller
           image: '{{.ControllerImage}}'
           name: controller
-          command: ["/controller"]
           ports:
             - containerPort: 7472
               name: monitoring
@@ -203,6 +203,8 @@ spec:
               drop:
                 - all
             readOnlyRootFilesystem: true
+          command:
+            - /controller
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
