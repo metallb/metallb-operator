@@ -95,7 +95,7 @@ deploy: manifests kustomize configure-operator-webhook ## Deploy controller in t
 ifeq ($(ENABLE_OPERATOR_WEBHOOK), true)
 	$(MAKE) deploy-cert-manager
 endif
-	cd config/manager && kustomize edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd $(KUSTOMIZE_DEPLOY_DIR) && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
 	cd config/metallb_rbac && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
