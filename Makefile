@@ -42,9 +42,9 @@ endif
 
 OPERATOR_SDK_VERSION=v1.8.1
 OLM_VERSION=v0.18.3
+CERT_MANAGER_VERSION=v1.5.4
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
-CERT_MANAGER_URL=https://github.com/jetstack/cert-manager/releases
 
 TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
 VALIDATION_TESTS_REPORTS_PATH ?= /tmp/test_validation_logs/
@@ -87,8 +87,7 @@ configure-operator-webhook:
 
 deploy-cert-manager:
 	set -e ;\
-	cert_manager_latest_version=$$(curl -s $(CERT_MANAGER_URL)| grep "title\=\"v" | head -1 | awk -F' ' '{print $$5}' | awk -F'=' '{print $$2}' | xargs) ;\
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$$cert_manager_latest_version/cert-manager.yaml ;\
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml ;\
 	hack/wait_for_cert_manager.sh ;\
 
 deploy: export ENABLE_OPERATOR_WEBHOOK?=false
