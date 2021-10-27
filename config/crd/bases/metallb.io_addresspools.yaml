@@ -72,9 +72,6 @@ spec:
                       type: integer
                   type: object
                 type: array
-              name:
-                description: Address Pool Name
-                type: string
               protocol:
                 description: Protocol can be used to select how the announcement is
                   done,
