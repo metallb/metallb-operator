@@ -162,6 +162,34 @@ func TestValidateAddressPool(t *testing.T) {
 			isNewAddressPool: true,
 			expectedError:    "invalid IP range",
 		},
+		{
+			desc: "Invalid protocol used while using bgp advertisments",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool2",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "layer2",
+					Addresses: []string{
+						"2.2.2.2-2.2.2.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: 24,
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "bgpadvertisement config not valid",
+		},
 	}
 
 	for _, test := range tests {

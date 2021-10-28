@@ -757,15 +757,15 @@ var _ = Describe("metallb", func() {
 			err = testclient.Client.List(context.TODO(), validateCfgList, &goclient.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 
-			isValidationWebhookRunning := false
+			isAddresspoolValidationWebhookRunning := false
 			for _, validateCfg := range validateCfgList.Items {
 				for _, webhook := range validateCfg.Webhooks {
 					if webhook.Name == consts.AddressPoolValidationWebhookName {
-						isValidationWebhookRunning = true
+						isAddresspoolValidationWebhookRunning = true
 					}
 				}
 			}
-			Expect(isValidationWebhookRunning).To(BeTrue(), "AddressPool webhook is not running")
+			Expect(isAddresspoolValidationWebhookRunning).To(BeTrue(), "AddressPool webhook is not running")
 		})
 		It("Should recognize overlapping addresses in two AddressPools", func() {
 			By("Creating first AddressPool resource")
@@ -842,6 +842,80 @@ var _ = Describe("metallb", func() {
 				return errors.IsNotFound(err)
 			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete second AddressPool resource")
 
+		})
+	})
+
+	Context("Validate BGPPeer Webhook", func() {
+		BeforeEach(func() {
+			By("Checking if validation webhook is enabled")
+			deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			isValidationWebhookEnabled := false
+			for _, container := range deploy.Spec.Template.Spec.Containers {
+				if container.Name == "manager" {
+					for _, env := range container.Env {
+						if env.Name == "ENABLE_OPERATOR_WEBHOOK" {
+							if env.Value == "true" {
+								isValidationWebhookEnabled = true
+							}
+						}
+					}
+				}
+			}
+
+			if !isValidationWebhookEnabled {
+				Skip("BGPPeer webhook is disabled")
+			}
+
+			By("Checking if validation webhook is running")
+			// Can't just check the ValidatingWebhookConfiguration name as it's changing between different deployment methods.
+			// Need to check the webhook name in the webhooks definition of the ValidatingWebhookConfiguration.
+			validateCfgList := &admv1.ValidatingWebhookConfigurationList{}
+			err = testclient.Client.List(context.TODO(), validateCfgList, &goclient.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			isBGPPeerValidationWebhookRunning := false
+			for _, validateCfg := range validateCfgList.Items {
+				for _, webhook := range validateCfg.Webhooks {
+					if webhook.Name == consts.BGPPeerValidationWebhookName {
+						isBGPPeerValidationWebhookRunning = true
+					}
+				}
+			}
+			Expect(isBGPPeerValidationWebhookRunning).To(BeTrue(), "BGPPeer webhook is not running")
+		})
+		It("Should reject invalid BGPPeer IP address", func() {
+			By("Creating BGPPeer resource")
+			peer := &metallbv1alpha1.BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgp-peer1",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1alpha1.BGPPeerSpec{
+					Address: "1.1.1",
+					ASN:     64500,
+					MyASN:   1000,
+				},
+			}
+			err := testclient.Client.Create(context.Background(), peer)
+			if !strings.Contains(fmt.Sprint(err), "Invalid BGPPeer address") {
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			By("Updating BGPPeer resource to use valid peer address")
+			peer.Spec.Address = "1.1.1.1"
+			err = testclient.Client.Create(context.Background(), peer)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Deleting BGPPeer resource")
+			err = testclient.Client.Delete(context.Background(), peer)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: peer.Namespace, Name: peer.Name}, peer)
+				return errors.IsNotFound(err)
+			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete BGPPeer resource")
 		})
 	})
 })

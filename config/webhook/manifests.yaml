@@ -1,21 +1,20 @@
+
+---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   creationTimestamp: null
-  name: addresspoolvalidationwebhook.metallb.io
+  name: validating-webhook-configuration
 webhooks:
-- clientConfig:
-    caBundle: Cg==
+- admissionReviewVersions:
+  - v1
+  clientConfig:
     service:
       name: webhook-service
       namespace: system
       path: /validate-metallb-io-v1alpha1-addresspool
   failurePolicy: Fail
   name: addresspoolvalidationwebhook.metallb.io
-  sideEffects: None
-  admissionReviewVersions:
-  - v1
-  - vibeta1
   rules:
   - apiGroups:
     - metallb.io
@@ -26,3 +25,24 @@ webhooks:
     - UPDATE
     resources:
     - addresspools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-metallb-io-v1alpha1-bgppeer
+  failurePolicy: Fail
+  name: bgppeervalidationwebhook.metallb.io
+  rules:
+  - apiGroups:
+    - metallb.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - bgppeers
+  sideEffects: None

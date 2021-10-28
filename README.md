@@ -9,9 +9,9 @@ for deploying MetalLB on a kubernetes cluster, as described in the [related desi
 ## Prerequisites
 Need to install the following packages
 - operator-sdk 1.8.0+
-- controller-gen v0.3.0+
+- controller-gen v0.7.0+
 ```
-     go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0
+     go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
 ```
 
 ## AddressPool Validation Webhook

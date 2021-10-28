@@ -41,7 +41,8 @@ func (addressPool *AddressPool) SetupWebhookWithManager(mgr ctrl.Manager) error 
 		Complete()
 }
 
-//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1alpha1-addresspool,mutating=false,failurePolicy=fail,groups=metallb.io,resources=addresspools,versions=v1alpha1,name=addresspoolvalidationwebhook.metallb.io
+//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1alpha1-addresspool,mutating=false,failurePolicy=fail,groups=metallb.io,resources=addresspools,versions=v1alpha1,name=addresspoolvalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
+
 var _ webhook.Validator = &AddressPool{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for AddressPool.
@@ -79,6 +80,13 @@ func (addressPool *AddressPool) validateAddressPool(isNewAddressPool bool, exist
 	addressPoolCIDRS, err := getAddressPoolCIDRs(addressPool)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to parse addresses for %s", addressPool.Name)
+	}
+
+	// Check protocol is BGP when BGPAdvertisement is used.
+	if len(addressPool.Spec.BGPAdvertisements) != 0 {
+		if addressPool.Spec.Protocol != "bgp" {
+			return fmt.Errorf("bgpadvertisement config not valid for protocol %s", addressPool.Spec.Protocol)
+		}
 	}
 
 	for _, existingAddressPool := range existingAddressPoolList.Items {
