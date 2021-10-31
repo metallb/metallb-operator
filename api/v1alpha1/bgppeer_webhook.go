@@ -89,6 +89,9 @@ func (bgpPeer *BGPPeer) validateBGPPeer(existingBGPPeersList *BGPPeerList, bgpFr
 	if err := bgpPeer.validateBGPPeerConfig(existingBGPPeersList); err != nil {
 		allErrs = append(allErrs, err)
 	}
+	if err := bgpPeer.validateBGPPeersKeepaliveTime(existingBGPPeersList); err != nil {
+		allErrs = append(allErrs, err)
+	}
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -97,6 +100,27 @@ func (bgpPeer *BGPPeer) validateBGPPeer(existingBGPPeersList *BGPPeerList, bgpFr
 		schema.GroupKind{Group: "metallb.io", Kind: "BGPPeer"},
 		bgpPeer.Name, allErrs)
 	return err
+}
+
+func (bgpPeer *BGPPeer) validateBGPPeersKeepaliveTime(existingBGPPeersList *BGPPeerList) *field.Error {
+	holdTime := bgpPeer.Spec.HoldTime
+	keepaliveTime := bgpPeer.Spec.KeepaliveTime
+
+	// Keepalivetime is not set we can't do any validation, return without doing keepalive validation
+	if keepaliveTime == 0 {
+		return nil
+	}
+	// If we come here then user configured KeepaliveTime and we need to make sure holdTime is also configured
+	if holdTime == 0 {
+		return field.Invalid(field.NewPath("spec").Child("HoldTime"), holdTime,
+			fmt.Sprintf("Missing to configure HoldTime when changing KeepaliveTime to %s", keepaliveTime))
+	}
+	// keepalive must be lower than holdtime by RFC4271 Keepalive Timer algorithm
+	if keepaliveTime > holdTime {
+		return field.Invalid(field.NewPath("spec").Child("KeepaliveTime"), keepaliveTime,
+			fmt.Sprintf("Invalid keepalive time %s higher than holdtime %s", keepaliveTime, holdTime))
+	}
+	return nil
 }
 
 func (bgpPeer *BGPPeer) validateBGPPeersRouterID(existingBGPPeersList *BGPPeerList) *field.Error {

@@ -66,6 +66,10 @@ type BGPPeerSpec struct {
 	// +optional
 	HoldTime time.Duration `json:"holdTime,omitempty" yaml:"hold-time,omitempty"`
 
+	// Requested BGP keepalive time, per RFC4271.
+	// +optional
+	KeepaliveTime time.Duration `json:"keepaliveTime,omitempty" yaml:"keepalive-time,omitempty"`
+
 	// BGP router ID to advertise to the peer
 	// +optional
 	RouterID string `json:"routerID,omitempty" yaml:"router-id,omitempty"`

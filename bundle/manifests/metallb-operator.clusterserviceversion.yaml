@@ -104,6 +104,7 @@ metadata:
           },
           "spec": {
             "holdTime": 10,
+            "keepaliveTime": 3,
             "myASN": 64500,
             "nodeSelectors": [
               {
