@@ -39,6 +39,7 @@ type addressPool struct {
 	AvoidBuggyIPs     bool               `yaml:"avoid-buggy-ips,omitempty"`
 	AutoAssign        *bool              `yaml:"auto-assign,omitempty"`
 	BGPAdvertisements []bgpAdvertisement `yaml:"bgp-advertisements,omitempty"`
+	NodeSelectors     []nodeSelector     `yaml:"node-selectors,omitempty"`
 }
 
 type bgpAdvertisement struct {

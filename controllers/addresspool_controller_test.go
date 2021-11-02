@@ -34,6 +34,20 @@ var _ = Describe("AddressPool Controller", func() {
 						"1.1.1.1-1.1.1.100",
 					},
 					AutoAssign: &autoAssign,
+					NodeSelectors: []v1alpha1.NodeSelector{
+						{
+							MatchExpressions: []v1alpha1.MatchExpression{
+								{
+									Key:      "kubernetes.io/hostname",
+									Operator: "In",
+									Values: []string{
+										"hostA",
+										"hostB",
+									},
+								},
+							},
+						},
+					},
 				},
 			}
 			addressPool2 := &v1alpha1.AddressPool{
@@ -66,6 +80,13 @@ var _ = Describe("AddressPool Controller", func() {
   auto-assign: false
   addresses:
   - 1.1.1.1-1.1.1.100
+  node-selectors:
+  - match-expressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - hostA
+      - hostB
 `))
 			By("Creating 2nd AddressPool resource")
 			err = k8sClient.Create(context.Background(), addressPool2)
@@ -84,6 +105,13 @@ var _ = Describe("AddressPool Controller", func() {
   auto-assign: false
   addresses:
   - 1.1.1.1-1.1.1.100
+  node-selectors:
+  - match-expressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - hostA
+      - hostB
 - name: test-addresspool2
   protocol: layer2
   auto-assign: false

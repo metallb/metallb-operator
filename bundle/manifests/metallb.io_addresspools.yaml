@@ -70,6 +70,35 @@ spec:
                       type: integer
                   type: object
                 type: array
+              nodeSelectors:
+                description: Only allow this address-pool on nodes that match one
+                  of these selectors.
+                items:
+                  properties:
+                    matchExpressions:
+                      items:
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                          values:
+                            items:
+                              type: string
+                            minItems: 1
+                            type: array
+                        required:
+                        - key
+                        - operator
+                        - values
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                type: array
               protocol:
                 description: Protocol can be used to select how the announcement is
                   done,

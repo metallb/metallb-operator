@@ -58,6 +58,26 @@ func TestRendering(t *testing.T) {
 							"2.2.3.2-2.2.3.100",
 						},
 						AutoAssign: pointer.BoolPtr(true),
+						NodeSelectors: []metallbv1alpha1.NodeSelector{
+							{
+								MatchLabels: map[string]string{
+									"foo": "bar",
+								},
+								MatchExpressions: []metallbv1alpha1.MatchExpression{
+
+									{
+
+										Key:      "k1",
+										Operator: "op1",
+										Values:   []string{"val1", "val2", "val3"},
+									},
+								},
+							}, {
+								MatchLabels: map[string]string{
+									"foo1": "bar1",
+								},
+							},
+						},
 					},
 				},
 			},

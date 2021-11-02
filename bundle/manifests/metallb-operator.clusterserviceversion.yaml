@@ -78,6 +78,34 @@ metadata:
         },
         {
           "apiVersion": "metallb.io/v1alpha1",
+          "kind": "AddressPool",
+          "metadata": {
+            "name": "addresspool-sample5",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "addresses": [
+              "172.18.0.100-172.18.0.255"
+            ],
+            "nodeSelectors": [
+              {
+                "matchExpressions": [
+                  {
+                    "key": "kubernetes.io/hostname",
+                    "operator": "In",
+                    "values": [
+                      "hostA",
+                      "hostB"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "protocol": "layer2"
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1alpha1",
           "kind": "BGPPeer",
           "metadata": {
             "name": "peer-sample1",

@@ -14,3 +14,15 @@ address-pools:
   addresses:
   - 2.2.2.2-2.2.2.100
   - 2.2.3.2-2.2.3.100
+  node-selectors:
+  - match-labels:
+      foo: bar
+    match-expressions:
+    - key: k1
+      operator: op1
+      values:
+      - val1
+      - val2
+      - val3
+  - match-labels:
+      foo1: bar1

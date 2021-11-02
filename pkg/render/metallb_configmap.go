@@ -73,7 +73,6 @@ func poolToMetalLB(p metallbv1alpha1.AddressPool) addressPool {
 	for i, a := range p.Spec.Addresses {
 		res.Addresses[i] = a
 	}
-	// TODO: avoid buggyip is missing
 	if p.Spec.AutoAssign != nil && !*p.Spec.AutoAssign {
 		res.AutoAssign = p.Spec.AutoAssign
 	}
@@ -88,6 +87,23 @@ func poolToMetalLB(p metallbv1alpha1.AddressPool) addressPool {
 		res.BGPAdvertisements[i].Communities = make([]string, len(b.Communities))
 		for j, c := range b.Communities {
 			res.BGPAdvertisements[i].Communities[j] = c
+		}
+	}
+	res.NodeSelectors = make([]nodeSelector, len(p.Spec.NodeSelectors))
+	for i, s := range p.Spec.NodeSelectors {
+		res.NodeSelectors[i].MatchLabels = make(map[string]string)
+		for k, v := range s.MatchLabels {
+			res.NodeSelectors[i].MatchLabels[k] = v
+		}
+
+		res.NodeSelectors[i].MatchExpressions = make([]selectorRequirements, len(s.MatchExpressions))
+		for i, m := range s.MatchExpressions {
+			res.NodeSelectors[i].MatchExpressions[i].Key = m.Key
+			res.NodeSelectors[i].MatchExpressions[i].Operator = m.Operator
+			res.NodeSelectors[i].MatchExpressions[i].Values = make([]string, len(m.Values))
+			for j, v := range m.Values {
+				res.NodeSelectors[i].MatchExpressions[i].Values[j] = v
+			}
 		}
 	}
 

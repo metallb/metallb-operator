@@ -55,6 +55,11 @@ type AddressPoolSpec struct {
 	// translated into BGP announcements?
 	// +optional
 	BGPAdvertisements []BgpAdvertisement `json:"bgpAdvertisements,omitempty" yaml:"bgp-advertisements,omitempty"`
+
+	// Only allow this address-pool on nodes that match one of these
+	// selectors.
+	// +optional
+	NodeSelectors []NodeSelector `json:"nodeSelectors,omitempty" yaml:"node-selectors,omitempty"`
 }
 
 // AddressPoolStatus defines the observed state of AddressPool

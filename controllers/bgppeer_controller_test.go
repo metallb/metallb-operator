@@ -186,6 +186,20 @@ var _ = Describe("Peer Controller", func() {
 							},
 						},
 					},
+					NodeSelectors: []v1alpha1.NodeSelector{
+						{
+							MatchExpressions: []v1alpha1.MatchExpression{
+								{
+									Key:      "kubernetes.io/hostname",
+									Operator: "In",
+									Values: []string{
+										"hostA",
+										"hostB",
+									},
+								},
+							},
+						},
+					},
 				},
 			}
 			addressPool2 := &v1alpha1.AddressPool{
@@ -249,6 +263,13 @@ var _ = Describe("Peer Controller", func() {
     - 7003:007
     aggregation-length: 24
     localpref: 100
+  node-selectors:
+  - match-expressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - hostA
+      - hostB
 `))
 			By("Creating 1st BGPPeer resource")
 			err = k8sClient.Create(context.Background(), Peer1)
@@ -274,6 +295,13 @@ var _ = Describe("Peer Controller", func() {
     - 7003:007
     aggregation-length: 24
     localpref: 100
+  node-selectors:
+  - match-expressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - hostA
+      - hostB
 peers:
 - my-asn: 64500
   peer-address: 10.0.0.1
@@ -303,6 +331,13 @@ peers:
     - 7003:007
     localpref: 100
     aggregation-length: 24
+  node-selectors:
+  - match-expressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - hostA
+      - hostB
 - name: test-addresspool2
   protocol: bgp
   addresses:
@@ -337,6 +372,13 @@ peers:
     - 7003:007
     localpref: 100
     aggregation-length: 24
+  node-selectors:
+  - match-expressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - hostA
+      - hostB
 - name: test-addresspool2
   protocol: bgp
   addresses:
@@ -376,6 +418,13 @@ peers:
     - 7003:007
     localpref: 100
     aggregation-length: 24
+  node-selectors:
+  - match-expressions:
+    - key: kubernetes.io/hostname
+      operator: In
+      values:
+      - hostA
+      - hostB
 - name: test-addresspool2
   protocol: bgp
   addresses:
