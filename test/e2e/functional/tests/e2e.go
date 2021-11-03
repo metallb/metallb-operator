@@ -83,7 +83,7 @@ var _ = Describe("metallb", func() {
 					if err != nil {
 						return false
 					}
-					return deploy.Status.ReadyReplicas == deploy.Status.Replicas
+					return deploy.Status.ReadyReplicas > 0 && deploy.Status.ReadyReplicas == deploy.Status.Replicas
 				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
