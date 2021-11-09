@@ -2,6 +2,6 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: addresspoolvalidationwebhook.metallb.io
+  name: validating-webhook-configuration
   annotations:
     service.beta.openshift.io/inject-cabundle: "true"
