@@ -30,6 +30,8 @@ type MetalLBSpec struct {
 
 	// Foo is an example field of MetalLB. Edit MetalLB_types.go to remove/update
 	MetalLBImage string `json:"image,omitempty"`
+	// +optional
+	SpeakerNodeSelector map[string]string `json:"nodeSelector,omitempty"`
 }
 
 // MetalLBStatus defines the observed state of MetalLB

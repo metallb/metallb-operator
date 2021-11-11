@@ -114,6 +114,11 @@ metadata:
           "metadata": {
             "name": "metallb",
             "namespace": "metallb-system"
+          },
+          "spec": {
+            "nodeSelector": {
+              "feature.node.kubernetes.io/metalLB.capable": "true"
+            }
           }
         }
       ]

@@ -40,6 +40,10 @@ spec:
                 description: Foo is an example field of MetalLB. Edit MetalLB_types.go
                   to remove/update
                 type: string
+              nodeSelector:
+                additionalProperties:
+                  type: string
+                type: object
             type: object
           status:
             description: MetalLBStatus defines the observed state of MetalLB
