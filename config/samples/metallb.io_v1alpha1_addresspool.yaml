@@ -47,3 +47,4 @@ spec:
   - communities:
     - 8000:800
     aggregationLength: 24
+    aggregationLengthV6: 120

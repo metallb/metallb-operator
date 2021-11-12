@@ -23,7 +23,15 @@ import (
 type BgpAdvertisement struct {
 	// The aggregation-length advertisement option lets you “roll up” the /32s into a larger prefix.
 	// +kubebuilder:validation:Minimum=1
-	AggregationLength int `json:"aggregationLength,omitempty" yaml:"aggregation-length,omitempty"`
+	// +kubebuilder:default:=32
+	// +optional
+	AggregationLength *int32 `json:"aggregationLength,omitempty" yaml:"aggregation-length,omitempty"`
+
+	// Optional, defaults to 128 (i.e. no aggregation) if not
+	// specified.
+	// +kubebuilder:default:=128
+	// +optional
+	AggregationLengthV6 *int32 `json:"aggregationLengthV6,omitempty" yaml:"aggregation-length-v6,omitempty"`
 
 	// BGP LOCAL_PREF attribute which is used by BGP best path algorithm,
 	// Path with higher localpref is preferred over one with lower localpref.

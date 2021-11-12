@@ -5,12 +5,14 @@ address-pools:
   - 1.1.1.1-1.1.1.100
   auto-assign: false
   bgp-advertisements:
-  - aggregation-length: 58
+  - aggregation-length: 57
+    aggregation-length-v6: 64
     localpref: 43
     communities:
     - foo
     - bar
   - aggregation-length: 58
+    aggregation-length-v6: 120
     localpref: 43
     communities:
     - foo1

@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"os"
 	"strings"
 	"time"
@@ -26,7 +27,6 @@ import (
 )
 
 var autoAssign = false
-
 var UseMetallbResourcesFromFile = false
 
 var OperatorNameSpace = consts.DefaultOperatorNameSpace
@@ -239,8 +239,9 @@ var _ = Describe("metallb", func() {
 					AutoAssign: &autoAssign,
 					BGPAdvertisements: []metallbv1alpha1.BgpAdvertisement{
 						{
-							AggregationLength: 24,
-							LocalPref:         100,
+							AggregationLength:   pointer.Int32Ptr(24),
+							AggregationLengthV6: pointer.Int32Ptr(124),
+							LocalPref:           100,
 							Communities: []string{
 								"65535:65282",
 								"7003:007",
@@ -259,6 +260,42 @@ var _ = Describe("metallb", func() {
     - 65535:65282
     - 7003:007
     aggregation-length: 24
+    aggregation-length-v6: 124
+    localpref: 100
+`),
+			table.Entry("Test AddressPool object with bgp-advertisements", "addresspool4", &metallbv1alpha1.AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "addresspool4",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1alpha1.AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"4.4.4.1-4.4.4.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []metallbv1alpha1.BgpAdvertisement{
+						{
+							LocalPref: 100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			}, `address-pools:
+- name: addresspool4
+  protocol: bgp
+  auto-assign: false
+  addresses:
+  - 4.4.4.1-4.4.4.100
+  bgp-advertisements: 
+  - communities: 
+    - 65535:65282
+    - 7003:007
+    aggregation-length: 32
+    aggregation-length-v6: 128
     localpref: 100
 `),
 		)

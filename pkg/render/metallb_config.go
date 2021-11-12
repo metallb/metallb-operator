@@ -42,7 +42,8 @@ type addressPool struct {
 }
 
 type bgpAdvertisement struct {
-	AggregationLength *int `yaml:"aggregation-length"`
-	LocalPref         *uint32
-	Communities       []string
+	AggregationLength   *int32 `yaml:"aggregation-length"`
+	AggregationLengthV6 *int32 `yaml:"aggregation-length-v6"`
+	LocalPref           *uint32
+	Communities         []string
 }

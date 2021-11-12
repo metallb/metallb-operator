@@ -55,9 +55,17 @@ spec:
                 items:
                   properties:
                     aggregationLength:
+                      default: 32
                       description: The aggregation-length advertisement option lets
                         you “roll up” the /32s into a larger prefix.
+                      format: int32
                       minimum: 1
+                      type: integer
+                    aggregationLengthV6:
+                      default: 128
+                      description: Optional, defaults to 128 (i.e. no aggregation)
+                        if not specified.
+                      format: int32
                       type: integer
                     communities:
                       description: BGP communities

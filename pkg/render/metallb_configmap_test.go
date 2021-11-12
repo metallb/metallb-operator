@@ -80,15 +80,17 @@ func TestRendering(t *testing.T) {
 						AutoAssign: pointer.BoolPtr(false),
 						BGPAdvertisements: []metallbv1alpha1.BgpAdvertisement{
 							{
-								AggregationLength: 57,
-								LocalPref:         42,
+								AggregationLength:   pointer.Int32Ptr(57),
+								AggregationLengthV6: pointer.Int32Ptr(64),
+								LocalPref:           42,
 								Communities: []string{
 									"foo",
 									"bar",
 								},
 							}, {
-								AggregationLength: 58,
-								LocalPref:         43,
+								AggregationLength:   pointer.Int32Ptr(58),
+								AggregationLengthV6: pointer.Int32Ptr(120),
+								LocalPref:           43,
 								Communities: []string{
 									"foo1",
 									"bar1",
