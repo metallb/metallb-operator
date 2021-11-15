@@ -86,7 +86,7 @@ uninstall: manifests kustomize  ## Uninstall CRDs from a cluster
 configure-operator-webhook:
 	ENABLE_OPERATOR_WEBHOOK=$(ENABLE_OPERATOR_WEBHOOK) hack/configure_operator_webhook.sh
 
-deploy-cert-manager:
+deploy-cert-manager: ## Deploys cert-manager. Fetching from https://github.com/jetstack/cert-manager
 	set -e ;\
 	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml ;\
 	hack/wait_for_cert_manager.sh ;\
