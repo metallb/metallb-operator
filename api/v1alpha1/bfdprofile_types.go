@@ -22,14 +22,25 @@ import (
 
 // BFDProfileSpec defines the desired state of BFDProfile
 type BFDProfileSpec struct {
-	ReceiveInterval      *uint32 `json:"receiveInterval,omitempty"`
-	TransmitInterval     *uint32 `json:"transmitInterval,omitempty"`
-	DetectMultiplier     *uint32 `json:"detectMultiplier,omitempty"`
-	EchoReceiveInterval  *string `json:"echoReceiveInterval,omitempty"`
+	// +kubebuilder:validation:Maximum:=60000
+	// +kubebuilder:validation:Minimum:=10
+	ReceiveInterval *uint32 `json:"receiveInterval,omitempty"`
+	// +kubebuilder:validation:Maximum:=60000
+	// +kubebuilder:validation:Minimum:=10
+	TransmitInterval *uint32 `json:"transmitInterval,omitempty"`
+	// +kubebuilder:validation:Maximum:=255
+	// +kubebuilder:validation:Minimum:=2
+	DetectMultiplier *uint32 `json:"detectMultiplier,omitempty"`
+	//+kubebuilder:validation:Pattern:=`(disabled|(1\d|[2-9]\d|[1-9]\d{2,3}|[1-5]\d{4}|60000))`
+	EchoReceiveInterval *string `json:"echoReceiveInterval,omitempty"`
+	// +kubebuilder:validation:Maximum:=60000
+	// +kubebuilder:validation:Minimum:=10
 	EchoTransmitInterval *uint32 `json:"echoTransmitInterval,omitempty"`
 	EchoMode             *bool   `json:"echoMode,omitempty"`
 	PassiveMode          *bool   `json:"passiveMode,omitempty"`
-	MinimumTTL           *uint32 `json:"minimumTtl,omitempty"`
+	// +kubebuilder:validation:Maximum:=254
+	// +kubebuilder:validation:Minimum:=1
+	MinimumTTL *uint32 `json:"minimumTtl,omitempty"`
 }
 
 // BFDProfileStatus defines the observed state of BFDProfile
