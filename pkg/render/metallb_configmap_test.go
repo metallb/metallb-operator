@@ -190,13 +190,13 @@ func TestRendering(t *testing.T) {
 		"peersBfd": {
 			ConfigMapName: "config",
 			NameSpace:     "namespace",
-			Pools: []metallbv1alpha1.AddressPool{
+			Pools: []metallbv1beta1.AddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-addresspool1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "bgp",
 						Addresses: []string{
 							"1.1.1.1-1.1.1.100",

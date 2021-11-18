@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbiov1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
 	"github.com/metallb/metallb-operator/pkg/platform"
@@ -54,6 +55,7 @@ func init() {
 	utilruntime.Must(policyv1beta1.AddToScheme(scheme))
 	utilruntime.Must(rbacv1.AddToScheme(scheme))
 
+	utilruntime.Must(metallbiov1beta1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
