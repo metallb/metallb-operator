@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"context"
@@ -30,18 +30,19 @@ import (
 )
 
 // log is for logging addresspool-webhook.
-var addresspoollog = logf.Log.WithName("addresspool-webhook")
-var c client.Client
+var (
+	addresspoollog    = logf.Log.WithName("addresspool-webhook")
+	addressPoolClient client.Client
+)
 
 func (addressPool *AddressPool) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	c = mgr.GetClient()
-
+	addressPoolClient = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(addressPool).
 		Complete()
 }
 
-//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1alpha1-addresspool,mutating=false,failurePolicy=fail,groups=metallb.io,resources=addresspools,versions=v1alpha1,name=addresspoolvalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
+//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1beta1-addresspool,mutating=false,failurePolicy=fail,groups=metallb.io,resources=addresspools,versions=v1beta1,name=addresspoolvalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
 
 var _ webhook.Validator = &AddressPool{}
 
@@ -119,7 +120,7 @@ func (addressPool *AddressPool) validateAddressPool(isNewAddressPool bool, exist
 
 func getExistingAddressPools() (*AddressPoolList, error) {
 	existingAddressPoolList := &AddressPoolList{}
-	err := c.List(context.Background(), existingAddressPoolList)
+	err := addressPoolClient.List(context.Background(), existingAddressPoolList)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get existing addresspool objects")
 	}

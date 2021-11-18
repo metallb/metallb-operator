@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
-	metallbiov1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
 	"github.com/metallb/metallb-operator/pkg/platform"
@@ -55,7 +54,6 @@ func init() {
 	utilruntime.Must(policyv1beta1.AddToScheme(scheme))
 	utilruntime.Must(rbacv1.AddToScheme(scheme))
 
-	utilruntime.Must(metallbiov1beta1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -129,16 +127,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if os.Getenv("ENABLE_OPERATOR_WEBHOOK") == "true" {
-		if err = (&metallbv1alpha1.AddressPool{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
-			os.Exit(1)
-		}
-		if err = (&metallbv1alpha1.BGPPeer{}).SetupWebhookWithManager(mgr, bgpType); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "BGPPeer")
-			os.Exit(1)
-		}
-	}
 	if err = (&controllers.BFDProfileReconciler{
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName("BFDProfile"),
@@ -147,6 +135,17 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "BFDProfile")
 		os.Exit(1)
+	}
+
+	if os.Getenv("ENABLE_OPERATOR_WEBHOOK") == "true" {
+		if err = (&metallbv1beta1.AddressPool{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
+			os.Exit(1)
+		}
+		if err = (&metallbv1alpha1.BGPPeer{}).SetupWebhookWithManager(mgr, bgpType); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "BGPPeer")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 

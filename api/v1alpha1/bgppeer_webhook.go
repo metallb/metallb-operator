@@ -19,19 +19,22 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"net"
+
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"net"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // log is for logging bgppeer-webhook
 var bgppeerlog = logf.Log.WithName("bgppeer-webhook")
+var bgpClient client.Client
 
 var BGPFrrMode = false
 
@@ -39,6 +42,7 @@ func (bgpPeer *BGPPeer) SetupWebhookWithManager(mgr ctrl.Manager, bgpType string
 	if bgpType == "frr" {
 		BGPFrrMode = true
 	}
+	bgpClient = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(bgpPeer).
 		Complete()
@@ -177,7 +181,7 @@ func (bgpPeer *BGPPeer) validateBGPPeerConfig(existingBGPPeersList *BGPPeerList)
 
 func getExistingBGPPeers() (*BGPPeerList, error) {
 	existingBGPPeerslList := &BGPPeerList{}
-	err := c.List(context.Background(), existingBGPPeerslList)
+	err := bgpClient.List(context.Background(), existingBGPPeerslList)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get existing BGPPeer objects")
 	}
