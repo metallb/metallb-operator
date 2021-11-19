@@ -4,6 +4,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -21,7 +22,7 @@ type OperatorConfig struct {
 	DataField     string
 	Pools         []metallbv1alpha1.AddressPool
 	Peers         []metallbv1alpha1.BGPPeer
-	BFDProfiles   []metallbv1alpha1.BFDProfile
+	BFDProfiles   []metallbv1beta1.BFDProfile
 }
 
 // Proto holds the protocol we are speaking.
@@ -135,7 +136,7 @@ func peerToMetalLB(p metallbv1alpha1.BGPPeer) peer {
 	return res
 }
 
-func bfdProfileToMetalLB(b metallbv1alpha1.BFDProfile) bfdProfile {
+func bfdProfileToMetalLB(b metallbv1beta1.BFDProfile) bfdProfile {
 	res := bfdProfile{}
 	res.Name = b.Name
 	res.ReceiveInterval = b.Spec.ReceiveInterval

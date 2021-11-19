@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/render"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -60,7 +61,7 @@ func operatorConfig(ctx context.Context, c client.Client) (*render.OperatorConfi
 		return nil, errors.Wrap(err, "failed to fetch bgp peers")
 	}
 
-	bfdProfiles := &metallbv1alpha1.BFDProfileList{}
+	bfdProfiles := &metallbv1beta1.BFDProfileList{}
 	err = c.List(ctx, bfdProfiles, &client.ListOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, errors.Wrap(err, "failed to fetch bfd profiles")
