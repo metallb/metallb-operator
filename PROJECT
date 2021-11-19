@@ -49,6 +49,6 @@ resources:
   domain: metallb.io
   group: metallb.io
   kind: BFDProfile
-  path: github.com/metallb/metallb-operator/api/v1alpha1
-  version: v1alpha1
+  path: github.com/metallb/metallb-operator/api/v1beta1
+  version: v1beta1
 version: "3"

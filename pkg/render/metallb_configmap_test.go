@@ -9,6 +9,7 @@ import (
 	"time"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -241,13 +242,13 @@ func TestRendering(t *testing.T) {
 					},
 				},
 			},
-			BFDProfiles: []metallbv1alpha1.BFDProfile{
+			BFDProfiles: []metallbv1beta1.BFDProfile{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-profile1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.BFDProfileSpec{
+					Spec: metallbv1beta1.BFDProfileSpec{
 						ReceiveInterval:  uint32Ptr(12),
 						TransmitInterval: uint32Ptr(13),
 						DetectMultiplier: uint32Ptr(14),
@@ -262,7 +263,7 @@ func TestRendering(t *testing.T) {
 						Name:      "test-profile2",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.BFDProfileSpec{},
+					Spec: metallbv1beta1.BFDProfileSpec{},
 				},
 			},
 		},

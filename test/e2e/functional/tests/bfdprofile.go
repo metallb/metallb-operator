@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 	metallbutils "github.com/metallb/metallb-operator/test/e2e/metallb"
@@ -55,12 +56,12 @@ var _ = Describe("metallb", func() {
 		},
 
 			table.Entry("Test two bfd profiles", []client.Object{
-				&metallbv1alpha1.BFDProfile{
+				&metallbv1beta1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-profile1",
 						Namespace: OperatorNameSpace,
 					},
-					Spec: metallbv1alpha1.BFDProfileSpec{
+					Spec: metallbv1beta1.BFDProfileSpec{
 						ReceiveInterval:  uint32Ptr(12),
 						TransmitInterval: uint32Ptr(13),
 						DetectMultiplier: uint32Ptr(14),
@@ -70,12 +71,12 @@ var _ = Describe("metallb", func() {
 						MinimumTTL:       uint32Ptr(16),
 					},
 				},
-				&metallbv1alpha1.BFDProfile{
+				&metallbv1beta1.BFDProfile{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-profile2",
 						Namespace: OperatorNameSpace,
 					},
-					Spec: metallbv1alpha1.BFDProfileSpec{},
+					Spec: metallbv1beta1.BFDProfileSpec{},
 				},
 				&metallbv1alpha1.AddressPool{
 					ObjectMeta: metav1.ObjectMeta{

@@ -16,7 +16,7 @@ spec:
     singular: bfdprofile
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - name: v1beta1
     schema:
       openAPIV3Schema:
         description: BFDProfile is the Schema for the bfdprofiles API

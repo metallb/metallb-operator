@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/metallb/metallb-operator/api/v1alpha1"
+	"github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,12 +23,12 @@ var _ = Describe("BFD Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("Should create BFD Objects", func() {
-			profile1 := &v1alpha1.BFDProfile{
+			profile1 := &v1beta1.BFDProfile{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bfdprofile1",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.BFDProfileSpec{
+				Spec: v1beta1.BFDProfileSpec{
 					ReceiveInterval:  uint32Ptr(1),
 					TransmitInterval: uint32Ptr(2),
 					DetectMultiplier: uint32Ptr(3),
@@ -38,12 +39,12 @@ var _ = Describe("BFD Controller", func() {
 				},
 			}
 
-			profile2 := &v1alpha1.BFDProfile{
+			profile2 := &v1beta1.BFDProfile{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bfdprofile2",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.BFDProfileSpec{
+				Spec: v1beta1.BFDProfileSpec{
 					ReceiveInterval:  uint32Ptr(1),
 					TransmitInterval: uint32Ptr(2),
 					DetectMultiplier: uint32Ptr(3),
@@ -175,12 +176,12 @@ var _ = Describe("BFD Controller", func() {
 					RouterID: "11.11.11.11",
 				},
 			}
-			profile1 := &v1alpha1.BFDProfile{
+			profile1 := &v1beta1.BFDProfile{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bfdprofile1",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.BFDProfileSpec{
+				Spec: v1beta1.BFDProfileSpec{
 					ReceiveInterval:  uint32Ptr(1),
 					TransmitInterval: uint32Ptr(2),
 					DetectMultiplier: uint32Ptr(3),
@@ -191,12 +192,12 @@ var _ = Describe("BFD Controller", func() {
 				},
 			}
 
-			profile2 := &v1alpha1.BFDProfile{
+			profile2 := &v1beta1.BFDProfile{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bfdprofile2",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.BFDProfileSpec{
+				Spec: v1beta1.BFDProfileSpec{
 					ReceiveInterval:  uint32Ptr(1),
 					TransmitInterval: uint32Ptr(2),
 					DetectMultiplier: uint32Ptr(3),

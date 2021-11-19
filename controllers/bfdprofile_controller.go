@@ -26,7 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metallbiov1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbiov1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/render"
 )
 
@@ -60,6 +60,6 @@ func (r *BFDProfileReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *BFDProfileReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&metallbiov1alpha1.BFDProfile{}).
+		For(&metallbiov1beta1.BFDProfile{}).
 		Complete(r)
 }
