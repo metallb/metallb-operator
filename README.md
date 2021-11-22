@@ -27,9 +27,12 @@ make deploy
 ```
 
 To install the MetalLB Operator using a prebuilt image and enable the AddressPool Validation Webhook, run: 
-
 ```shell
-ENABLE_OPERATOR_WEBHOOK=true make deploy
+make deploy-cert-manager
+```
+and then:
+```shell
+ENABLE_OPERATOR_WEBHOOK=true KUSTOMIZE_DEPLOY_DIR="config/webhook-with-certmanager/" make deploy
 ```
 
 ## Usage
