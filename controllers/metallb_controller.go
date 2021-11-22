@@ -45,6 +45,11 @@ const (
 	MetalLBSpeakerDaemonSet       = "speaker"
 )
 
+const (
+	bgpNative string = "native"
+	bgpFrr    string = "frr"
+)
+
 // MetalLBReconciler reconciles a MetalLB object
 type MetalLBReconciler struct {
 	client.Client
@@ -121,7 +126,15 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) error {
+	if bgpType == "" {
+		bgpType = bgpNative
+	}
+	if bgpType != bgpNative && bgpType != bgpFrr {
+		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
+	}
+	ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&metallbv1beta1.MetalLB{}).
 		Complete(r)
@@ -134,6 +147,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 
 	data.Data["SpeakerImage"] = os.Getenv("SPEAKER_IMAGE")
 	data.Data["ControllerImage"] = os.Getenv("CONTROLLER_IMAGE")
+	data.Data["FRRImage"] = os.Getenv("FRR_IMAGE")
 	data.Data["IsOpenShift"] = r.PlatformInfo.IsOpenShift()
 	data.Data["NameSpace"] = r.Namespace
 	objs, err := render.RenderDir(ManifestPath, &data)
