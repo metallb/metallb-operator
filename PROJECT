@@ -42,4 +42,13 @@ resources:
     defaulting: true
     validation: true
     webhookVersion: v1
+- api:
+    crdVersion: v1beta1
+    namespaced: true
+  controller: true
+  domain: metallb.io
+  group: metallb.io
+  kind: BFDProfile
+  path: github.com/metallb/metallb-operator/api/v1beta1
+  version: v1beta1
 version: "3"

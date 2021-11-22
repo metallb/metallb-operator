@@ -3,4 +3,5 @@ resources:
 - metallb.io_v1alpha1_addresspool.yaml
 - metallb.yaml
 - metallb.io_v1alpha1_bgppeer.yaml
+- metallb.io_v1alpha1_bfdprofile.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

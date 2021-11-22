@@ -1,0 +1,29 @@
+apiVersion: metallb.io/v1alpha1
+kind: BFDProfile
+metadata:
+  name: bfdprofilefull
+  namespace: metallb-system
+spec:
+  receiveInterval: 35
+  transmitInterval: 35
+  detectMultiplier: 37
+  echoReceiveInterval: 38
+  echoTransmitInterval: 39
+  echoMode: true
+  passiveMode: true
+  minimumTtl: 10
+---
+apiVersion: metallb.io/v1alpha1
+kind: BFDProfile
+metadata:
+  name: bfdprofiledefault
+  namespace: metallb-system
+spec:
+  receiveInterval: 35
+  transmitInterval: 35
+  detectMultiplier: 37
+  echoReceiveInterval: 38
+  echoTransmitInterval: 39
+  echoMode: true
+  passiveMode: true
+  minimumTtl: 10

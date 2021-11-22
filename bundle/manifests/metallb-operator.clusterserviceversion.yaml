@@ -81,6 +81,24 @@ metadata:
           "apiVersion": "metallb.io/v1alpha1",
           "kind": "BGPPeer",
           "metadata": {
+            "name": "peer-bfd",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "bfdProfile": "bfdprofilefull",
+            "holdTime": 10,
+            "myASN": 64500,
+            "peerASN": 64501,
+            "peerAddress": "10.0.0.2",
+            "peerPort": 1,
+            "routerID": "10.10.10.10",
+            "sourceAddress": "1.1.1.1"
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1alpha1",
+          "kind": "BGPPeer",
+          "metadata": {
             "name": "peer-sample1",
             "namespace": "metallb-system"
           },
@@ -144,6 +162,9 @@ spec:
         kind: AddressPool
         name: addresspools.metallb.io
         version: v1alpha1
+      - kind: BFDProfile
+        name: bfdprofiles.metallb.io
+        version: v1beta1
       - kind: BGPPeer
         name: bgppeers.metallb.io
         version: v1alpha1
@@ -208,6 +229,26 @@ spec:
                 - metallb.io
               resources:
                 - addresspools/status
+              verbs:
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bfdprofiles
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bfdprofiles/status
               verbs:
                 - get
                 - patch
