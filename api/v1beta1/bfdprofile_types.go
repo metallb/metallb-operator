@@ -22,13 +22,23 @@ import (
 
 // BFDProfileSpec defines the desired state of BFDProfile
 type BFDProfileSpec struct {
-	ReceiveInterval  *uint32 `json:"receiveInterval,omitempty"`
+	// +kubebuilder:validation:Maximum:=60000
+	// +kubebuilder:validation:Minimum:=10
+	ReceiveInterval *uint32 `json:"receiveInterval,omitempty"`
+	// +kubebuilder:validation:Maximum:=60000
+	// +kubebuilder:validation:Minimum:=10
 	TransmitInterval *uint32 `json:"transmitInterval,omitempty"`
+	// +kubebuilder:validation:Maximum:=255
+	// +kubebuilder:validation:Minimum:=2
 	DetectMultiplier *uint32 `json:"detectMultiplier,omitempty"`
-	EchoInterval     *uint32 `json:"echoInterval,omitempty"`
-	EchoMode         *bool   `json:"echoMode,omitempty"`
-	PassiveMode      *bool   `json:"passiveMode,omitempty"`
-	MinimumTTL       *uint32 `json:"minimumTtl,omitempty"`
+	// +kubebuilder:validation:Maximum:=60000
+	// +kubebuilder:validation:Minimum:=10
+	EchoInterval *uint32 `json:"echoInterval,omitempty"`
+	EchoMode     *bool   `json:"echoMode,omitempty"`
+	PassiveMode  *bool   `json:"passiveMode,omitempty"`
+	// +kubebuilder:validation:Maximum:=254
+	// +kubebuilder:validation:Minimum:=1
+	MinimumTTL *uint32 `json:"minimumTtl,omitempty"`
 }
 
 // BFDProfileStatus defines the observed state of BFDProfile

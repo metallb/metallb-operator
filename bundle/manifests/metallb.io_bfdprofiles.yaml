@@ -36,22 +36,32 @@ spec:
             properties:
               detectMultiplier:
                 format: int32
+                maximum: 255
+                minimum: 2
                 type: integer
               echoInterval:
                 format: int32
+                maximum: 60000
+                minimum: 10
                 type: integer
               echoMode:
                 type: boolean
               minimumTtl:
                 format: int32
+                maximum: 254
+                minimum: 1
                 type: integer
               passiveMode:
                 type: boolean
               receiveInterval:
                 format: int32
+                maximum: 60000
+                minimum: 10
                 type: integer
               transmitInterval:
                 format: int32
+                maximum: 60000
+                minimum: 10
                 type: integer
             type: object
           status:
