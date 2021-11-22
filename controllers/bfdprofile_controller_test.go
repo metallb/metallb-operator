@@ -29,13 +29,13 @@ var _ = Describe("BFD Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: v1beta1.BFDProfileSpec{
-					ReceiveInterval:  uint32Ptr(1),
-					TransmitInterval: uint32Ptr(2),
-					DetectMultiplier: uint32Ptr(3),
-					EchoInterval:     uint32Ptr(4),
+					ReceiveInterval:  uint32Ptr(10),
+					TransmitInterval: uint32Ptr(20),
+					DetectMultiplier: uint32Ptr(30),
+					EchoInterval:     uint32Ptr(40),
 					EchoMode:         pointer.BoolPtr(true),
 					PassiveMode:      pointer.BoolPtr(false),
-					MinimumTTL:       uint32Ptr(5),
+					MinimumTTL:       uint32Ptr(50),
 				},
 			}
 
@@ -45,9 +45,9 @@ var _ = Describe("BFD Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: v1beta1.BFDProfileSpec{
-					ReceiveInterval:  uint32Ptr(1),
-					TransmitInterval: uint32Ptr(2),
-					DetectMultiplier: uint32Ptr(3),
+					ReceiveInterval:  uint32Ptr(10),
+					TransmitInterval: uint32Ptr(20),
+					DetectMultiplier: uint32Ptr(30),
 					EchoInterval:     uint32Ptr(45),
 				},
 			}
@@ -58,14 +58,14 @@ var _ = Describe("BFD Controller", func() {
 
 			By("Checking ConfigMap is created and matches the bfdprofile1 configuration")
 			validateConfigMatchesYaml(`bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-mode: true
-  echo-interval: 4
-  minimum-ttl: 5
+  echo-interval: 40
+  minimum-ttl: 50
   name: bfdprofile1
   passive-mode: false
-  receive-interval: 1
-  transmit-interval: 2
+  receive-interval: 10
+  transmit-interval: 20
 `)
 			By("Creating the second BFDProfile resource")
 			err = k8sClient.Create(context.Background(), profile2)
@@ -73,19 +73,19 @@ var _ = Describe("BFD Controller", func() {
 
 			By("Checking ConfigMap is created and matches the profile1 & profile2 configuration")
 			validateConfigMatchesYaml(`bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-mode: true
-  echo-interval: 4
-  minimum-ttl: 5
+  echo-interval: 40
+  minimum-ttl: 50
   name: bfdprofile1
   passive-mode: false
-  receive-interval: 1
-  transmit-interval: 2
-- detect-multiplier: 3
+  receive-interval: 10
+  transmit-interval: 20
+- detect-multiplier: 30
   echo-interval: 45
   name: bfdprofile2
-  receive-interval: 1
-  transmit-interval: 2`)
+  receive-interval: 10
+  transmit-interval: 20`)
 
 			By("Deleting the 1st BFDProfile resource")
 			err = k8sClient.Delete(context.Background(), profile1)
@@ -93,11 +93,11 @@ var _ = Describe("BFD Controller", func() {
 
 			By("Checking ConfigMap matches the profile2 configuration")
 			validateConfigMatchesYaml(`bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-interval: 45
   name: bfdprofile2
-  receive-interval: 1
-  transmit-interval: 2
+  receive-interval: 10
+  transmit-interval: 20
 `)
 			By("Deleting 2nd BFD Profile resource")
 			err = k8sClient.Delete(context.Background(), profile2)
@@ -105,6 +105,45 @@ var _ = Describe("BFD Controller", func() {
 
 			By("Checking the ConfigMap is cleared")
 			validateConfigMatchesYaml("{}")
+		})
+	})
+
+	Context("Creating invalid BFDProfiles", func() {
+		AfterEach(func() {
+			err := cleanTestNamespace()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Creating new profile with invalid detect multiplier value (over maximum limit)")
+		badProfile1 := &v1beta1.BFDProfile{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "badProfile1",
+				Namespace: MetalLBTestNameSpace,
+			},
+			Spec: v1beta1.BFDProfileSpec{
+				DetectMultiplier: uint32Ptr(999999),
+			},
+		}
+
+		It("Should fail the validation", func() {
+			err := k8sClient.Create(context.Background(), badProfile1)
+			Expect(err).To(HaveOccurred())
+		})
+
+		By("Creating new profile with invalid receive interval value (under minimum limit)")
+		badProfile2 := &v1beta1.BFDProfile{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "badProfile2",
+				Namespace: MetalLBTestNameSpace,
+			},
+			Spec: v1beta1.BFDProfileSpec{
+				ReceiveInterval: uint32Ptr(1),
+			},
+		}
+
+		It("Should fail the validation", func() {
+			err := k8sClient.Create(context.Background(), badProfile2)
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
@@ -182,13 +221,13 @@ var _ = Describe("BFD Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: v1beta1.BFDProfileSpec{
-					ReceiveInterval:  uint32Ptr(1),
-					TransmitInterval: uint32Ptr(2),
-					DetectMultiplier: uint32Ptr(3),
-					EchoInterval:     uint32Ptr(4),
+					ReceiveInterval:  uint32Ptr(10),
+					TransmitInterval: uint32Ptr(20),
+					DetectMultiplier: uint32Ptr(30),
+					EchoInterval:     uint32Ptr(40),
 					EchoMode:         pointer.BoolPtr(true),
 					PassiveMode:      pointer.BoolPtr(false),
-					MinimumTTL:       uint32Ptr(5),
+					MinimumTTL:       uint32Ptr(50),
 				},
 			}
 
@@ -198,9 +237,9 @@ var _ = Describe("BFD Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: v1beta1.BFDProfileSpec{
-					ReceiveInterval:  uint32Ptr(1),
-					TransmitInterval: uint32Ptr(2),
-					DetectMultiplier: uint32Ptr(3),
+					ReceiveInterval:  uint32Ptr(10),
+					TransmitInterval: uint32Ptr(20),
+					DetectMultiplier: uint32Ptr(30),
 					EchoInterval:     uint32Ptr(45),
 				},
 			}
@@ -332,14 +371,14 @@ peers:
   name: test-addresspool2
   protocol: bgp
 bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-mode: true
-  echo-interval: 4
-  minimum-ttl: 5
+  echo-interval: 40
+  minimum-ttl: 50
   name: bfdprofile1
   passive-mode: false
-  receive-interval: 1
-  transmit-interval: 2
+  receive-interval: 10
+  transmit-interval: 20
 peers:
 - my-asn: 64500
   peer-address: 10.0.0.1
@@ -373,19 +412,19 @@ peers:
   name: test-addresspool2
   protocol: bgp
 bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-mode: true
-  echo-interval: 4
-  minimum-ttl: 5
+  echo-interval: 40
+  minimum-ttl: 50
   name: bfdprofile1
   passive-mode: false
-  receive-interval: 1
-  transmit-interval: 2
-- detect-multiplier: 3
+  receive-interval: 10
+  transmit-interval: 20
+- detect-multiplier: 30
   echo-interval: 45
   name: bfdprofile2
-  receive-interval: 1
-  transmit-interval: 2
+  receive-interval: 10
+  transmit-interval: 20
 peers:
 - my-asn: 64500
   peer-address: 10.0.0.1
@@ -420,19 +459,19 @@ peers:
   name: test-addresspool2
   protocol: bgp
 bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-mode: true
-  echo-interval: 4
-  minimum-ttl: 5
+  echo-interval: 40
+  minimum-ttl: 50
   name: bfdprofile1
   passive-mode: false
-  receive-interval: 1
-  transmit-interval: 2
-- detect-multiplier: 3
+  receive-interval: 10
+  transmit-interval: 20
+- detect-multiplier: 30
   echo-interval: 45
   name: bfdprofile2
-  receive-interval: 1
-  transmit-interval: 2
+  receive-interval: 10
+  transmit-interval: 20
 peers:
 - my-asn: 64000
   peer-address: 11.0.0.1
@@ -450,19 +489,19 @@ peers:
   name: test-addresspool2
   protocol: bgp
 bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-mode: true
-  echo-interval: 4
-  minimum-ttl: 5
+  echo-interval: 40
+  minimum-ttl: 50
   name: bfdprofile1
   passive-mode: false
-  receive-interval: 1
-  transmit-interval: 2
-- detect-multiplier: 3
+  receive-interval: 10
+  transmit-interval: 20
+- detect-multiplier: 30
   echo-interval: 45
   name: bfdprofile2
-  receive-interval: 1
-  transmit-interval: 2
+  receive-interval: 10
+  transmit-interval: 20
 peers:
 - my-asn: 64000
   peer-address: 11.0.0.1
@@ -480,19 +519,19 @@ peers:
   name: test-addresspool2
   protocol: bgp
 bfd-profiles:
-- detect-multiplier: 3
+- detect-multiplier: 30
   echo-mode: true
-  echo-interval: 4
-  minimum-ttl: 5
+  echo-interval: 40
+  minimum-ttl: 50
   name: bfdprofile1
   passive-mode: false
-  receive-interval: 1
-  transmit-interval: 2
-- detect-multiplier: 3
+  receive-interval: 10
+  transmit-interval: 20
+- detect-multiplier: 30
   echo-interval: 45
   name: bfdprofile2
-  receive-interval: 1
-  transmit-interval: 2`)
+  receive-interval: 10
+  transmit-interval: 20`)
 			By("Deleting the remaining resources")
 			err = k8sClient.Delete(context.Background(), addressPool2)
 			Expect(err).ToNot(HaveOccurred())
