@@ -1,7 +1,7 @@
 #!/bin/bash
 . $(dirname "$0")/common.sh
 
-METALLB_COMMIT_ID="de28a9447bb60a488fc0016bb3eb6e6aff2294ec" # TODO: change to commit containing FRR manifests
+METALLB_COMMIT_ID="d7afd9c94e246bc838b49a5fdee5384528513d63"
 METALLB_SC_FILE=$(dirname "$0")/securityContext.yaml
 
 NATIVE_MANIFESTS_FILE="metallb.yaml"
