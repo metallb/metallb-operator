@@ -33,7 +33,12 @@ import (
 // log is for logging bgppeer-webhook
 var bgppeerlog = logf.Log.WithName("bgppeer-webhook")
 
-func (bgpPeer *BGPPeer) SetupWebhookWithManager(mgr ctrl.Manager) error {
+var BGPFrrMode = false
+
+func (bgpPeer *BGPPeer) SetupWebhookWithManager(mgr ctrl.Manager, bgpType string) error {
+	if bgpType == "frr" {
+		BGPFrrMode = true
+	}
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(bgpPeer).
 		Complete()
@@ -50,7 +55,7 @@ func (bgpPeer *BGPPeer) ValidateCreate() error {
 	if err != nil {
 		return err
 	}
-	return bgpPeer.validateBGPPeer(existingBGPPeersList)
+	return bgpPeer.validateBGPPeer(existingBGPPeersList, BGPFrrMode)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -60,7 +65,7 @@ func (bgpPeer *BGPPeer) ValidateUpdate(old runtime.Object) error {
 	if err != nil {
 		return err
 	}
-	return bgpPeer.validateBGPPeer(existingBGPPeersList)
+	return bgpPeer.validateBGPPeer(existingBGPPeersList, BGPFrrMode)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -70,11 +75,16 @@ func (bgpPeer *BGPPeer) ValidateDelete() error {
 	return nil
 }
 
-func (bgpPeer *BGPPeer) validateBGPPeer(existingBGPPeersList *BGPPeerList) error {
+func (bgpPeer *BGPPeer) validateBGPPeer(existingBGPPeersList *BGPPeerList, bgpFrrMode bool) error {
 	var allErrs field.ErrorList
 
 	if err := bgpPeer.validateBGPPeersRouterID(existingBGPPeersList); err != nil {
 		allErrs = append(allErrs, err)
+	}
+	if bgpFrrMode {
+		if err := bgpPeer.validateBGPPeersMyASN(existingBGPPeersList); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 	if err := bgpPeer.validateBGPPeerConfig(existingBGPPeersList); err != nil {
 		allErrs = append(allErrs, err)
@@ -102,17 +112,37 @@ func (bgpPeer *BGPPeer) validateBGPPeersRouterID(existingBGPPeersList *BGPPeerLi
 	return nil
 }
 
+func (bgpPeer *BGPPeer) validateBGPPeersMyASN(existingBGPPeersList *BGPPeerList) *field.Error {
+	myASN := bgpPeer.Spec.MyASN
+	for _, BGPPeer := range existingBGPPeersList.Items {
+		if myASN != BGPPeer.Spec.MyASN {
+			return field.Invalid(field.NewPath("spec").Child("MyASN"), myASN,
+				fmt.Sprintf("Multiple local ASN not supported in FRR mode, myASN %d existing myASN %d",
+					myASN, BGPPeer.Spec.MyASN))
+		}
+	}
+
+	return nil
+}
+
 func (bgpPeer *BGPPeer) validateBGPPeerConfig(existingBGPPeersList *BGPPeerList) *field.Error {
 	remoteASN := bgpPeer.Spec.ASN
+	myASN := bgpPeer.Spec.MyASN
 	address := bgpPeer.Spec.Address
+	srcAddr := bgpPeer.Spec.SrcAddress
 
 	if net.ParseIP(address) == nil {
 		return field.Invalid(field.NewPath("spec").Child("Address"), address,
 			fmt.Sprintf("Invalid BGPPeer address %s", address))
 	}
 
+	if len(srcAddr) != 0 && net.ParseIP(srcAddr) == nil {
+		return field.Invalid(field.NewPath("spec").Child("SrcAddress"), srcAddr,
+			fmt.Sprintf("Invalid BGPPeer source address %s", srcAddr))
+	}
+
 	for _, BGPPeer := range existingBGPPeersList.Items {
-		if remoteASN == BGPPeer.Spec.ASN && address == BGPPeer.Spec.Address {
+		if remoteASN == BGPPeer.Spec.ASN && address == BGPPeer.Spec.Address && myASN == BGPPeer.Spec.MyASN {
 			return field.Invalid(field.NewPath("spec").Child("Address"), address,
 				fmt.Sprintf("Duplicate BGPPeer %s ASN %d in the same BGP instance",
 					address, remoteASN))
