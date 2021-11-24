@@ -920,7 +920,7 @@ var _ = Describe("metallb", func() {
 					}
 				}
 			}
-			Expect(isBGPPeerValidationWebhookRunning).To(BeTrue(), "BGPPeer webhook is not running")
+			Expect(isBGPPeerValidationWebhookRunning).To(BeTrue(), "BGPPeer validation webhook is not running")
 		})
 		It("Should reject invalid BGPPeer IP address", func() {
 			By("Creating BGPPeer resource")
@@ -942,6 +942,40 @@ var _ = Describe("metallb", func() {
 
 			By("Updating BGPPeer resource to use valid peer address")
 			peer.Spec.Address = "1.1.1.1"
+			err = testclient.Client.Create(context.Background(), peer)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Deleting BGPPeer resource")
+			err = testclient.Client.Delete(context.Background(), peer)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: peer.Namespace, Name: peer.Name}, peer)
+				return errors.IsNotFound(err)
+			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete BGPPeer resource")
+		})
+		It("Should reject invalid Keepalive time", func() {
+			By("Creating BGPPeer resource")
+			peer := &metallbv1alpha1.BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgp-peer1",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1alpha1.BGPPeerSpec{
+					Address:       "1.1.1.1",
+					ASN:           64500,
+					MyASN:         1000,
+					KeepaliveTime: 180 * time.Second,
+					HoldTime:      90 * time.Second,
+				},
+			}
+			err := testclient.Client.Create(context.Background(), peer)
+			if !strings.Contains(fmt.Sprint(err), "Invalid keepalive time") {
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			By("Updating BGPPeer resource to use valid keepalive time")
+			peer.Spec.KeepaliveTime = 90 * time.Second
 			err = testclient.Client.Create(context.Background(), peer)
 			Expect(err).ToNot(HaveOccurred())
 

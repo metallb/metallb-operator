@@ -140,13 +140,14 @@ func TestRendering(t *testing.T) {
 						Namespace: "namespace",
 					},
 					Spec: metallbv1alpha1.BGPPeerSpec{
-						MyASN:      23,
-						ASN:        24,
-						Address:    "192.168.1.1",
-						SrcAddress: "192.168.1.2",
-						Port:       1234,
-						HoldTime:   time.Second,
-						RouterID:   "abcd",
+						MyASN:         23,
+						ASN:           24,
+						Address:       "192.168.1.1",
+						SrcAddress:    "192.168.1.2",
+						Port:          1234,
+						HoldTime:      time.Second,
+						KeepaliveTime: time.Second,
+						RouterID:      "abcd",
 						NodeSelectors: []metallbv1alpha1.NodeSelector{
 							{
 								MatchLabels: map[string]string{

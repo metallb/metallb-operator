@@ -10,6 +10,7 @@ spec:
   routerID: 10.10.10.10
   peerPort: 1
   holdTime: 10
+  keepaliveTime: 3
   sourceAddress: 1.1.1.1
   password: test
   nodeSelectors:

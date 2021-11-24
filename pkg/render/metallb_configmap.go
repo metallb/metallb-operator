@@ -113,6 +113,9 @@ func peerToMetalLB(p metallbv1alpha1.BGPPeer) peer {
 	if p.Spec.HoldTime > 0 {
 		res.HoldTime = p.Spec.HoldTime.String()
 	}
+	if p.Spec.KeepaliveTime > 0 {
+		res.KeepaliveTime = p.Spec.KeepaliveTime.String()
+	}
 	res.RouterID = p.Spec.RouterID
 	res.Password = p.Spec.Password
 	res.BFDProfile = p.Spec.BFDProfile

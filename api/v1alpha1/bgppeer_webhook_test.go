@@ -5,6 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestValidateBGPPeer(t *testing.T) {
@@ -107,6 +108,41 @@ func TestValidateBGPPeer(t *testing.T) {
 				},
 			},
 			expectedError: "Multiple local ASN not supported in FRR mode",
+		},
+		{
+			desc: "Invalid keepalive time configuration",
+			bgpPeer: &BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgppeer",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: BGPPeerSpec{
+					Address:       "10.0.0.2",
+					ASN:           64502,
+					MyASN:         64500,
+					HoldTime:      90 * time.Second,
+					KeepaliveTime: 180 * time.Second,
+					RouterID:      "10.10.10.10",
+				},
+			},
+			expectedError: "Invalid keepalive time",
+		},
+		{
+			desc: "Missing holdtime time configuration",
+			bgpPeer: &BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgppeer",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: BGPPeerSpec{
+					Address:       "10.0.0.2",
+					ASN:           64502,
+					MyASN:         64500,
+					KeepaliveTime: 180 * time.Second,
+					RouterID:      "10.10.10.10",
+				},
+			},
+			expectedError: "Missing to configure HoldTime",
 		},
 	}
 
