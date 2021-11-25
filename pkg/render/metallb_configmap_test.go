@@ -21,13 +21,13 @@ func TestRendering(t *testing.T) {
 		"poolRendering": {
 			ConfigMapName: "config",
 			NameSpace:     "namespace",
-			Pools: []metallbv1alpha1.AddressPool{
+			Pools: []metallbv1beta1.AddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-addresspool1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
 							"1.1.1.1-1.1.1.100",
@@ -40,7 +40,7 @@ func TestRendering(t *testing.T) {
 						Name:      "test-addresspool2",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
 							"2.2.2.2-2.2.2.100",
@@ -52,7 +52,7 @@ func TestRendering(t *testing.T) {
 						Name:      "test-addresspool3",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
 							"2.2.2.2-2.2.2.100",
@@ -67,19 +67,19 @@ func TestRendering(t *testing.T) {
 		"communitiesRendering": {
 			ConfigMapName: "config",
 			NameSpace:     "namespace",
-			Pools: []metallbv1alpha1.AddressPool{
+			Pools: []metallbv1beta1.AddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-addresspool1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "bgp",
 						Addresses: []string{
 							"1.1.1.1-1.1.1.100",
 						},
 						AutoAssign: pointer.BoolPtr(false),
-						BGPAdvertisements: []metallbv1alpha1.BgpAdvertisement{
+						BGPAdvertisements: []metallbv1beta1.BgpAdvertisement{
 							{
 								AggregationLength:   pointer.Int32Ptr(57),
 								AggregationLengthV6: pointer.Int32Ptr(64),
@@ -105,7 +105,7 @@ func TestRendering(t *testing.T) {
 						Name:      "test-addresspool2",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "bgp",
 						Addresses: []string{
 							"2.2.2.2-2.2.2.100",
@@ -119,13 +119,13 @@ func TestRendering(t *testing.T) {
 		"peersRendering": {
 			ConfigMapName: "config",
 			NameSpace:     "namespace",
-			Pools: []metallbv1alpha1.AddressPool{
+			Pools: []metallbv1beta1.AddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-addresspool1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "bgp",
 						Addresses: []string{
 							"1.1.1.1-1.1.1.100",
@@ -190,13 +190,13 @@ func TestRendering(t *testing.T) {
 		"peersBfd": {
 			ConfigMapName: "config",
 			NameSpace:     "namespace",
-			Pools: []metallbv1alpha1.AddressPool{
+			Pools: []metallbv1beta1.AddressPool{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-addresspool1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "bgp",
 						Addresses: []string{
 							"1.1.1.1-1.1.1.100",

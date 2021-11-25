@@ -2,10 +2,15 @@ package v1alpha1
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 	"testing"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	MetalLBTestNameSpace = "metallb-test-namespace"
 )
 
 func TestValidateBGPPeer(t *testing.T) {

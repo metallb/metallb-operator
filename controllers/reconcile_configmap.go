@@ -49,7 +49,7 @@ func reconcileConfigMap(ctx context.Context, c client.Client, log logr.Logger, n
 }
 
 func operatorConfig(ctx context.Context, c client.Client) (*render.OperatorConfig, error) {
-	addressPools := &metallbv1alpha1.AddressPoolList{}
+	addressPools := &metallbv1beta1.AddressPoolList{}
 	err := c.List(ctx, addressPools, &client.ListOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return nil, errors.Wrap(err, "failed to fetch address pools")

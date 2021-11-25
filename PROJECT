@@ -23,8 +23,8 @@ resources:
   domain: metallb.io
   group: metallb.io
   kind: AddressPool
-  path: github.com/metallb/metallb-operator/api/v1alpha1
-  version: v1alpha1
+  path: github.com/metallb/metallb-operator/api/v1beta1
+  version: v1beta1
   webhooks:
     defaulting: true
     validation: true
@@ -51,4 +51,7 @@ resources:
   kind: BFDProfile
   path: github.com/metallb/metallb-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    conversion: true
+    webhookVersion: v1beta1
 version: "3"

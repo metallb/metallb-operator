@@ -20,7 +20,7 @@ type OperatorConfig struct {
 	NameSpace     string
 	ConfigMapName string
 	DataField     string
-	Pools         []metallbv1alpha1.AddressPool
+	Pools         []metallbv1beta1.AddressPool
 	Peers         []metallbv1alpha1.BGPPeer
 	BFDProfiles   []metallbv1beta1.BFDProfile
 }
@@ -71,7 +71,7 @@ func metalLBConfig(data *OperatorConfig) (string, error) {
 	return string(b), nil
 }
 
-func poolToMetalLB(p metallbv1alpha1.AddressPool) addressPool {
+func poolToMetalLB(p metallbv1beta1.AddressPool) addressPool {
 	res := addressPool{}
 	res.Protocol = Proto(p.Spec.Protocol)
 	res.Name = p.Name

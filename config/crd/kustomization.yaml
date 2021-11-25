@@ -6,6 +6,7 @@ resources:
   - bases/metallb.io_addresspools.yaml
   - bases/metallb.io_bgppeers.yaml
   - bases/metallb.io_bfdprofiles.yaml
+
 # +kubebuilder:scaffold:crdkustomizeresource
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.

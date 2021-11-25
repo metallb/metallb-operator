@@ -127,16 +127,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if os.Getenv("ENABLE_OPERATOR_WEBHOOK") == "true" {
-		if err = (&metallbv1alpha1.AddressPool{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
-			os.Exit(1)
-		}
-		if err = (&metallbv1alpha1.BGPPeer{}).SetupWebhookWithManager(mgr, bgpType); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "BGPPeer")
-			os.Exit(1)
-		}
-	}
 	if err = (&controllers.BFDProfileReconciler{
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName("BFDProfile"),
@@ -145,6 +135,17 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "BFDProfile")
 		os.Exit(1)
+	}
+
+	if os.Getenv("ENABLE_OPERATOR_WEBHOOK") == "true" {
+		if err = (&metallbv1beta1.AddressPool{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
+			os.Exit(1)
+		}
+		if err = (&metallbv1alpha1.BGPPeer{}).SetupWebhookWithManager(mgr, bgpType); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "BGPPeer")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 
