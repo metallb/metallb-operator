@@ -185,21 +185,21 @@ kind: DaemonSet
 metadata:
   labels:
     app: metallb
-    component: speaker
+    app.kubernetes.io/component: speaker
   name: speaker
   namespace: '{{.NameSpace}}'
 spec:
   selector:
     matchLabels:
       app: metallb
-      component: speaker
+      app.kubernetes.io/component: speaker
   template:
     metadata:
       annotations:
         prometheus.io/scrape: 'true'
       labels:
         app: metallb
-        component: speaker
+        app.kubernetes.io/component: speaker
     spec:
       volumes:
         - name: frr-sockets
@@ -327,7 +327,7 @@ spec:
             #- name: METALLB_ML_BIND_PORT
             #  value: "7946"
             - name: METALLB_ML_LABELS
-              value: "app=metallb,component=speaker"
+              value: "app=metallb,app.kubernetes.io/component=speaker"
             - name: METALLB_ML_SECRET_KEY
               valueFrom:
                 secretKeyRef:
@@ -346,6 +346,24 @@ spec:
             - containerPort: 7946
               name: memberlist-udp
               protocol: UDP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -372,7 +390,7 @@ kind: Deployment
 metadata:
   labels:
     app: metallb
-    component: controller
+    app.kubernetes.io/component: controller
   name: controller
   namespace: '{{.NameSpace}}'
 spec:
@@ -380,7 +398,7 @@ spec:
   selector:
     matchLabels:
       app: metallb
-      component: controller
+      app.kubernetes.io/component: controller
   template:
     metadata:
       annotations:
@@ -388,7 +406,7 @@ spec:
         prometheus.io/scrape: 'true'
       labels:
         app: metallb
-        component: controller
+        app.kubernetes.io/component: controller
     spec:
       containers:
         - args:
@@ -405,6 +423,24 @@ spec:
           ports:
             - containerPort: 7472
               name: monitoring
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            successThreshold: 1
+            failureThreshold: 3
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
