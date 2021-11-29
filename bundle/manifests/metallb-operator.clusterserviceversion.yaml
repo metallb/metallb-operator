@@ -382,7 +382,7 @@ spec:
                       - name: METALLB_BGP_TYPE
                         value: native
                       - name: FRR_IMAGE
-                        value: frrouting/frr:v7.5.1
+                        value: quay.io/frrouting/frr:stable_7.5
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
