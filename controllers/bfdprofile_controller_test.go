@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	. "github.com/onsi/ginkgo"
@@ -154,18 +153,18 @@ var _ = Describe("BFD Controller", func() {
 		})
 		It("Should create BGP Configuration Objects", func() {
 			autoAssign := false
-			addressPool1 := &v1alpha1.AddressPool{
+			addressPool1 := &v1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-addresspool1",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.AddressPoolSpec{
+				Spec: v1beta1.AddressPoolSpec{
 					Protocol: "bgp",
 					Addresses: []string{
 						"1.1.1.1-1.1.1.100",
 					},
 					AutoAssign: &autoAssign,
-					BGPAdvertisements: []v1alpha1.BgpAdvertisement{
+					BGPAdvertisements: []v1beta1.BgpAdvertisement{
 						{
 							AggregationLength: pointer.Int32Ptr(24),
 							LocalPref:         100,
@@ -177,12 +176,12 @@ var _ = Describe("BFD Controller", func() {
 					},
 				},
 			}
-			addressPool2 := &v1alpha1.AddressPool{
+			addressPool2 := &v1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-addresspool2",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.AddressPoolSpec{
+				Spec: v1beta1.AddressPoolSpec{
 					Protocol: "bgp",
 					Addresses: []string{
 						"2.2.2.2-2.2.2.100",
@@ -191,24 +190,24 @@ var _ = Describe("BFD Controller", func() {
 				},
 			}
 
-			peer1 := &v1alpha1.BGPPeer{
+			peer1 := &v1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bgp-peer1",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.BGPPeerSpec{
+				Spec: v1beta1.BGPPeerSpec{
 					Address:  "10.0.0.1",
 					ASN:      64501,
 					MyASN:    64500,
 					RouterID: "10.10.10.10",
 				},
 			}
-			peer2 := &v1alpha1.BGPPeer{
+			peer2 := &v1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "bgp-peer2",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.BGPPeerSpec{
+				Spec: v1beta1.BGPPeerSpec{
 					Address:  "11.0.0.1",
 					ASN:      64001,
 					MyASN:    64000,

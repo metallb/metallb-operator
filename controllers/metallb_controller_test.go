@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/test/consts"
 	. "github.com/onsi/ginkgo"
@@ -115,11 +114,11 @@ var _ = Describe("MetalLB Controller", func() {
 })
 
 func cleanTestNamespace() error {
-	err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.AddressPool{}, client.InNamespace(MetalLBTestNameSpace))
+	err := k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.AddressPool{}, client.InNamespace(MetalLBTestNameSpace))
 	if err != nil {
 		return err
 	}
-	err = k8sClient.DeleteAllOf(context.Background(), &v1alpha1.BGPPeer{}, client.InNamespace(MetalLBTestNameSpace))
+	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.BGPPeer{}, client.InNamespace(MetalLBTestNameSpace))
 	if err != nil {
 		return err
 	}

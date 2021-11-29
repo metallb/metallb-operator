@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"context"
@@ -48,7 +48,7 @@ func (bgpPeer *BGPPeer) SetupWebhookWithManager(mgr ctrl.Manager, bgpType string
 		Complete()
 }
 
-//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1alpha1-bgppeer,mutating=false,failurePolicy=fail,groups=metallb.io,resources=bgppeers,versions=v1alpha1,name=bgppeervalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
+//+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1beta1-bgppeer,mutating=false,failurePolicy=fail,groups=metallb.io,resources=bgppeers,versions=v1beta1,name=bgppeervalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
 
 var _ webhook.Validator = &BGPPeer{}
 

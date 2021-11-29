@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"context"
-	"k8s.io/utils/pointer"
 	"time"
+
+	"k8s.io/utils/pointer"
 
 	"github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/metallb/metallb-operator/pkg/apply"

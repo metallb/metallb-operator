@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/render"
 )
 
@@ -59,6 +59,6 @@ func (r *BGPPeerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 func (r *BGPPeerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&metallbv1alpha1.BGPPeer{}).
+		For(&metallbv1beta1.BGPPeer{}).
 		Complete(r)
 }

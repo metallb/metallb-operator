@@ -226,12 +226,12 @@ var _ = Describe("metallb", func() {
   addresses:
   - 1.1.1.1-1.1.1.100
 `),
-			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1beta1.AddressPool{
+			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool2",
 					Namespace: OperatorNameSpace,
 				},
-				Spec: metallbv1beta1.AddressPoolSpec{
+				Spec: metallbv1alpha1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
 						"2.2.2.1-2.2.2.100",
@@ -672,7 +672,7 @@ var _ = Describe("metallb", func() {
 	})
 
 	Context("Creating BGP Peer", func() {
-		table.DescribeTable("Testing creating BGP peer CR successfully", func(peerName string, peer *metallbv1alpha1.BGPPeer, expectedConfigMap string) {
+		table.DescribeTable("Testing creating BGP peer CR successfully", func(peerName string, peer *metallbv1beta1.BGPPeer, expectedConfigMap string) {
 			By("Creating BGP peer CR")
 
 			Expect(testclient.Client.Create(context.Background(), peer)).Should(Succeed())
@@ -707,19 +707,19 @@ var _ = Describe("metallb", func() {
 				return configmap.Data[consts.MetalLBConfigMapName]
 			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
 		},
-			table.Entry("Test BGP Peer object", "peer1", &metallbv1alpha1.BGPPeer{
+			table.Entry("Test BGP Peer object", "peer1", &metallbv1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "peer1",
 					Namespace: OperatorNameSpace,
 				},
-				Spec: metallbv1alpha1.BGPPeerSpec{
+				Spec: metallbv1beta1.BGPPeerSpec{
 					Address:  "10.0.0.1",
 					ASN:      64501,
 					MyASN:    64500,
 					RouterID: "10.10.10.10",
-					NodeSelectors: []metallbv1alpha1.NodeSelector{
+					NodeSelectors: []metallbv1beta1.NodeSelector{
 						{
-							MatchExpressions: []metallbv1alpha1.MatchExpression{
+							MatchExpressions: []metallbv1beta1.MatchExpression{
 								{
 									Key:      "kubernetes.io/hostname",
 									Operator: "In",
@@ -745,19 +745,19 @@ var _ = Describe("metallb", func() {
   peer-asn: 64501
   router-id: 10.10.10.10 
 `),
-			table.Entry("Test BGP Peer object", "peer2", &metallbv1alpha1.BGPPeer{
+			table.Entry("Test BGP Peer object", "peer2", &metallbv1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "peer2",
 					Namespace: OperatorNameSpace,
 				},
-				Spec: metallbv1alpha1.BGPPeerSpec{
+				Spec: metallbv1beta1.BGPPeerSpec{
 					Address:  "11.0.0.1",
 					ASN:      60501,
 					MyASN:    60500,
 					RouterID: "11.11.11.11",
-					NodeSelectors: []metallbv1alpha1.NodeSelector{
+					NodeSelectors: []metallbv1beta1.NodeSelector{
 						{
-							MatchExpressions: []metallbv1alpha1.MatchExpression{
+							MatchExpressions: []metallbv1beta1.MatchExpression{
 								{
 									Key:      "kubernetes.io/hostname",
 									Operator: "Out",
@@ -943,12 +943,12 @@ var _ = Describe("metallb", func() {
 		})
 		It("Should reject invalid BGPPeer IP address", func() {
 			By("Creating BGPPeer resource")
-			peer := &metallbv1alpha1.BGPPeer{
+			peer := &metallbv1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-bgp-peer1",
 					Namespace: OperatorNameSpace,
 				},
-				Spec: metallbv1alpha1.BGPPeerSpec{
+				Spec: metallbv1beta1.BGPPeerSpec{
 					Address: "1.1.1",
 					ASN:     64500,
 					MyASN:   1000,
@@ -975,12 +975,12 @@ var _ = Describe("metallb", func() {
 		})
 		It("Should reject invalid Keepalive time", func() {
 			By("Creating BGPPeer resource")
-			peer := &metallbv1alpha1.BGPPeer{
+			peer := &metallbv1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-bgp-peer1",
 					Namespace: OperatorNameSpace,
 				},
-				Spec: metallbv1alpha1.BGPPeerSpec{
+				Spec: metallbv1beta1.BGPPeerSpec{
 					Address:       "1.1.1.1",
 					ASN:           64500,
 					MyASN:         1000,

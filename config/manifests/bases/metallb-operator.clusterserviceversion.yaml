@@ -21,7 +21,7 @@ spec:
       displayName: Address Pool
       kind: AddressPool
       name: addresspools.metallb.io
-      version: v1alpha1
+      version: v1beta1
     - description: MetalLB is the Schema for the metallbs API
       displayName: MetalLB
       kind: MetalLB

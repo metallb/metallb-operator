@@ -32,14 +32,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-metallb-io-v1alpha1-bgppeer
+      path: /validate-metallb-io-v1beta1-bgppeer
   failurePolicy: Fail
   name: bgppeervalidationwebhook.metallb.io
   rules:
   - apiGroups:
     - metallb.io
     apiVersions:
-    - v1alpha1
+    - v1beta1
     operations:
     - CREATE
     - UPDATE
