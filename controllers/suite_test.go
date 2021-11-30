@@ -111,26 +111,10 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, bgpType)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&AddressPoolReconciler{
+	err = (&ConfigMapReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
-		Log:       ctrl.Log.WithName("controller").WithName("AddressPool"),
-		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&BGPPeerReconciler{
-		Client:    k8sClient,
-		Scheme:    scheme.Scheme,
-		Log:       ctrl.Log.WithName("controller").WithName("BGPPeer"),
-		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&BFDProfileReconciler{
-		Client:    k8sClient,
-		Scheme:    scheme.Scheme,
-		Log:       ctrl.Log.WithName("controller").WithName("BFDProfile"),
+		Log:       ctrl.Log.WithName("controller").WithName("ConfigMap"),
 		Namespace: MetalLBTestNameSpace,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())

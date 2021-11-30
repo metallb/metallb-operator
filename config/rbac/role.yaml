@@ -12,11 +12,8 @@ rules:
   - addresspools
   verbs:
   - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - metallb.io
@@ -32,11 +29,8 @@ rules:
   - bfdprofiles
   verbs:
   - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - metallb.io
@@ -51,12 +45,8 @@ rules:
   resources:
   - bgppeers
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - metallb.io

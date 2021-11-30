@@ -108,32 +108,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)
 	}
-	if err = (&controllers.AddressPoolReconciler{
-		Client:    mgr.GetClient(),
-		Log:       ctrl.Log.WithName("controllers").WithName("AddressPool"),
-		Scheme:    mgr.GetScheme(),
-		Namespace: watchNamespace,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "AddressPool")
-		os.Exit(1)
-	}
-	if err = (&controllers.BGPPeerReconciler{
-		Client:    mgr.GetClient(),
-		Log:       ctrl.Log.WithName("controllers").WithName("Peer"),
-		Scheme:    mgr.GetScheme(),
-		Namespace: watchNamespace,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "BGPPeer")
-		os.Exit(1)
-	}
 
-	if err = (&controllers.BFDProfileReconciler{
+	if err = (&controllers.ConfigMapReconciler{
 		Client:    mgr.GetClient(),
-		Log:       ctrl.Log.WithName("controllers").WithName("BFDProfile"),
+		Log:       ctrl.Log.WithName("controllers").WithName("ConfigMap"),
 		Scheme:    mgr.GetScheme(),
 		Namespace: watchNamespace,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "BFDProfile")
+		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
 		os.Exit(1)
 	}
 
