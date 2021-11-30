@@ -226,12 +226,12 @@ var _ = Describe("metallb", func() {
   addresses:
   - 1.1.1.1-1.1.1.100
 `),
-			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1alpha1.AddressPool{
+			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "addresspool2",
 					Namespace: OperatorNameSpace,
 				},
-				Spec: metallbv1alpha1.AddressPoolSpec{
+				Spec: metallbv1beta1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
 						"2.2.2.1-2.2.2.100",
