@@ -3,7 +3,6 @@ package render
 import (
 	"gopkg.in/yaml.v2"
 
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -21,7 +20,7 @@ type OperatorConfig struct {
 	ConfigMapName string
 	DataField     string
 	Pools         []metallbv1beta1.AddressPool
-	Peers         []metallbv1alpha1.BGPPeer
+	Peers         []metallbv1beta1.BGPPeer
 	BFDProfiles   []metallbv1beta1.BFDProfile
 }
 
@@ -103,7 +102,7 @@ func poolToMetalLB(p metallbv1beta1.AddressPool) addressPool {
 	return res
 }
 
-func peerToMetalLB(p metallbv1alpha1.BGPPeer) peer {
+func peerToMetalLB(p metallbv1beta1.BGPPeer) peer {
 	res := peer{}
 	res.MyASN = p.Spec.MyASN
 	res.ASN = p.Spec.ASN

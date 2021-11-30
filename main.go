@@ -142,7 +142,7 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
 			os.Exit(1)
 		}
-		if err = (&metallbv1alpha1.BGPPeer{}).SetupWebhookWithManager(mgr, bgpType); err != nil {
+		if err = (&metallbv1beta1.BGPPeer{}).SetupWebhookWithManager(mgr, bgpType); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "BGPPeer")
 			os.Exit(1)
 		}

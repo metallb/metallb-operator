@@ -1,4 +1,4 @@
-apiVersion: metallb.io/v1alpha1
+apiVersion: metallb.io/v1beta1
 kind: BFDProfile
 metadata:
   name: bfdprofilefull
@@ -13,7 +13,7 @@ spec:
   passiveMode: true
   minimumTtl: 10
 ---
-apiVersion: metallb.io/v1alpha1
+apiVersion: metallb.io/v1beta1
 kind: BFDProfile
 metadata:
   name: bfdprofiledefault

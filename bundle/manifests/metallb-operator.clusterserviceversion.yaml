@@ -5,57 +5,6 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "metallb.io/v1alpha1",
-          "kind": "BGPPeer",
-          "metadata": {
-            "name": "peer-bfd",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "bfdProfile": "bfdprofilefull",
-            "holdTime": 10,
-            "myASN": 64500,
-            "peerASN": 64501,
-            "peerAddress": "10.0.0.2",
-            "peerPort": 1,
-            "routerID": "10.10.10.10",
-            "sourceAddress": "1.1.1.1"
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1alpha1",
-          "kind": "BGPPeer",
-          "metadata": {
-            "name": "peer-sample1",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "holdTime": 10,
-            "keepaliveTime": 3,
-            "myASN": 64500,
-            "nodeSelectors": [
-              {
-                "matchExpressions": [
-                  {
-                    "key": "kubernetes.io/hostname",
-                    "operator": "In",
-                    "values": [
-                      "hostA",
-                      "hostB"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "password": "test",
-            "peerASN": 64501,
-            "peerAddress": "10.0.0.1",
-            "peerPort": 1,
-            "routerID": "10.10.10.10",
-            "sourceAddress": "1.1.1.1"
-          }
-        },
-        {
           "apiVersion": "metallb.io/v1beta1",
           "kind": "AddressPool",
           "metadata": {
@@ -130,6 +79,93 @@ metadata:
         },
         {
           "apiVersion": "metallb.io/v1beta1",
+          "kind": "BFDProfile",
+          "metadata": {
+            "name": "bfdprofiledefault",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "detectMultiplier": 37,
+            "echoMode": true,
+            "echoReceiveInterval": 38,
+            "echoTransmitInterval": 39,
+            "minimumTtl": 10,
+            "passiveMode": true,
+            "receiveInterval": 35,
+            "transmitInterval": 35
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1beta1",
+          "kind": "BFDProfile",
+          "metadata": {
+            "name": "bfdprofilefull",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "detectMultiplier": 37,
+            "echoMode": true,
+            "echoReceiveInterval": 38,
+            "echoTransmitInterval": 39,
+            "minimumTtl": 10,
+            "passiveMode": true,
+            "receiveInterval": 35,
+            "transmitInterval": 35
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1beta1",
+          "kind": "BGPPeer",
+          "metadata": {
+            "name": "peer-bfd",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "bfdProfile": "bfdprofilefull",
+            "holdTime": 10,
+            "myASN": 64500,
+            "peerASN": 64501,
+            "peerAddress": "10.0.0.2",
+            "peerPort": 1,
+            "routerID": "10.10.10.10",
+            "sourceAddress": "1.1.1.1"
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1beta1",
+          "kind": "BGPPeer",
+          "metadata": {
+            "name": "peer-sample1",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "holdTime": 10,
+            "keepaliveTime": 3,
+            "myASN": 64500,
+            "nodeSelectors": [
+              {
+                "matchExpressions": [
+                  {
+                    "key": "kubernetes.io/hostname",
+                    "operator": "In",
+                    "values": [
+                      "hostA",
+                      "hostB"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "password": "test",
+            "peerASN": 64501,
+            "peerAddress": "10.0.0.1",
+            "peerPort": 1,
+            "routerID": "10.10.10.10",
+            "sourceAddress": "1.1.1.1"
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1beta1",
           "kind": "MetalLB",
           "metadata": {
             "name": "metallb",
@@ -158,12 +194,12 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
+      - kind: AddressPool
+        name: addresspools.metallb.io
+        version: v1alpha1
       - description: AddressPool is the Schema for the addresspools API
         displayName: Address Pool
         kind: AddressPool
-        name: addresspools.metallb.io
-        version: v1alpha1
-      - kind: AddressPool
         name: addresspools.metallb.io
         version: v1beta1
       - kind: BFDProfile
@@ -171,7 +207,7 @@ spec:
         version: v1beta1
       - kind: BGPPeer
         name: bgppeers.metallb.io
-        version: v1alpha1
+        version: v1beta1
       - description: MetalLB is the Schema for the metallbs API
         displayName: MetalLB
         kind: MetalLB
@@ -563,7 +599,7 @@ spec:
         - apiGroups:
             - metallb.io
           apiVersions:
-            - v1alpha1
+            - v1beta1
           operations:
             - CREATE
             - UPDATE
@@ -572,4 +608,4 @@ spec:
       sideEffects: None
       targetPort: 9443
       type: ValidatingAdmissionWebhook
-      webhookPath: /validate-metallb-io-v1alpha1-bgppeer
+      webhookPath: /validate-metallb-io-v1beta1-bgppeer

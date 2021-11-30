@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -62,7 +61,7 @@ func TestRendering(t *testing.T) {
 					},
 				},
 			},
-			Peers: []metallbv1alpha1.BGPPeer{},
+			Peers: []metallbv1beta1.BGPPeer{},
 		},
 		"communitiesRendering": {
 			ConfigMapName: "config",
@@ -114,7 +113,7 @@ func TestRendering(t *testing.T) {
 					},
 				},
 			},
-			Peers: []metallbv1alpha1.BGPPeer{},
+			Peers: []metallbv1beta1.BGPPeer{},
 		},
 		"peersRendering": {
 			ConfigMapName: "config",
@@ -133,13 +132,13 @@ func TestRendering(t *testing.T) {
 					},
 				},
 			},
-			Peers: []metallbv1alpha1.BGPPeer{
+			Peers: []metallbv1beta1.BGPPeer{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-peer1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.BGPPeerSpec{
+					Spec: metallbv1beta1.BGPPeerSpec{
 						MyASN:         23,
 						ASN:           24,
 						Address:       "192.168.1.1",
@@ -148,12 +147,12 @@ func TestRendering(t *testing.T) {
 						HoldTime:      time.Second,
 						KeepaliveTime: time.Second,
 						RouterID:      "abcd",
-						NodeSelectors: []metallbv1alpha1.NodeSelector{
+						NodeSelectors: []metallbv1beta1.NodeSelector{
 							{
 								MatchLabels: map[string]string{
 									"foo": "bar",
 								},
-								MatchExpressions: []metallbv1alpha1.MatchExpression{
+								MatchExpressions: []metallbv1beta1.MatchExpression{
 
 									{
 
@@ -175,7 +174,7 @@ func TestRendering(t *testing.T) {
 						Name:      "test-peer2",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.BGPPeerSpec{
+					Spec: metallbv1beta1.BGPPeerSpec{
 						MyASN:      25,
 						ASN:        26,
 						Address:    "192.168.2.1",
@@ -204,13 +203,13 @@ func TestRendering(t *testing.T) {
 					},
 				},
 			},
-			Peers: []metallbv1alpha1.BGPPeer{
+			Peers: []metallbv1beta1.BGPPeer{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-peer1",
 						Namespace: "namespace",
 					},
-					Spec: metallbv1alpha1.BGPPeerSpec{
+					Spec: metallbv1beta1.BGPPeerSpec{
 						MyASN:      23,
 						ASN:        24,
 						Address:    "192.168.1.1",
@@ -218,12 +217,12 @@ func TestRendering(t *testing.T) {
 						Port:       1234,
 						HoldTime:   time.Second,
 						RouterID:   "abcd",
-						NodeSelectors: []metallbv1alpha1.NodeSelector{
+						NodeSelectors: []metallbv1beta1.NodeSelector{
 							{
 								MatchLabels: map[string]string{
 									"foo": "bar",
 								},
-								MatchExpressions: []metallbv1alpha1.MatchExpression{
+								MatchExpressions: []metallbv1beta1.MatchExpression{
 
 									{
 

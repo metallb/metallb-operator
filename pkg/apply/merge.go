@@ -1,16 +1,9 @@
 package apply
 
 import (
-	metallbv1alpha "github.com/metallb/metallb-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
-
-// ConfigMap structure
-type ConfigMapData struct {
-	AddressPools []metallbv1alpha.AddressPoolSpec `yaml:"address-pools,omitempty"`
-	Peers        []metallbv1alpha.BGPPeerSpec     `yaml:"peers,omitempty"`
-}
 
 // MergeMetadataForUpdate merges the read-only fields of metadata.
 // This is to be able to do a a meaningful comparison in apply,

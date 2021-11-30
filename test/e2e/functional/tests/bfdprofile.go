@@ -8,7 +8,6 @@ import (
 	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
@@ -73,12 +72,12 @@ var _ = Describe("metallb", func() {
 					},
 					Spec: metallbv1beta1.BFDProfileSpec{},
 				},
-				&metallbv1alpha1.AddressPool{
+				&metallbv1beta1.AddressPool{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "addresspool1",
 						Namespace: OperatorNameSpace,
 					},
-					Spec: metallbv1alpha1.AddressPoolSpec{
+					Spec: metallbv1beta1.AddressPoolSpec{
 						Protocol: "layer2",
 						Addresses: []string{
 							"1.1.1.1-1.1.1.100",

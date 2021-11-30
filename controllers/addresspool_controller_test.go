@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"context"
-	"k8s.io/utils/pointer"
 	"time"
 
-	"github.com/metallb/metallb-operator/api/v1alpha1"
+	"k8s.io/utils/pointer"
+
+	"github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,12 +25,12 @@ var _ = Describe("AddressPool Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("Should create AddressPool Objects", func() {
-			addressPool1 := &v1alpha1.AddressPool{
+			addressPool1 := &v1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-addresspool1",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.AddressPoolSpec{
+				Spec: v1beta1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
 						"1.1.1.1-1.1.1.100",
@@ -37,12 +38,12 @@ var _ = Describe("AddressPool Controller", func() {
 					AutoAssign: &autoAssign,
 				},
 			}
-			addressPool2 := &v1alpha1.AddressPool{
+			addressPool2 := &v1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-addresspool2",
 					Namespace: MetalLBTestNameSpace,
 				},
-				Spec: v1alpha1.AddressPoolSpec{
+				Spec: v1beta1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
 						"2.2.2.2-2.2.2.100",
@@ -126,19 +127,19 @@ var _ = Describe("AddressPool Controller", func() {
 	Context("Creating AddressPool object BGP Config", func() {
 		autoAssign := false
 		configmap := &corev1.ConfigMap{}
-		addressPool := &v1alpha1.AddressPool{
+		addressPool := &v1beta1.AddressPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-addresspool-bgp",
 				Namespace: MetalLBTestNameSpace,
 			},
-			Spec: v1alpha1.AddressPoolSpec{
+			Spec: v1beta1.AddressPoolSpec{
 				Protocol: "bgp",
 				Addresses: []string{
 					"2.2.2.2",
 					"2.2.2.100",
 				},
 				AutoAssign: &autoAssign,
-				BGPAdvertisements: []v1alpha1.BgpAdvertisement{
+				BGPAdvertisements: []v1beta1.BgpAdvertisement{
 					{
 						AggregationLength:   pointer.Int32Ptr(24),
 						AggregationLengthV6: pointer.Int32Ptr(124),
