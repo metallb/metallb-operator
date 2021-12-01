@@ -259,11 +259,8 @@ spec:
                 - addresspools
               verbs:
                 - create
-                - delete
                 - get
                 - list
-                - patch
-                - update
                 - watch
             - apiGroups:
                 - metallb.io
@@ -279,11 +276,8 @@ spec:
                 - bfdprofiles
               verbs:
                 - create
-                - delete
                 - get
                 - list
-                - patch
-                - update
                 - watch
             - apiGroups:
                 - metallb.io
@@ -298,12 +292,8 @@ spec:
               resources:
                 - bgppeers
               verbs:
-                - create
-                - delete
                 - get
                 - list
-                - patch
-                - update
                 - watch
             - apiGroups:
                 - metallb.io
