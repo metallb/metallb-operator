@@ -1,7 +1,7 @@
 #!/bin/bash
 . $(dirname "$0")/common.sh
 
-METALLB_COMMIT_ID="06da676fa192967190839464c58e62cae175105e"
+METALLB_COMMIT_ID="a4b2482c334678ae79d79b5f5b3196ad760b48ac"
 METALLB_SC_FILE=$(dirname "$0")/securityContext.yaml
 
 NATIVE_MANIFESTS_FILE="metallb.yaml"
@@ -68,6 +68,9 @@ yq e --inplace '. | select(.metadata.namespace == "metallb-system").metadata.nam
 # Furthermore, the sed has to be last since it breaks the yaml's syntax by adding the conditionals between
 yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.securityContext|="'"$(< ${METALLB_SC_FILE})"'"' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 sed -i 's/securityContext\: |-/securityContext\:/g' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE} # Last because it breaks yaml syntax
+
+# Update MetalLB's E2E lane to clone the same commit as the manifests.
+yq e --inplace ".jobs.main.steps[] |= select(.name==\"Checkout MetalLB\").with.ref=\"${METALLB_COMMIT_ID}\"" .github/workflows/metallb_e2e.yml
 
 # TODO: run this script once FRR is merged
 

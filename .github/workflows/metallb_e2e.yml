@@ -1,0 +1,80 @@
+name: MetalLB-E2E
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches:
+      - main
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+"
+defaults:
+  run:
+    shell: bash
+    working-directory: metallboperator
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    env:
+      built_image: "metallb-operator:ci" # Arbitrary name
+    strategy:
+      matrix:
+        go: ['1.16']
+    name: Go ${{ matrix.go }}
+    steps:
+      - name: Checkout Metal LB Operator
+        uses: actions/checkout@v2
+        with:
+          path: metallboperator
+          fetch-depth: 0 # Fetch all history for all tags and branches
+      - uses: actions/setup-go@v2
+        id: go
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Verify modules
+        run: go mod verify
+      - name: Verify format
+        run: |
+          make fmt
+          git diff --exit-code
+      - name: Verify manifests
+        run: |
+          make manifests
+          git diff --exit-code
+      - name: Checkout MetalLB
+        uses: actions/checkout@v2
+        with:
+          repository: metallb/metallb
+          path: metallb
+          ref: a4b2482c334678ae79d79b5f5b3196ad760b48ac
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install python3-pip arping ndisc6
+          sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
+      - name: Build image
+        run: |
+          docker build . -t ${built_image}
+      - name: Create multi-node K8s Kind Cluster
+        run: |
+          ./hack/kind-multi-node-cluster-without-registry.sh
+          kind load docker-image ${built_image}
+      - name: Deploy Metal LB Operator
+        run: |
+          make deploy-cert-manager
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" ENABLE_OPERATOR_WEBHOOK="true" make deploy
+      - name: MetalLB E2E Tests
+        run: |
+          export KUBECONFIG=${HOME}/.kube/config
+          kubectl apply -f config/samples/metallb.yaml
+          cd ${GITHUB_WORKSPACE}/metallb
+          sudo -E env "PATH=$PATH" inv e2etest --skip "IPV6\|DUALSTACK" -e /tmp/kind_logs --use-operator
+      - name: Change permissions for kind logs
+        if: ${{ failure() }}
+        run: |
+          sudo chmod -R o+r /tmp/kind_logs
+      - name: Archive kind logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: kind_logs
+          path: /tmp/kind_logs
