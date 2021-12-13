@@ -144,8 +144,8 @@ func TestRendering(t *testing.T) {
 						Address:       "192.168.1.1",
 						SrcAddress:    "192.168.1.2",
 						Port:          1234,
-						HoldTime:      time.Second,
-						KeepaliveTime: time.Second,
+						HoldTime:      metav1.Duration{Duration: 1 * time.Second},
+						KeepaliveTime: metav1.Duration{Duration: 1 * time.Second},
 						RouterID:      "abcd",
 						NodeSelectors: []metallbv1beta1.NodeSelector{
 							{
@@ -215,7 +215,7 @@ func TestRendering(t *testing.T) {
 						Address:    "192.168.1.1",
 						SrcAddress: "192.168.1.2",
 						Port:       1234,
-						HoldTime:   time.Second,
+						HoldTime:   metav1.Duration{Duration: 1 * time.Second},
 						RouterID:   "abcd",
 						NodeSelectors: []metallbv1beta1.NodeSelector{
 							{

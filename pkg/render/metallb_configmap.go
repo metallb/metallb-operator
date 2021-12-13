@@ -1,9 +1,8 @@
 package render
 
 import (
-	"gopkg.in/yaml.v2"
-
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -109,11 +108,11 @@ func peerToMetalLB(p metallbv1beta1.BGPPeer) peer {
 	res.Addr = p.Spec.Address
 	res.SrcAddr = p.Spec.SrcAddress
 	res.Port = p.Spec.Port
-	if p.Spec.HoldTime > 0 {
-		res.HoldTime = p.Spec.HoldTime.String()
+	if p.Spec.HoldTime.Duration > 0 {
+		res.HoldTime = p.Spec.HoldTime.Duration.String()
 	}
-	if p.Spec.KeepaliveTime > 0 {
-		res.KeepaliveTime = p.Spec.KeepaliveTime.String()
+	if p.Spec.KeepaliveTime.Duration > 0 {
+		res.KeepaliveTime = p.Spec.KeepaliveTime.Duration.String()
 	}
 	res.RouterID = p.Spec.RouterID
 	res.Password = p.Spec.Password
