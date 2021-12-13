@@ -38,12 +38,10 @@ spec:
                 type: string
               holdTime:
                 description: Requested BGP hold time, per RFC4271.
-                format: int64
-                type: integer
+                type: string
               keepaliveTime:
                 description: Requested BGP keepalive time, per RFC4271.
-                format: int64
-                type: integer
+                type: string
               myASN:
                 description: AS number to use for the local end of the session.
                 format: int32
