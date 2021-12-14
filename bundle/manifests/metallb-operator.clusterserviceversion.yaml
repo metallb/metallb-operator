@@ -122,7 +122,7 @@ metadata:
           },
           "spec": {
             "bfdProfile": "bfdprofilefull",
-            "holdTime": 10,
+            "holdTime": "10s",
             "myASN": 64500,
             "peerASN": 64501,
             "peerAddress": "10.0.0.2",
@@ -139,8 +139,8 @@ metadata:
             "namespace": "metallb-system"
           },
           "spec": {
-            "holdTime": 10,
-            "keepaliveTime": 3,
+            "holdTime": "10s",
+            "keepaliveTime": "3s",
             "myASN": 64500,
             "nodeSelectors": [
               {

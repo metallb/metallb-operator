@@ -6,7 +6,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      component: controller
+      app.kubernetes.io/component: controller
   namespaceSelector:
     matchNames:
       - '{{.NameSpace}}'
@@ -22,7 +22,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      component: speaker
+      app.kubernetes.io/component: speaker
   namespaceSelector:
     matchNames:
       - '{{.NameSpace}}'

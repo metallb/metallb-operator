@@ -169,7 +169,8 @@ spec:
   myASN: 64500
   routerID: 10.10.10.10
   peerPort: 1
-  holdTime: 10
+  holdTime: "180s"
+  keepaliveTime: "180s"
   sourceAddress: "1.1.1.1"
   password: "test"
   nodeSelectors:
