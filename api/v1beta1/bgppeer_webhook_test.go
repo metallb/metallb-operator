@@ -65,7 +65,7 @@ func TestValidateBGPPeer(t *testing.T) {
 			desc: "Duplicate BGP Peer",
 			bgpPeer: &BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-bgppeer",
+					Name:      "test-bgppeer1",
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: BGPPeerSpec{
@@ -98,7 +98,7 @@ func TestValidateBGPPeer(t *testing.T) {
 			desc: "Different myASN configuration",
 			bgpPeer: &BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-bgppeer",
+					Name:      "test-bgppeer1",
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: BGPPeerSpec{
