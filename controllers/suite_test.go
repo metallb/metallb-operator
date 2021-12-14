@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -101,6 +102,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	ManifestPath = MetalLBManifestPathControllerTest // This is needed as the tests need to reference a directory backward
+	PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathControllerTest, "prometheus-operator")
 
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
 	err = (&MetalLBReconciler{

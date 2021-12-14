@@ -12,6 +12,10 @@ FRR_MANIFESTS_FILE="metallb-frr.yaml"
 FRR_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/manifests/${FRR_MANIFESTS_FILE}"
 FRR_MANIFESTS_DIR="bindata/deployment/frr"
 
+PROMETHEUS_OPERATOR_FILE="prometheus-operator.yaml"
+PROMETHEUS_OPERATOR_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/manifests/${PROMETHEUS_OPERATOR_FILE}"
+PROMETHEUS_OPERATOR_MANIFESTS_DIR="bindata/deployment/prometheus-operator"
+
 if ! command -v yq &> /dev/null
 then
     echo "yq binary not found, installing... "
@@ -66,3 +70,9 @@ yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controll
 sed -i 's/securityContext\: |-/securityContext\:/g' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE} # Last because it breaks yaml syntax
 
 # TODO: run this script once FRR is merged
+
+# Prometheus Operator manifests
+curl ${PROMETHEUS_OPERATOR_MANIFESTS_URL} -o _cache/${PROMETHEUS_OPERATOR_FILE}
+yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount") | not)' _cache/${PROMETHEUS_OPERATOR_FILE} > ${PROMETHEUS_OPERATOR_MANIFESTS_DIR}/${PROMETHEUS_OPERATOR_FILE}
+yq e --inplace '. | select(.kind == "PodMonitor").metadata.namespace|="{{.NameSpace}}"' ${PROMETHEUS_OPERATOR_MANIFESTS_DIR}/${PROMETHEUS_OPERATOR_FILE}
+yq e --inplace '. | select(.kind == "PodMonitor").spec.namespaceSelector.matchNames|=["{{.NameSpace}}"]' ${PROMETHEUS_OPERATOR_MANIFESTS_DIR}/${PROMETHEUS_OPERATOR_FILE}

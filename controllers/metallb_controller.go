@@ -36,6 +36,7 @@ import (
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/render"
 	"github.com/metallb/metallb-operator/pkg/status"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -60,15 +61,18 @@ type MetalLBReconciler struct {
 }
 
 var ManifestPath = MetalLBManifestPathController
+var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prometheus-operator")
 
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
 
 // Cluster Scoped
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/finalizers,verbs=delete;get;update;patch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
@@ -156,6 +160,18 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		return err
 	}
 
+	// We shouldn't spam the api server trying to apply PodMonitors if the resource isn't installed.
+	if podMonitorAvailable(r.Client) {
+		podmonitors, err := render.RenderDir(PodMonitorsPath, &data)
+		if err != nil {
+			logger.Error(err, "Fail to render PodMonitors manifests")
+			return err
+		}
+		objs = append(objs, podmonitors...)
+	} else {
+		logger.Info("PodMonitors Resource not available in the cluster. Will not try to apply them.")
+	}
+
 	for _, obj := range objs {
 		if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
 			return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
@@ -181,4 +197,10 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		}
 	}
 	return nil
+}
+
+func podMonitorAvailable(c client.Client) bool {
+	crd := &apiext.CustomResourceDefinition{}
+	err := c.Get(context.Background(), client.ObjectKey{Name: "podmonitors.monitoring.coreos.com"}, crd)
+	return err == nil
 }
