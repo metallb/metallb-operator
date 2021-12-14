@@ -143,7 +143,7 @@ func (bgpPeer *BGPPeer) validateBGPPeersRouterID(existingBGPPeersList *BGPPeerLi
 func (bgpPeer *BGPPeer) validateBGPPeersMyASN(existingBGPPeersList *BGPPeerList) *field.Error {
 	myASN := bgpPeer.Spec.MyASN
 	for _, BGPPeer := range existingBGPPeersList.Items {
-		if myASN != BGPPeer.Spec.MyASN {
+		if bgpPeer.Name != BGPPeer.Name && myASN != BGPPeer.Spec.MyASN {
 			return field.Invalid(field.NewPath("spec").Child("MyASN"), myASN,
 				fmt.Sprintf("Multiple local ASN not supported in FRR mode, myASN %d existing myASN %d",
 					myASN, BGPPeer.Spec.MyASN))
@@ -170,7 +170,7 @@ func (bgpPeer *BGPPeer) validateBGPPeerConfig(existingBGPPeersList *BGPPeerList)
 	}
 
 	for _, BGPPeer := range existingBGPPeersList.Items {
-		if remoteASN == BGPPeer.Spec.ASN && address == BGPPeer.Spec.Address && myASN == BGPPeer.Spec.MyASN {
+		if bgpPeer.Name != BGPPeer.Name && remoteASN == BGPPeer.Spec.ASN && address == BGPPeer.Spec.Address && myASN == BGPPeer.Spec.MyASN {
 			return field.Invalid(field.NewPath("spec").Child("Address"), address,
 				fmt.Sprintf("Duplicate BGPPeer %s ASN %d in the same BGP instance",
 					address, remoteASN))
