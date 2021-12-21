@@ -173,23 +173,13 @@ var _ = Describe("metallb", func() {
 			}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
 
 			By("Checking ConfigMap is created match the expected configuration")
-			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					return "", err
-				}
-				return configmap.Data[consts.MetalLBConfigMapName], err
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(expectedConfigMap))
+			assertConfigMapMatchYAML(expectedConfigMap)
 
 			By("Checking AddressPool resource is deleted and ConfigMap is cleared")
 			err := testclient.Client.Delete(context.Background(), addresspool)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() string {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				return configmap.Data[consts.MetalLBConfigMapName]
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
+			assertConfigMapMatchYAML("{}")
 		},
 			table.Entry("Test AddressPool object with default auto assign", "addresspool1", &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
@@ -405,22 +395,36 @@ var _ = Describe("metallb", func() {
 		})
 	})
 	Context("Testing create/delete Multiple AddressPools", func() {
+		addresspool1 := &metallbv1beta1.AddressPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "addresspool1",
+				Namespace: OperatorNameSpace,
+			},
+			Spec: metallbv1beta1.AddressPoolSpec{
+				Protocol: "layer2",
+				Addresses: []string{
+					"1.1.1.1-1.1.1.100",
+				},
+			},
+		}
+		addresspool2 := &metallbv1beta1.AddressPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "addresspool2",
+				Namespace: OperatorNameSpace,
+			},
+			Spec: metallbv1beta1.AddressPoolSpec{
+				Protocol: "layer2",
+				Addresses: []string{
+					"2.2.2.1-2.2.2.100",
+				},
+				AutoAssign: &autoAssign,
+			},
+		}
+
 		It("should have created, merged and deleted resources correctly", func() {
 			By("Creating first addresspool object ", func() {
-				addresspool := &metallbv1beta1.AddressPool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "addresspool1",
-						Namespace: OperatorNameSpace,
-					},
-					Spec: metallbv1beta1.AddressPoolSpec{
-						Protocol: "layer2",
-						Addresses: []string{
-							"1.1.1.1-1.1.1.100",
-						},
-					},
-				}
 
-				Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
+				Expect(testclient.Client.Create(context.Background(), addresspool1)).Should(Succeed())
 
 				key := types.NamespacedName{
 					Name:      "addresspool1",
@@ -428,42 +432,21 @@ var _ = Describe("metallb", func() {
 				}
 				By("Checking AddressPool1 resource is created")
 				Eventually(func() error {
-					err := testclient.Client.Get(context.Background(), key, addresspool)
+					err := testclient.Client.Get(context.Background(), key, addresspool1)
 					return err
 				}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
 
 				By("Checking ConfigMap is created and matches addresspool1 configuration")
-				Eventually(func() (string, error) {
-					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-					if err != nil {
-						return "", err
-					}
-					return configmap.Data[consts.MetalLBConfigMapName], err
-				}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+				assertConfigMapMatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
-`))
-
+`)
 			})
 
 			By("Creating second addresspool object ", func() {
-				addresspool := &metallbv1beta1.AddressPool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "addresspool2",
-						Namespace: OperatorNameSpace,
-					},
-					Spec: metallbv1beta1.AddressPoolSpec{
-						Protocol: "layer2",
-						Addresses: []string{
-							"2.2.2.1-2.2.2.100",
-						},
-						AutoAssign: &autoAssign,
-					},
-				}
-
-				Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
+				Expect(testclient.Client.Create(context.Background(), addresspool2)).Should(Succeed())
 
 				key := types.NamespacedName{
 					Name:      "addresspool2",
@@ -471,18 +454,12 @@ var _ = Describe("metallb", func() {
 				}
 				By("Checking AddressPool2 resource is created")
 				Eventually(func() error {
-					err := testclient.Client.Get(context.Background(), key, addresspool)
+					err := testclient.Client.Get(context.Background(), key, addresspool2)
 					return err
 				}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
 
 				By("Checking ConfigMap is created and matches addresspool2 configuration")
-				Eventually(func() (string, error) {
-					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-					if err != nil {
-						return "", err
-					}
-					return configmap.Data[consts.MetalLBConfigMapName], err
-				}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+				assertConfigMapMatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
@@ -492,95 +469,58 @@ var _ = Describe("metallb", func() {
   auto-assign: false
   addresses:
   - 2.2.2.1-2.2.2.100
-`))
+`)
 			})
 
 			By("Deleting the first addresspool object", func() {
-				addresspool := &metallbv1beta1.AddressPool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "addresspool1",
-						Namespace: OperatorNameSpace,
-					},
-					Spec: metallbv1beta1.AddressPoolSpec{
-						Protocol: "layer2",
-						Addresses: []string{
-							"1.1.1.1-1.1.1.100",
-						},
-					},
-				}
-				err := testclient.Client.Delete(context.Background(), addresspool)
+				err := testclient.Client.Delete(context.Background(), addresspool1)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Checking ConfigMap matches the expected configuration")
-				Eventually(func() (string, error) {
-					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-					if err != nil {
-						// if its notfound means that was the last addresspool and configmap is deleted
-						if errors.IsNotFound(err) {
-							return "", nil
-						}
-						return "", err
-					}
-					return configmap.Data[consts.MetalLBConfigMapName], err
-				}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+				assertConfigMapMatchYAML(`address-pools:
 - name: addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
   - 2.2.2.1-2.2.2.100
-`))
-
+`)
 			})
 
 			By("Deleting the second addresspool object", func() {
-				addresspool := &metallbv1beta1.AddressPool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "addresspool2",
-						Namespace: OperatorNameSpace,
-					},
-					Spec: metallbv1beta1.AddressPoolSpec{
-						Protocol: "layer2",
-						Addresses: []string{
-							"2.2.2.1-2.2.2.100",
-						},
-					},
-				}
-
-				err := testclient.Client.Delete(context.Background(), addresspool)
+				err := testclient.Client.Delete(context.Background(), addresspool2)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			By("Checking ConfigMap is cleared at the end of the test")
-			Eventually(func() string {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				return configmap.Data[consts.MetalLBConfigMapName]
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
+			assertConfigMapMatchYAML("{}")
 		})
 	})
 
 	Context("Testing Update AddressPool", func() {
+		var addresspool *metallbv1beta1.AddressPool
+		var key types.NamespacedName
+
+		addresspool = &metallbv1beta1.AddressPool{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "addresspool1",
+				Namespace: OperatorNameSpace,
+			},
+			Spec: metallbv1beta1.AddressPoolSpec{
+				Protocol: "layer2",
+				Addresses: []string{
+					"1.1.1.1-1.1.1.100",
+				},
+			},
+		}
+		key = types.NamespacedName{
+			Name:      "addresspool1",
+			Namespace: OperatorNameSpace,
+		}
+
 		It("should have created, update and finally delete addresspool correctly", func() {
 			By("Creating addresspool object ", func() {
-				addresspool := &metallbv1beta1.AddressPool{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "addresspool1",
-						Namespace: OperatorNameSpace,
-					},
-					Spec: metallbv1beta1.AddressPoolSpec{
-						Protocol: "layer2",
-						Addresses: []string{
-							"1.1.1.1-1.1.1.100",
-						},
-					},
-				}
-
 				Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
 
-				key := types.NamespacedName{
-					Name:      "addresspool1",
-					Namespace: OperatorNameSpace,
-				}
 				By("Checking AddressPool resource is created")
 				Eventually(func() error {
 					err := testclient.Client.Get(context.Background(), key, addresspool)
@@ -588,32 +528,15 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
 
 				By("Checking ConfigMap is created and matches addresspool configuration")
-				Eventually(func() (string, error) {
-					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-					if err != nil {
-						return "", err
-					}
-					return configmap.Data[consts.MetalLBConfigMapName], err
-				}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+				assertConfigMapMatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
-`))
-
+`)
 			})
 
 			By("Update the same addresspool object with different range ", func() {
-				addresspool := &metallbv1beta1.AddressPool{}
-				key := types.NamespacedName{
-					Name:      "addresspool1",
-					Namespace: OperatorNameSpace,
-				}
-				Eventually(func() error {
-					err := testclient.Client.Get(context.Background(), key, addresspool)
-					return err
-				}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
-
 				addresspool.Spec = metallbv1beta1.AddressPoolSpec{
 					Protocol: "layer2",
 					Addresses: []string{
@@ -628,19 +551,13 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
 
 				By("Checking ConfigMap is created and matches updated configuration")
-				Eventually(func() (string, error) {
-					configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-					if err != nil {
-						return "", err
-					}
-					return configmap.Data[consts.MetalLBConfigMapName], err
-				}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+				assertConfigMapMatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   auto-assign: false
   addresses:
   - 1.1.1.1-1.1.1.200
-`))
+`)
 			})
 
 			By("Deleting the addresspool object", func() {
@@ -662,11 +579,7 @@ var _ = Describe("metallb", func() {
 
 			By("Checking ConfigMap is cleared at the end of the test")
 			// Make sure Configmap is cleared at the end of this test
-			Eventually(func() string {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				return configmap.Data[consts.MetalLBConfigMapName]
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
+			assertConfigMapMatchYAML("{}")
 		})
 	})
 
@@ -688,23 +601,13 @@ var _ = Describe("metallb", func() {
 			}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
 
 			By("Checking ConfigMap is created match the expected configuration")
-			Eventually(func() (string, error) {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					return "", err
-				}
-				return configmap.Data[consts.MetalLBConfigMapName], err
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(expectedConfigMap))
+			assertConfigMapMatchYAML(expectedConfigMap)
 
 			By("Checking the ConfigMap is cleared")
 			err := testclient.Client.Delete(context.Background(), peer)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() string {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				return configmap.Data[consts.MetalLBConfigMapName]
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
+			assertConfigMapMatchYAML("{}")
 		},
 			table.Entry("Test BGP Peer object", "peer1", &metallbv1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
@@ -785,41 +688,17 @@ var _ = Describe("metallb", func() {
 	Context("Validate AddressPool Webhook", func() {
 		BeforeEach(func() {
 			By("Checking if validation webhook is enabled")
-			deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
 
-			isValidationWebhookEnabled := false
-			for _, container := range deploy.Spec.Template.Spec.Containers {
-				if container.Name == "manager" {
-					for _, env := range container.Env {
-						if env.Name == "ENABLE_OPERATOR_WEBHOOK" {
-							if env.Value == "true" {
-								isValidationWebhookEnabled = true
-							}
-						}
-					}
-				}
-			}
+			isValidationWebhookEnabled := isValidationWebhookEnabled()
 
 			if !isValidationWebhookEnabled {
 				Skip("AddressPool webhook is disabled")
 			}
 
 			By("Checking if validation webhook is running")
-			// Can't just check the ValidatingWebhookConfiguration name as it's changing between different deployment methods.
-			// Need to check the webhook name in the webhooks definition of the ValidatingWebhookConfiguration.
-			validateCfgList := &admv1.ValidatingWebhookConfigurationList{}
-			err = testclient.Client.List(context.TODO(), validateCfgList, &goclient.ListOptions{})
-			Expect(err).ToNot(HaveOccurred())
 
-			isAddresspoolValidationWebhookRunning := false
-			for _, validateCfg := range validateCfgList.Items {
-				for _, webhook := range validateCfg.Webhooks {
-					if webhook.Name == consts.AddressPoolValidationWebhookName {
-						isAddresspoolValidationWebhookRunning = true
-					}
-				}
-			}
+			isAddresspoolValidationWebhookRunning := isValidationWebhookRunning(consts.AddressPoolValidationWebhookName)
+
 			Expect(isAddresspoolValidationWebhookRunning).To(BeTrue(), "AddressPool webhook is not running")
 		})
 		It("Should recognize overlapping addresses in two AddressPools", func() {
@@ -903,41 +782,16 @@ var _ = Describe("metallb", func() {
 	Context("Validate BGPPeer Webhook", func() {
 		BeforeEach(func() {
 			By("Checking if validation webhook is enabled")
-			deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
-
-			isValidationWebhookEnabled := false
-			for _, container := range deploy.Spec.Template.Spec.Containers {
-				if container.Name == "manager" {
-					for _, env := range container.Env {
-						if env.Name == "ENABLE_OPERATOR_WEBHOOK" {
-							if env.Value == "true" {
-								isValidationWebhookEnabled = true
-							}
-						}
-					}
-				}
-			}
+			isValidationWebhookEnabled := isValidationWebhookEnabled()
 
 			if !isValidationWebhookEnabled {
 				Skip("BGPPeer webhook is disabled")
 			}
 
 			By("Checking if validation webhook is running")
-			// Can't just check the ValidatingWebhookConfiguration name as it's changing between different deployment methods.
-			// Need to check the webhook name in the webhooks definition of the ValidatingWebhookConfiguration.
-			validateCfgList := &admv1.ValidatingWebhookConfigurationList{}
-			err = testclient.Client.List(context.TODO(), validateCfgList, &goclient.ListOptions{})
-			Expect(err).ToNot(HaveOccurred())
 
-			isBGPPeerValidationWebhookRunning := false
-			for _, validateCfg := range validateCfgList.Items {
-				for _, webhook := range validateCfg.Webhooks {
-					if webhook.Name == consts.BGPPeerValidationWebhookName {
-						isBGPPeerValidationWebhookRunning = true
-					}
-				}
-			}
+			isBGPPeerValidationWebhookRunning := isValidationWebhookRunning(consts.BGPPeerValidationWebhookName)
+
 			Expect(isBGPPeerValidationWebhookRunning).To(BeTrue(), "BGPPeer validation webhook is not running")
 		})
 		It("Should reject invalid BGPPeer IP address", func() {
@@ -1085,70 +939,97 @@ var _ = Describe("metallb", func() {
 				return err
 			}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
 
-			configMap := &corev1.ConfigMap{}
-
 			By("Checking ConfigMap is created match the expected configuration")
-			Eventually(func() (string, error) {
-				var err error
-				configMap, err = testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					return "", err
-				}
-				return configMap.Data[consts.MetalLBConfigMapName], err
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+			assertConfigMapMatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
-`))
+  `)
+
+			configMap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
 
 			By("Changing the Configmap")
 			configMap.Data[consts.MetalLBConfigMapName] = "fooo"
-			_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Update(context.Background(), configMap, metav1.UpdateOptions{})
+			_, err = testclient.Client.ConfigMaps(OperatorNameSpace).Update(context.Background(), configMap, metav1.UpdateOptions{})
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking ConfigMap is created match the expected configuration")
-			Eventually(func() (string, error) {
-				var err error
-				configMap, err = testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					return "", err
-				}
-				return configMap.Data[consts.MetalLBConfigMapName], err
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+			assertConfigMapMatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
-`))
+  `)
 
 			By("Deleting the Configmap")
 			err = testclient.Client.ConfigMaps(OperatorNameSpace).Delete(context.Background(), consts.MetalLBConfigMapName, metav1.DeleteOptions{})
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() (string, error) {
-				var err error
-				configMap, err = testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				if err != nil {
-					return "", err
-				}
-				return configMap.Data[consts.MetalLBConfigMapName], err
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+			assertConfigMapMatchYAML(`address-pools:
 - name: addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
-`))
+`)
 
 			By("Checking AddressPool resource is deleted and ConfigMap is cleared")
 			err = testclient.Client.Delete(context.Background(), addressPool)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() string {
-				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				return configmap.Data[consts.MetalLBConfigMapName]
-			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
+			assertConfigMapMatchYAML("{}")
 		})
 	})
 })
+
+func isValidationWebhookEnabled() bool {
+	deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
+	Expect(err).ToNot(HaveOccurred())
+
+	isEnabled := false
+	for _, container := range deploy.Spec.Template.Spec.Containers {
+		if container.Name == "manager" {
+			for _, env := range container.Env {
+				if env.Name == "ENABLE_OPERATOR_WEBHOOK" {
+					if env.Value == "true" {
+						isEnabled = true
+					}
+				}
+			}
+		}
+	}
+
+	return isEnabled
+}
+
+func isValidationWebhookRunning(validationWebhookName string) bool {
+	// Can't just check the ValidatingWebhookConfiguration name as it's changing between different deployment methods.
+	// Need to check the webhook name in the webhooks definition of the ValidatingWebhookConfiguration.
+	validateCfgList := &admv1.ValidatingWebhookConfigurationList{}
+	err := testclient.Client.List(context.TODO(), validateCfgList, &goclient.ListOptions{})
+	Expect(err).ToNot(HaveOccurred())
+
+	isRunning := false
+	for _, validateCfg := range validateCfgList.Items {
+		for _, webhook := range validateCfg.Webhooks {
+			if webhook.Name == validationWebhookName {
+				isRunning = true
+			}
+		}
+	}
+
+	return isRunning
+}
+
+func assertConfigMapMatchYAML(yaml string) {
+	EventuallyWithOffset(1, func() string {
+		configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return ""
+		}
+		Expect(err).ToNot(HaveOccurred())
+
+		return configmap.Data[consts.MetalLBConfigMapName]
+	}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(yaml))
+}
