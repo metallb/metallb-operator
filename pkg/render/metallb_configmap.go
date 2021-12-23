@@ -108,6 +108,7 @@ func peerToMetalLB(p metallbv1beta1.BGPPeer) peer {
 	res.Addr = p.Spec.Address
 	res.SrcAddr = p.Spec.SrcAddress
 	res.Port = p.Spec.Port
+	res.EBGPMultiHop = p.Spec.EBGPMultiHop
 	if p.Spec.HoldTime.Duration > 0 {
 		res.HoldTime = p.Spec.HoldTime.Duration.String()
 	}
