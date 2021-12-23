@@ -36,6 +36,9 @@ spec:
             properties:
               bfdProfile:
                 type: string
+              ebgpMultiHop:
+                description: EBGP peer is multi-hops away
+                type: boolean
               holdTime:
                 description: Requested BGP hold time, per RFC4271.
                 type: string

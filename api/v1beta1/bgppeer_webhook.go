@@ -19,12 +19,13 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+	"net"
+
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"net"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -157,6 +158,7 @@ func (bgpPeer *BGPPeer) validateBGPPeerConfig(existingBGPPeersList *BGPPeerList)
 	myASN := bgpPeer.Spec.MyASN
 	address := bgpPeer.Spec.Address
 	srcAddr := bgpPeer.Spec.SrcAddress
+	eBGPMultiHop := bgpPeer.Spec.EBGPMultiHop
 
 	if net.ParseIP(address) == nil {
 		return field.Invalid(field.NewPath("spec").Child("Address"), address,
@@ -166,6 +168,11 @@ func (bgpPeer *BGPPeer) validateBGPPeerConfig(existingBGPPeersList *BGPPeerList)
 	if len(srcAddr) != 0 && net.ParseIP(srcAddr) == nil {
 		return field.Invalid(field.NewPath("spec").Child("SrcAddress"), srcAddr,
 			fmt.Sprintf("Invalid BGPPeer source address %s", srcAddr))
+	}
+
+	if remoteASN == myASN && eBGPMultiHop {
+		return field.Invalid(field.NewPath("spec").Child("EBGPMultiHop"), eBGPMultiHop,
+			fmt.Sprintf("Invalid EBGPMultiHop parameter set for an ibgp peer %v", eBGPMultiHop))
 	}
 
 	for _, BGPPeer := range existingBGPPeersList.Items {

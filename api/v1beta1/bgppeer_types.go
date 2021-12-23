@@ -82,6 +82,9 @@ type BGPPeerSpec struct {
 	Password string `json:"password,omitempty" yaml:"password,omitempty"`
 
 	BFDProfile string `json:"bfdProfile,omitempty" yaml:"bfdprofile,omitempty"`
+
+	// EBGP peer is multi-hops away
+	EBGPMultiHop bool `json:"ebgpMultiHop,omitempty" yaml:"ebgp-multihop,omitempty"`
 	// Add future BGP configuration here
 }
 

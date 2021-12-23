@@ -167,7 +167,8 @@ func TestRendering(t *testing.T) {
 								},
 							},
 						},
-						Password: "topsecret",
+						Password:     "topsecret",
+						EBGPMultiHop: true,
 					},
 				}, {
 					ObjectMeta: metav1.ObjectMeta{
@@ -175,10 +176,11 @@ func TestRendering(t *testing.T) {
 						Namespace: "namespace",
 					},
 					Spec: metallbv1beta1.BGPPeerSpec{
-						MyASN:      25,
-						ASN:        26,
-						Address:    "192.168.2.1",
-						SrcAddress: "192.168.2.2",
+						MyASN:        25,
+						ASN:          26,
+						Address:      "192.168.2.1",
+						SrcAddress:   "192.168.2.2",
+						EBGPMultiHop: false,
 					},
 				},
 			},

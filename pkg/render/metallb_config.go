@@ -22,6 +22,7 @@ type peer struct {
 	NodeSelectors []nodeSelector `yaml:"node-selectors,omitempty"`
 	Password      string         `yaml:"password,omitempty"`
 	BFDProfile    string         `yaml:"bfd-profile,omitempty"`
+	EBGPMultiHop  bool           `yaml:"ebgp-multihop,omitempty"`
 }
 
 type nodeSelector struct {

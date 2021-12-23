@@ -20,6 +20,7 @@ peers:
   - match-labels:
       foo1: bar1
   password: topsecret
+  ebgp-multihop: true
 - my-asn: 25
   peer-asn: 26
   peer-address: 192.168.2.1
