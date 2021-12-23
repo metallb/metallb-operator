@@ -4,7 +4,6 @@ metadata:
   labels:
     app: metallb
   name: controller
-  namespace: '{{.NameSpace}}'
 spec:
   allowPrivilegeEscalation: false
   allowedCapabilities: []
@@ -46,7 +45,6 @@ metadata:
   labels:
     app: metallb
   name: speaker
-  namespace: '{{.NameSpace}}'
 spec:
   allowPrivilegeEscalation: false
   allowedCapabilities:

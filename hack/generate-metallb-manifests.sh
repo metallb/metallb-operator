@@ -1,7 +1,7 @@
 #!/bin/bash
 . $(dirname "$0")/common.sh
 
-METALLB_COMMIT_ID="a4b2482c334678ae79d79b5f5b3196ad760b48ac"
+METALLB_COMMIT_ID="b8025064d2b9413565475c7f076da1eecf7b80a0"
 METALLB_SC_FILE=$(dirname "$0")/securityContext.yaml
 
 NATIVE_MANIFESTS_FILE="metallb.yaml"
