@@ -62,4 +62,4 @@ jobs:
     - name: Unit and Integration Tests
       run: |
         METALLB_BGP_TYPE=native make test
-        METALLB_BGP_TYPE=frr make test
+        METALLB_BGP_TYPE=frr DEPLOY_KUBE_RBAC_PROXIES=true make test

@@ -33,17 +33,26 @@ var _ = Describe("MetalLB Controller", func() {
 			speakerImage := "test-speaker:latest"
 			controllerImage := "test-controller:latest"
 			frrImage := "test-frr:latest"
+			kubeRbacImage := "test-kube-rbac-proxy:latest"
 			By("Setting the environment variables")
 			Expect(os.Setenv("SPEAKER_IMAGE", speakerImage)).To(Succeed())
 			Expect(os.Setenv("CONTROLLER_IMAGE", controllerImage)).To(Succeed())
 			Expect(os.Setenv("WATCH_NAMESPACE", MetalLBTestNameSpace)).To(Succeed())
 			Expect(os.Setenv("FRR_IMAGE", frrImage)).To(Succeed())
+			Expect(os.Setenv("KUBE_RBAC_PROXY_IMAGE", kubeRbacImage)).To(Succeed())
+
+			controllerContainers := map[string]string{
+				"controller":      controllerImage,
+				"kube-rbac-proxy": kubeRbacImage,
+			}
 
 			speakerContainers := map[string]string{
-				"speaker":     speakerImage,
-				"frr":         frrImage,
-				"reloader":    frrImage,
-				"frr-metrics": frrImage,
+				"speaker":             speakerImage,
+				"frr":                 frrImage,
+				"reloader":            frrImage,
+				"frr-metrics":         frrImage,
+				"kube-rbac-proxy":     kubeRbacImage,
+				"kube-rbac-proxy-frr": kubeRbacImage,
 			}
 
 			speakerInitContainers := map[string]string{
@@ -64,7 +73,11 @@ var _ = Describe("MetalLB Controller", func() {
 			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
 			Expect(controllerDeployment).NotTo(BeZero())
 			Expect(len(controllerDeployment.Spec.Template.Spec.Containers)).To(BeNumerically(">", 0))
-			Expect(controllerDeployment.Spec.Template.Spec.Containers[0].Image).To(Equal(controllerImage))
+			for _, c := range controllerDeployment.Spec.Template.Spec.Containers {
+				image, ok := controllerContainers[c.Name]
+				Expect(ok).To(BeTrue(), fmt.Sprintf("container %s not found in %s", c.Name, controllerContainers))
+				Expect(c.Image).To(Equal(image))
+			}
 
 			speakerDaemonSet := &appsv1.DaemonSet{}
 			Eventually(func() error {
