@@ -154,6 +154,8 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	data.Data["FRRImage"] = os.Getenv("FRR_IMAGE")
 	data.Data["IsOpenShift"] = r.PlatformInfo.IsOpenShift()
 	data.Data["NameSpace"] = r.Namespace
+	data.Data["KubeRbacProxy"] = os.Getenv("KUBE_RBAC_PROXY_IMAGE")
+	data.Data["DeployKubeRbacProxies"] = os.Getenv("DEPLOY_KUBE_RBAC_PROXIES") == "true"
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")
@@ -161,7 +163,8 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	}
 
 	// We shouldn't spam the api server trying to apply PodMonitors if the resource isn't installed.
-	if podMonitorAvailable(r.Client) {
+	deployPodMonitors := os.Getenv("DEPLOY_PODMONITORS") == "true"
+	if podMonitorAvailable(r.Client) && deployPodMonitors {
 		podmonitors, err := render.RenderDir(PodMonitorsPath, &data)
 		if err != nil {
 			logger.Error(err, "Fail to render PodMonitors manifests")

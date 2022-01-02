@@ -424,6 +424,12 @@ spec:
                         value: native
                       - name: FRR_IMAGE
                         value: quay.io/frrouting/frr:stable_7.5
+                      - name: KUBE_RBAC_PROXY_IMAGE
+                        value: quay.io/brancz/kube-rbac-proxy:v0.11.0
+                      - name: DEPLOY_KUBE_RBAC_PROXIES
+                        value: "false"
+                      - name: DEPLOY_PODMONITORS
+                        value: "true"
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -480,6 +486,18 @@ spec:
                 - deployments
               verbs:
                 - get
+            - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
           serviceAccountName: controller
         - rules:
             - apiGroups:
@@ -536,6 +554,18 @@ spec:
                 - get
                 - list
                 - watch
+            - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
             - apiGroups:
                 - ""
               resources:
