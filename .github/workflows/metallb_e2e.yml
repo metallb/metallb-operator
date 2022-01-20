@@ -67,7 +67,7 @@ jobs:
           export KUBECONFIG=${HOME}/.kube/config
           kubectl apply -f config/samples/metallb.yaml
           cd ${GITHUB_WORKSPACE}/metallb
-          sudo -E env "PATH=$PATH" inv e2etest --skip "IPV6\|DUALSTACK" -e /tmp/kind_logs --use-operator
+          sudo -E env "PATH=$PATH" inv e2etest --skip "IPV6|DUALSTACK" -e /tmp/kind_logs --use-operator
       - name: Change permissions for kind logs
         if: ${{ failure() }}
         run: |
