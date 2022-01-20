@@ -191,6 +191,264 @@ func TestValidateAddressPool(t *testing.T) {
 			isNewAddressPool: true,
 			expectedError:    "bgpadvertisement config not valid",
 		},
+		{
+			desc: "Duplicate bgp advertisment in AddressPool",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(32),
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+						{
+							AggregationLength: pointer.Int32Ptr(32),
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "duplicate definition of bgpadvertisement",
+		},
+		{
+			desc: "Duplicate communities in AddressPool",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(32),
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"65535:65282",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "duplicate definition of communities",
+		},
+		{
+			desc: "Bad IPv4 aggregation length in bgp advertisment (too long)",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(33),
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "invalid aggregation length 33 for IPv4",
+		},
+		{
+			desc: "Bad IPv6 aggregation length in bgp advertisment (too long)",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"1000::/127",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLengthV6: pointer.Int32Ptr(129),
+							LocalPref:           100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "invalid aggregation length 129 for IPv6",
+		},
+		{
+			desc: "Bad IPv4 aggregation length in bgp advertisment (incompatible with CIDR)",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"10.20.30.40/24",
+						"1.2.3.0/28",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(26),
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "invalid aggregation length 26: prefix 28 in this pool is more specific than the aggregation length for addresses 1.2.3.0/28",
+		},
+		{
+			desc: "Bad IPv4 aggregation length by range in bgp advertisment (too wide)",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"3.3.3.2-3.3.3.254",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(24),
+							LocalPref:         100,
+							Communities: []string{
+								"65535:65282",
+								"7003:007",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "invalid aggregation length 24: prefix 26 in this pool is more specific than the aggregation length for addresses 3.3.3.2-3.3.3.254",
+		},
+		{
+			desc: "Bad community literal in bgp advertisment (wrong format)",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(32),
+							LocalPref:         100,
+							Communities: []string{
+								"65535",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "invalid community string \"65535\"",
+		},
+		{
+			desc: "Bad community literal in bgp advertisment (asn part doesn't fit)",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(32),
+							LocalPref:         100,
+							Communities: []string{
+								"99999999:1",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "invalid first section of community \"99999999\"",
+		},
+		{
+			desc: "Bad community literal in bgp advertisment (community# part doesn't fit)",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "bgp",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+					AutoAssign: &autoAssign,
+					BGPAdvertisements: []BgpAdvertisement{
+						{
+							AggregationLength: pointer.Int32Ptr(32),
+							LocalPref:         100,
+							Communities: []string{
+								"1:99999999",
+							},
+						},
+					},
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "invalid second section of community \"99999999\"",
+		},
 	}
 
 	for _, test := range tests {
