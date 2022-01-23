@@ -176,8 +176,11 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	}
 
 	for _, obj := range objs {
-		if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
-			return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
+		objNS := obj.GetNamespace()
+		if objNS != "" { // Avoid setting reference on a cluster-scoped resource.
+			if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
+				return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
+			}
 		}
 		if obj.GetKind() == "DaemonSet" && len(config.Spec.SpeakerNodeSelector) > 0 {
 			scheme := kscheme.Scheme
