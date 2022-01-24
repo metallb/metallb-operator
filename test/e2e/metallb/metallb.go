@@ -19,6 +19,21 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	ControllerLabelSelector = "app.kubernetes.io/component=controller"
+	SpeakerLabelSelector    = "app.kubernetes.io/component=speaker"
+)
+
+func init() {
+	if v, ok := os.LookupEnv("CONTROLLER_SELECTOR"); ok {
+		ControllerLabelSelector = v
+	}
+
+	if v, ok := os.LookupEnv("SPEAKER_SELECTOR"); ok {
+		SpeakerLabelSelector = v
+	}
+}
+
 const (
 	// Timeout and Interval settings
 	Timeout       = time.Second * 5
@@ -51,13 +66,13 @@ func Delete(metallb *metallbv1beta1.MetalLB) {
 
 	Eventually(func() bool {
 		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app.kubernetes.io/component=%s", consts.MetalLBDeploymentName)})
+			LabelSelector: ControllerLabelSelector})
 		return len(pods.Items) == 0
 	}, DeployTimeout, Interval).Should(BeTrue())
 
 	Eventually(func() bool {
 		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app.kubernetes.io/component=%s", consts.MetalLBDaemonsetName)})
+			LabelSelector: SpeakerLabelSelector})
 		return len(pods.Items) == 0
 	}, DeployTimeout, Interval).Should(BeTrue())
 }
