@@ -98,6 +98,15 @@ deploy: manifests kustomize configure-operator-webhook ## Deploy controller in t
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
+BIN_FILE ?= "metallb-operator.yaml"
+bin: manifests kustomize configure-operator-webhook ## Create manifests
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd $(KUSTOMIZE_DEPLOY_DIR) && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
+	cd config/metallb_rbac && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
+	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) > bin/$(BIN_FILE)
+	echo "---" >> bin/$(BIN_FILE)
+	$(KUSTOMIZE) build config/metallb_rbac >> bin/$(BIN_FILE)
+
 manifests: controller-gen generate-metallb-manifests  ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 

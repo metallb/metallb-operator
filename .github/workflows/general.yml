@@ -59,6 +59,12 @@ jobs:
         make manifests
         git diff --exit-code
 
+    - name: Verify bin dir
+      run: |
+        BIN_FILE="metallb-operator.yaml" ENABLE_OPERATOR_WEBHOOK=false make bin
+        BIN_FILE="metallb-operator-with-webhooks.yaml" ENABLE_OPERATOR_WEBHOOK=true KUSTOMIZE_DEPLOY_DIR="config/webhook-with-certmanager/" make bin
+        git diff --exit-code bin/
+
     - name: Unit and Integration Tests
       run: |
         METALLB_BGP_TYPE=native make test

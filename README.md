@@ -5,7 +5,24 @@ for deploying MetalLB on a kubernetes cluster, as described in the [related desi
 
 >**WARNING: This project is still work in progress and is not ready for production by any means!**
 
+## Quick Setup
 
+To install the MetalLB Operator using the prebuilt manifests, run the following:
+```shell
+kubectl apply -f bin/metallb-operator.yaml
+```
+
+To install the MetalLB Operator with the Validation Webhooks using the prebuilt manifests, run the following:
+
+Have cert-manager installed in your cluster, or install it using:
+```shell
+make deploy-cert-manager
+```
+
+Run:
+```shell
+kubectl apply -f bin/metallb-operator-with-webhooks.yaml
+```
 ## Prerequisites
 
 Need to install the following packages:
