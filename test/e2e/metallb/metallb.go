@@ -51,13 +51,13 @@ func Delete(metallb *metallbv1beta1.MetalLB) {
 
 	Eventually(func() bool {
 		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app.kubernetes.io/component=%s", consts.MetalLBDeploymentName)})
+			LabelSelector: fmt.Sprintf("component=%s", consts.MetalLBDeploymentName)})
 		return len(pods.Items) == 0
 	}, DeployTimeout, Interval).Should(BeTrue())
 
 	Eventually(func() bool {
 		pods, _ := testclient.Client.Pods(metallb.Namespace).List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app.kubernetes.io/component=%s", consts.MetalLBDaemonsetName)})
+			LabelSelector: fmt.Sprintf("component=%s", consts.MetalLBDaemonsetName)})
 		return len(pods.Items) == 0
 	}, DeployTimeout, Interval).Should(BeTrue())
 }
