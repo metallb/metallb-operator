@@ -94,13 +94,6 @@ sed -i 's/securityContext\: |-/securityContext\:/g' ${FRR_MANIFESTS_DIR}/${FRR_M
 sed -i "s/- name: '{{ if .DeployKubeRbacProxies }}'/{{ if .DeployKubeRbacProxies }}/g" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 sed -i "s/- name: '{{ end }}'/{{ end }}/g" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 
-sed -i "s/app.kubernetes.io\/component: speaker/{{.SpeakerSelector}}/g" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-sed -i "s/app.kubernetes.io\/component: controller/{{.ControllerSelector}}/g" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-sed -i "s/app.kubernetes.io\/component: speaker/{{.SpeakerSelector}}/g" ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
-sed -i "s/app.kubernetes.io\/component: controller/{{.ControllerSelector}}/g" ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
-sed -i "s/app.kubernetes.io\/component=speaker/{{.SpeakerLabelSelector}}/g" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-sed -i "s/app.kubernetes.io\/component=speaker/{{.SpeakerLabelSelector}}/g" ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
-
 # Update MetalLB's E2E lane to clone the same commit as the manifests.
 yq e --inplace ".jobs.main.steps[] |= select(.name==\"Checkout MetalLB\").with.ref=\"${METALLB_COMMIT_ID}\"" .github/workflows/metallb_e2e.yml
 
