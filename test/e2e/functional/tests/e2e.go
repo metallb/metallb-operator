@@ -27,17 +27,18 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var autoAssign = false
-var UseMetallbResourcesFromFile = false
-
-var OperatorNameSpace = consts.DefaultOperatorNameSpace
+var (
+	autoAssign                  = false
+	UseMetallbResourcesFromFile = false
+	OperatorNameSpace           = consts.DefaultOperatorNameSpace
+)
 
 func init() {
-	if len(os.Getenv("USE_LOCAL_RESOURCES")) != 0 {
+	if _, ok := os.LookupEnv("USE_LOCAL_RESOURCES"); ok {
 		UseMetallbResourcesFromFile = true
 	}
 
-	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
+	if ns, ok := os.LookupEnv("OO_INSTALL_NAMESPACE"); ok {
 		OperatorNameSpace = ns
 	}
 }
@@ -88,7 +89,7 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "app.kubernetes.io/component=controller"})
+					LabelSelector: metallbutils.ControllerLabelSelector})
 				Expect(err).ToNot(HaveOccurred())
 
 				deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
@@ -110,7 +111,7 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "app.kubernetes.io/component=speaker"})
+					LabelSelector: metallbutils.SpeakerLabelSelector})
 				Expect(err).ToNot(HaveOccurred())
 
 				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
