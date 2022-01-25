@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -40,23 +39,6 @@ import (
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
-
-var (
-	controllerSelector   = "app.kubernetes.io/component: controller"
-	speakerSelector      = "app.kubernetes.io/component: speaker"
-	speakerLabelSelector = "app.kubernetes.io/component=speaker"
-)
-
-func init() {
-	if v, ok := os.LookupEnv("CONTROLLER_SELECTOR"); ok {
-		controllerSelector = v
-	}
-
-	if v, ok := os.LookupEnv("SPEAKER_SELECTOR"); ok {
-		speakerSelector = v
-		speakerLabelSelector = strings.Replace(speakerSelector, ": ", "=", -1)
-	}
-}
 
 const (
 	defaultMetalLBCrName          = "metallb"
@@ -174,11 +156,6 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	data.Data["NameSpace"] = r.Namespace
 	data.Data["KubeRbacProxy"] = os.Getenv("KUBE_RBAC_PROXY_IMAGE")
 	data.Data["DeployKubeRbacProxies"] = os.Getenv("DEPLOY_KUBE_RBAC_PROXIES") == "true"
-
-	data.Data["ControllerSelector"] = controllerSelector
-	data.Data["SpeakerSelector"] = speakerSelector
-	data.Data["SpeakerLabelSelector"] = speakerLabelSelector
-
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")
