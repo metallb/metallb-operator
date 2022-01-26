@@ -88,7 +88,7 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "app.kubernetes.io/component=controller"})
+					LabelSelector: "component=controller"})
 				Expect(err).ToNot(HaveOccurred())
 
 				deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
@@ -110,7 +110,7 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "app.kubernetes.io/component=speaker"})
+					LabelSelector: "component=speaker"})
 				Expect(err).ToNot(HaveOccurred())
 
 				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
