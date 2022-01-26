@@ -7,6 +7,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/metallb/metallb-operator/api/v1beta1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,6 +20,18 @@ var _ = Describe("AddressPool Controller", func() {
 	Context("Creating AddressPool object Layer2 Config", func() {
 		autoAssign := false
 		configmap := &corev1.ConfigMap{}
+
+		BeforeEach(func() {
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+			}
+			By("Creating a MetalLB resource")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+		})
 
 		AfterEach(func() {
 			err := cleanTestNamespace()
@@ -152,6 +165,18 @@ var _ = Describe("AddressPool Controller", func() {
 				},
 			},
 		}
+
+		BeforeEach(func() {
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+			}
+			By("Creating a MetalLB resource")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+		})
 
 		AfterEach(func() {
 			err := cleanTestNamespace()

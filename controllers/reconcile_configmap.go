@@ -7,8 +7,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/render"
@@ -18,7 +20,7 @@ import (
 const ConfigMapName = "config"
 const ConfigDataField = "config"
 
-func reconcileConfigMap(ctx context.Context, c client.Client, log logr.Logger, namespace string) error {
+func reconcileConfigMap(ctx context.Context, c client.Client, log logr.Logger, namespace string, scheme *runtime.Scheme) error {
 	config, err := operatorConfig(ctx, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to collect configmap data")
@@ -33,8 +35,18 @@ func reconcileConfigMap(ctx context.Context, c client.Client, log logr.Logger, n
 	existing := &corev1.ConfigMap{}
 	err = c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: ConfigMapName}, existing)
 	if k8serrors.IsNotFound(err) {
+		metalLbInstance := &metallbv1beta1.MetalLB{}
+		err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: defaultMetalLBCrName}, metalLbInstance)
+		if err != nil && k8serrors.IsNotFound(err) {
+			log.Info("not updating configmap because MetalLB resource not found")
+			return nil
+		}
+		if err := controllerutil.SetControllerReference(metalLbInstance, rendered, scheme); err != nil {
+			return errors.Wrapf(err, "Failed to set controller reference to %s %s", rendered.GetNamespace(), rendered.GetName())
+		}
 		return c.Create(ctx, rendered)
 	}
+	rendered.OwnerReferences = existing.OwnerReferences
 
 	if existing.Data[ConfigDataField] == rendered.Data[ConfigDataField] {
 		log.Info("not updating configmap because of no changes")

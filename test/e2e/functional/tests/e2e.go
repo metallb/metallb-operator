@@ -156,6 +156,8 @@ var _ = Describe("metallb", func() {
 	})
 
 	Context("Creating AddressPool", func() {
+		BeforeEach(createMetalLBResource)
+		AfterEach(deleteMetalLBResource)
 		table.DescribeTable("Testing creating addresspool CR successfully", func(addressPoolName string, addresspool client.Object, expectedConfigMap string) {
 			By("Creating AddressPool CR")
 
@@ -420,7 +422,8 @@ var _ = Describe("metallb", func() {
 				AutoAssign: &autoAssign,
 			},
 		}
-
+		BeforeEach(createMetalLBResource)
+		AfterEach(deleteMetalLBResource)
 		It("should have created, merged and deleted resources correctly", func() {
 			By("Creating first addresspool object ", func() {
 
@@ -516,7 +519,8 @@ var _ = Describe("metallb", func() {
 			Name:      "addresspool1",
 			Namespace: OperatorNameSpace,
 		}
-
+		BeforeEach(createMetalLBResource)
+		AfterEach(deleteMetalLBResource)
 		It("should have created, update and finally delete addresspool correctly", func() {
 			By("Creating addresspool object ", func() {
 				Expect(testclient.Client.Create(context.Background(), addresspool)).Should(Succeed())
@@ -584,6 +588,8 @@ var _ = Describe("metallb", func() {
 	})
 
 	Context("Creating BGP Peer", func() {
+		BeforeEach(createMetalLBResource)
+		AfterEach(deleteMetalLBResource)
 		table.DescribeTable("Testing creating BGP peer CR successfully", func(peerName string, peer *metallbv1beta1.BGPPeer, expectedConfigMap string) {
 			By("Creating BGP peer CR")
 
@@ -912,6 +918,8 @@ var _ = Describe("metallb", func() {
 	})
 
 	Context("Configmap", func() {
+		BeforeEach(createMetalLBResource)
+		AfterEach(deleteMetalLBResource)
 		It("Should be constantly reconciled", func() {
 			By("Creating AddressPool CR")
 			addressPool := &metallbv1beta1.AddressPool{
@@ -979,6 +987,71 @@ var _ = Describe("metallb", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			assertConfigMapMatchYAML("{}")
+		})
+	})
+
+	Context("Validate MetalLB", func() {
+		It("Create it after Address Pool is created", func() {
+			By("Creating AddressPool CR")
+			addressPool := &metallbv1beta1.AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "addresspool1",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1beta1.AddressPoolSpec{
+					Protocol: "layer2",
+					Addresses: []string{
+						"1.1.1.1-1.1.1.100",
+					},
+				},
+			}
+			Expect(testclient.Client.Create(context.Background(), addressPool)).Should(Succeed())
+
+			key := types.NamespacedName{
+				Name:      addressPool.Name,
+				Namespace: OperatorNameSpace,
+			}
+			// Create addresspool resource
+			By("Checking AddressPool resource is created")
+			Eventually(func() error {
+				err := testclient.Client.Get(context.Background(), key, addressPool)
+				return err
+			}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
+
+			By("Checking config map is not created")
+			Eventually(func() bool {
+				_, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				return errors.IsNotFound(err)
+			}, metallbutils.Timeout, metallbutils.Interval).Should(Equal(true))
+
+			createMetalLBResource()
+
+			configMap := &corev1.ConfigMap{}
+			By("Checking ConfigMap is updated and match the expected configuration")
+			Eventually(func() (string, error) {
+				var err error
+				configMap, err = testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				if err != nil {
+					return "", err
+				}
+				return configMap.Data[consts.MetalLBConfigMapName], err
+			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
+- name: addresspool1
+  protocol: layer2
+  addresses:
+  - 1.1.1.1-1.1.1.100
+`))
+			By("Checking AddressPool resource is deleted and ConfigMap is cleared")
+			err := testclient.Client.Delete(context.Background(), addressPool)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() string {
+				configmap, err := testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				return configmap.Data[consts.MetalLBConfigMapName]
+			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML("{}"))
+
+			deleteMetalLBResource()
 		})
 	})
 })

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/metallb/metallb-operator/api/v1beta1"
+	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,6 +18,17 @@ import (
 
 var _ = Describe("BFD Controller", func() {
 	Context("Creating BFD object", func() {
+		BeforeEach(func() {
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+			}
+			By("Creating a MetalLB resource")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+		})
 		AfterEach(func() {
 			err := cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
@@ -108,6 +120,17 @@ var _ = Describe("BFD Controller", func() {
 	})
 
 	Context("Creating invalid BFDProfiles", func() {
+		BeforeEach(func() {
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+			}
+			By("Creating a MetalLB resource")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+		})
 		AfterEach(func() {
 			err := cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
@@ -147,6 +170,17 @@ var _ = Describe("BFD Controller", func() {
 	})
 
 	Context("Creating Full BGP + BFD configuration", func() {
+		BeforeEach(func() {
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+			}
+			By("Creating a MetalLB resource")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+		})
 		AfterEach(func() {
 			err := cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())

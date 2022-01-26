@@ -56,7 +56,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	r.Log.Info(fmt.Sprintf("Starting ConfigMap reconcile loop for %v", req.NamespacedName))
 	defer r.Log.Info(fmt.Sprintf("Finish ConfigMap reconcile loop for %v", req.NamespacedName))
 
-	err := reconcileConfigMap(ctx, r.Client, r.Log, r.Namespace)
+	err := reconcileConfigMap(ctx, r.Client, r.Log, r.Namespace, r.Scheme)
 	if errors.As(err, &render.RenderingFailed{}) {
 		r.Log.Error(err, "configmap rendering failed", "controller", "bgppeer")
 		return ctrl.Result{}, nil
