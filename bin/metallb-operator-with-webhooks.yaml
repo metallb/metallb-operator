@@ -445,6 +445,18 @@ spec:
                 description: Foo is an example field of MetalLB. Edit MetalLB_types.go
                   to remove/update
                 type: string
+              logLevel:
+                description: 'Define the verbosity of the controller and the speaker
+                  logging. Allowed values are: all, debug, info, warn, error, none.
+                  (default: info)'
+                enum:
+                - all
+                - debug
+                - info
+                - warn
+                - error
+                - none
+                type: string
               nodeSelector:
                 additionalProperties:
                   type: string
