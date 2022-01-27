@@ -46,6 +46,22 @@ func TestValidateBGPPeer(t *testing.T) {
 			expectedError: "Invalid RouterID",
 		},
 		{
+			desc: "BGPPeer with different RouterID",
+			bgpPeer: &BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgppeer1",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: BGPPeerSpec{
+					Address:  "10.0.0.1",
+					ASN:      64501,
+					MyASN:    64500,
+					RouterID: "11.11.11.11",
+				},
+			},
+			expectedError: "BGPPeers with different RouterID not supported ",
+		},
+		{
 			desc: "Invalid BGP Peer IP address",
 			bgpPeer: &BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
