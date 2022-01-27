@@ -1006,6 +1006,55 @@ var _ = Describe("metallb", func() {
 				return errors.IsNotFound(err)
 			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete BGPPeer resource")
 		})
+		It("Should allow multiple BGPPeers with the same router-id", func() {
+			By("Creating multiple BGPpeers")
+			peer1 := &metallbv1beta1.BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgp-peer1",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1beta1.BGPPeerSpec{
+					Address:  "1.1.1.1",
+					ASN:      64500,
+					MyASN:    1000,
+					RouterID: "10.10.10.10",
+				},
+			}
+			err := testclient.Client.Create(context.Background(), peer1)
+			Expect(err).ToNot(HaveOccurred())
+
+			peer2 := &metallbv1beta1.BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgp-peer2",
+					Namespace: OperatorNameSpace,
+				},
+				Spec: metallbv1beta1.BGPPeerSpec{
+					Address:  "2.2.2.2",
+					ASN:      64600,
+					MyASN:    1000,
+					RouterID: "10.10.10.10",
+				},
+			}
+			err = testclient.Client.Create(context.Background(), peer2)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Deleting BGPPeers")
+			err = testclient.Client.Delete(context.Background(), peer1)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: peer1.Namespace, Name: peer1.Name}, peer1)
+				return errors.IsNotFound(err)
+			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete BGPPeer peer1")
+
+			err = testclient.Client.Delete(context.Background(), peer2)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() bool {
+				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: peer2.Namespace, Name: peer2.Name}, peer2)
+				return errors.IsNotFound(err)
+			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to delete BGPPeer peer2")
+		})
 	})
 
 	Context("Configmap", func() {

@@ -82,9 +82,6 @@ func (bgpPeer *BGPPeer) ValidateDelete() error {
 func (bgpPeer *BGPPeer) validateBGPPeer(existingBGPPeersList *BGPPeerList, bgpFrrMode bool) error {
 	var allErrs field.ErrorList
 
-	if err := bgpPeer.validateBGPPeersRouterID(); err != nil {
-		allErrs = append(allErrs, err)
-	}
 	if bgpFrrMode {
 		if err := bgpPeer.validateBGPPeersMyASN(existingBGPPeersList); err != nil {
 			allErrs = append(allErrs, err)
@@ -97,6 +94,9 @@ func (bgpPeer *BGPPeer) validateBGPPeer(existingBGPPeersList *BGPPeerList, bgpFr
 		}
 	}
 	if err := bgpPeer.validateBGPPeersKeepaliveTime(); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if err := bgpPeer.validateBGPPeersRouterID(existingBGPPeersList, bgpFrrMode); err != nil {
 		allErrs = append(allErrs, err)
 	}
 	if err := bgpPeer.validateBGPPeerAddrConfig(); err != nil {
@@ -133,7 +133,7 @@ func (bgpPeer *BGPPeer) validateBGPPeersKeepaliveTime() *field.Error {
 	return nil
 }
 
-func (bgpPeer *BGPPeer) validateBGPPeersRouterID() *field.Error {
+func (bgpPeer *BGPPeer) validateBGPPeersRouterID(existingBGPPeersList *BGPPeerList, bgpFrrMode bool) *field.Error {
 	routerID := bgpPeer.Spec.RouterID
 	if len(routerID) == 0 {
 		return nil
@@ -141,6 +141,15 @@ func (bgpPeer *BGPPeer) validateBGPPeersRouterID() *field.Error {
 	if net.ParseIP(routerID) == nil {
 		return field.Invalid(field.NewPath("spec").Child("RouterID"), routerID,
 			fmt.Sprintf("Invalid RouterID %s", routerID))
+	}
+	if bgpFrrMode {
+		for _, existingBGPPeer := range existingBGPPeersList.Items {
+			if bgpPeer.Name != existingBGPPeer.Name && routerID != existingBGPPeer.Spec.RouterID {
+				return field.Invalid(field.NewPath("spec").Child("RouterID"), routerID,
+					fmt.Sprintf("BGPPeers with different RouterID not supported in FRR mode, RouterID %s existing routerID %s",
+						routerID, existingBGPPeer.Spec.RouterID))
+			}
+		}
 	}
 	return nil
 }
