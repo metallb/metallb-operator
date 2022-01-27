@@ -98,6 +98,7 @@ export IMAGE_NAME=metallb-operator
 
 make docker-build IMG=$IMAGE_NAME
 kind load docker-image $IMAGE_NAME
+make deploy-cert-manager
 IMG=$IMAGE_NAME KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
 ```
 
