@@ -257,7 +257,7 @@ var _ = Describe("metallb", func() {
 					AutoAssign: &autoAssign,
 					BGPAdvertisements: []metallbv1beta1.BgpAdvertisement{
 						{
-							AggregationLength:   pointer.Int32Ptr(24),
+							AggregationLength:   pointer.Int32Ptr(32),
 							AggregationLengthV6: pointer.Int32Ptr(124),
 							LocalPref:           100,
 							Communities: []string{
@@ -277,7 +277,7 @@ var _ = Describe("metallb", func() {
   - communities: 
     - 65535:65282
     - 7003:007
-    aggregation-length: 24
+    aggregation-length: 32
     aggregation-length-v6: 124
     localpref: 100
 `),
