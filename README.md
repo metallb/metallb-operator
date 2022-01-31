@@ -3,7 +3,18 @@
 This is a WIP implementaton of a MetalLB Operator, implementing the [operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 for deploying MetalLB on a kubernetes cluster, as described in the [related design proposal](https://github.com/metallb/metallb/blob/main/design/metallb-operator.md).
 
->**WARNING: This project is still work in progress and is not ready for production by any means!**
+## Prerequisites
+
+Need to install the following packages:
+
+- operator-sdk 1.8.0+
+- controller-gen v0.7.0+
+
+To install controller-gen, run the following:
+
+```
+go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+```
 
 ## Quick Setup
 
@@ -22,18 +33,6 @@ make deploy-cert-manager
 Run:
 ```shell
 kubectl apply -f bin/metallb-operator-with-webhooks.yaml
-```
-## Prerequisites
-
-Need to install the following packages:
-
-- operator-sdk 1.8.0+
-- controller-gen v0.7.0+
-
-To install controller-gen, run the following:
-
-```
-go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
 ```
 
 ## AddressPool Validation Webhook
