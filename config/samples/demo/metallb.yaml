@@ -6,3 +6,7 @@ metadata:
 spec:
   nodeSelector:
     feature.node.kubernetes.io/metalLB.capable: 'true'
+  speakerTolerations:
+  - key: "Example"
+    operator: "Exists"
+    effect: "NoExecute"
