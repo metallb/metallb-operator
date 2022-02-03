@@ -2,17 +2,12 @@ package controllers
 
 import (
 	"context"
-	"time"
 
 	"github.com/metallb/metallb-operator/api/v1beta1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/metallb/metallb-operator/pkg/apply"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 )
 
@@ -581,19 +576,4 @@ bfd-profiles:
 
 func uint32Ptr(n uint32) *uint32 {
 	return &n
-}
-
-func validateConfigMatchesYaml(toMatch string) {
-	configmap := &corev1.ConfigMap{}
-	EventuallyWithOffset(1, func() (string, error) {
-		err := k8sClient.Get(context.Background(),
-			types.NamespacedName{Name: apply.MetalLBConfigMap, Namespace: MetalLBTestNameSpace}, configmap)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				return "", nil
-			}
-			return "", err
-		}
-		return configmap.Data[apply.MetalLBConfigMap], err
-	}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML(toMatch))
 }
