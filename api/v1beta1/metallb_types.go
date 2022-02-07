@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,6 +33,10 @@ type MetalLBSpec struct {
 	MetalLBImage string `json:"image,omitempty"`
 	// +optional
 	SpeakerNodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// tolerations is a list of tolerations applied to metalLB controller
+	// deployments.
+	// +optional
+	SpeakerTolerations []corev1.Toleration `json:"speakerTolerations,omitempty"`
 }
 
 // MetalLBStatus defines the observed state of MetalLB
