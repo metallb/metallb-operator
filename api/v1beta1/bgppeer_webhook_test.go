@@ -178,6 +178,23 @@ func TestValidateBGPPeer(t *testing.T) {
 			},
 			expectedError: "Invalid EBGPMultiHop parameter set for an ibgp peer",
 		},
+		{
+			desc: "Invalid holdtime time configuration",
+			bgpPeer: &BGPPeer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-bgppeer",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: BGPPeerSpec{
+					Address:  "10.0.0.2",
+					ASN:      64502,
+					MyASN:    64500,
+					HoldTime: metav1.Duration{Duration: 2 * time.Second},
+					RouterID: "10.10.10.10",
+				},
+			},
+			expectedError: "Invalid hold time",
+		},
 	}
 
 	for _, test := range tests {

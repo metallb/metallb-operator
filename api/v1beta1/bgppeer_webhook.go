@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"time"
 )
 
 // log is for logging bgppeer-webhook
@@ -101,7 +102,9 @@ func (bgpPeer *BGPPeer) validateBGPPeer(existingBGPPeersList *BGPPeerList, bgpFr
 	}
 	if err := bgpPeer.validateBGPPeerAddrConfig(); err != nil {
 		allErrs = append(allErrs, err)
-
+	}
+	if err := bgpPeer.validateBGPPeersHoldTime(existingBGPPeersList); err != nil {
+		allErrs = append(allErrs, err)
 	}
 	if len(allErrs) == 0 {
 		return nil
@@ -123,12 +126,21 @@ func (bgpPeer *BGPPeer) validateBGPPeersKeepaliveTime() *field.Error {
 	// If we come here then user configured KeepaliveTime and we need to make sure holdTime is also configured
 	if holdTime.Duration == 0 {
 		return field.Invalid(field.NewPath("spec").Child("HoldTime"), holdTime,
-			fmt.Sprintf("Missing to configure HoldTime when changing KeepaliveTime to %s", keepaliveTime))
+			fmt.Sprintf("Missing to configure HoldTime when changing KeepaliveTime to %s", keepaliveTime.String()))
 	}
 	// keepalive must be lower than holdtime by RFC4271 Keepalive Timer algorithm
 	if keepaliveTime.Duration > holdTime.Duration {
 		return field.Invalid(field.NewPath("spec").Child("KeepaliveTime"), keepaliveTime,
-			fmt.Sprintf("Invalid keepalive time %s higher than holdtime %s", keepaliveTime, holdTime))
+			fmt.Sprintf("Invalid keepalive time %s higher than holdtime %s", keepaliveTime.String(), holdTime.String()))
+	}
+	return nil
+}
+
+func (bgpPeer *BGPPeer) validateBGPPeersHoldTime(existingBGPPeersList *BGPPeerList) *field.Error {
+	holdTime := bgpPeer.Spec.HoldTime
+	if holdTime.Duration != 0 && holdTime.Duration < 3*time.Second {
+		return field.Invalid(field.NewPath("spec").Child("HoldTime"), holdTime,
+			fmt.Sprintf("Invalid hold time %s must be 0 or >=3s", holdTime.String()))
 	}
 	return nil
 }
