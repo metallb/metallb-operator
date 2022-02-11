@@ -25,7 +25,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +40,7 @@ import (
 	"github.com/metallb/metallb-operator/pkg/status"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
@@ -173,6 +176,20 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		objs = append(objs, podmonitors...)
 	} else {
 		logger.Info("PodMonitors Resource not available in the cluster. Will not try to apply them.")
+	}
+
+	cm := &corev1.ConfigMap{}
+	err = r.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: ConfigMapName}, cm)
+	if k8serrors.IsNotFound(err) {
+		cm.Name = ConfigMapName
+		cm.Namespace = r.Namespace
+		if err := controllerutil.SetControllerReference(config, cm, r.Scheme); err != nil {
+			return errors.Wrapf(err, "Failed to set controller reference to %s %s", cm.GetNamespace(), cm.GetName())
+		}
+		err = r.Create(context.TODO(), cm)
+		if err != nil {
+			r.Log.Error(err, "configmap creation failed", "config", err)
+		}
 	}
 
 	for _, obj := range objs {

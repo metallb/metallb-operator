@@ -160,6 +160,10 @@ func cleanTestNamespace() error {
 	if err != nil {
 		return err
 	}
+	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.BFDProfile{}, client.InNamespace(MetalLBTestNameSpace))
+	if err != nil {
+		return err
+	}
 	err = k8sClient.DeleteAllOf(context.Background(), &v1.ConfigMap{}, client.InNamespace(MetalLBTestNameSpace))
 	if err != nil {
 		return err

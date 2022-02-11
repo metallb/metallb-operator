@@ -12,12 +12,17 @@ import (
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 	metallbutils "github.com/metallb/metallb-operator/test/e2e/metallb"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("metallb", func() {
+	BeforeEach(createMetalLBResource)
+	AfterEach(deleteMetalLBResource)
 	Context("with BFD profile", func() {
 		table.DescribeTable("should render the configmap properly", func(objects []client.Object, expectedConfigMap string) {
 			By("Creating AddressPool CR")
@@ -105,4 +110,30 @@ bfd-profiles:
 
 func uint32Ptr(n uint32) *uint32 {
 	return &n
+}
+
+func createMetalLBResource() {
+	metallb := &metallbv1beta1.MetalLB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "metallb",
+			Namespace: OperatorNameSpace,
+		},
+	}
+	By("Creating a MetalLB resource")
+	err := testclient.Client.Create(context.Background(), metallb)
+	Expect(err).ToNot(HaveOccurred())
+	configmap := &corev1.ConfigMap{}
+	Eventually(func() error {
+		return testclient.Client.Get(context.Background(), types.NamespacedName{Name: consts.MetalLBConfigMapName, Namespace: OperatorNameSpace}, configmap)
+	}, metallbutils.Timeout, metallbutils.Interval).Should(BeNil())
+}
+
+func deleteMetalLBResource() {
+	By("Deleting MetalLB resource")
+	err := testclient.Client.DeleteAllOf(context.Background(), &metallbv1beta1.MetalLB{}, client.InNamespace(OperatorNameSpace))
+	Expect(err).ToNot(HaveOccurred())
+	Eventually(func() bool {
+		_, err = testclient.Client.ConfigMaps(OperatorNameSpace).Get(context.Background(), consts.MetalLBConfigMapName, metav1.GetOptions{})
+		return errors.IsNotFound(err)
+	}, metallbutils.Timeout, metallbutils.Interval).Should(Equal(true))
 }
