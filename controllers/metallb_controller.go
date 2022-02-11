@@ -199,7 +199,8 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 				return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
 			}
 		}
-		if obj.GetKind() == "DaemonSet" && len(config.Spec.SpeakerNodeSelector) > 0 {
+		if obj.GetKind() == "DaemonSet" &&
+			(len(config.Spec.SpeakerNodeSelector) > 0 || len(config.Spec.SpeakerTolerations) > 0) {
 			scheme := kscheme.Scheme
 			ds := &appsv1.DaemonSet{}
 			err = scheme.Convert(obj, ds, nil)
@@ -207,7 +208,12 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 				logger.Error(err, "Fail to convert MetalLB object to DaemonSet")
 				return err
 			}
-			ds.Spec.Template.Spec.NodeSelector = config.Spec.SpeakerNodeSelector
+			if len(config.Spec.SpeakerNodeSelector) > 0 {
+				ds.Spec.Template.Spec.NodeSelector = config.Spec.SpeakerNodeSelector
+			}
+			if len(config.Spec.SpeakerTolerations) > 0 {
+				ds.Spec.Template.Spec.Tolerations = config.Spec.SpeakerTolerations
+			}
 			err = scheme.Convert(ds, obj, nil)
 			if err != nil {
 				logger.Error(err, "Fail to convert DaemonSet to MetalLB object")
