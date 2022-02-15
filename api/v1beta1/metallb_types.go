@@ -24,6 +24,18 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type MetalLBLogLevel string
+
+// These are valid logging level for MetalLB components.
+const (
+	LogLevelAll   MetalLBLogLevel = "all"
+	LogLevelDebug MetalLBLogLevel = "debug"
+	LogLevelInfo  MetalLBLogLevel = "info"
+	LogLevelWarn  MetalLBLogLevel = "warn"
+	LogLevelError MetalLBLogLevel = "error"
+	LogLevelNone  MetalLBLogLevel = "none"
+)
+
 // MetalLBSpec defines the desired state of MetalLB
 type MetalLBSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -37,6 +49,12 @@ type MetalLBSpec struct {
 	// deployments.
 	// +optional
 	SpeakerTolerations []corev1.Toleration `json:"speakerTolerations,omitempty"`
+
+	// Define the verbosity of the controller and the speaker logging.
+	// Allowed values are: all, debug, info, warn, error, none. (default: info)
+	// +optional
+	// +kubebuilder:validation:Enum=all;debug;info;warn;error;none
+	LogLevel MetalLBLogLevel `json:"logLevel,omitempty"`
 }
 
 // MetalLBStatus defines the observed state of MetalLB

@@ -159,6 +159,12 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	data.Data["NameSpace"] = r.Namespace
 	data.Data["KubeRbacProxy"] = os.Getenv("KUBE_RBAC_PROXY_IMAGE")
 	data.Data["DeployKubeRbacProxies"] = os.Getenv("DEPLOY_KUBE_RBAC_PROXIES") == "true"
+
+	data.Data["LogLevel"] = metallbv1beta1.LogLevelInfo
+	if config.Spec.LogLevel != "" {
+		data.Data["LogLevel"] = config.Spec.LogLevel
+	}
+
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")
