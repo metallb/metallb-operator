@@ -19,17 +19,21 @@ import (
 
 var _ = Describe("MetalLB Controller", func() {
 	Context("syncMetalLB", func() {
-		metallb := &metallbv1beta1.MetalLB{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "metallb",
-				Namespace: MetalLBTestNameSpace,
-			},
-		}
+
 		AfterEach(func() {
 			err := cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
 		})
+
 		It("Should create manifests with images and namespace overriden", func() {
+
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+			}
+
 			speakerImage := "test-speaker:latest"
 			controllerImage := "test-controller:latest"
 			frrImage := "test-frr:latest"
@@ -148,6 +152,53 @@ var _ = Describe("MetalLB Controller", func() {
 			err = k8sClient.Update(context.TODO(), metallb)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("Should forward logLevel to containers", func() {
+
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					LogLevel: metallbv1beta1.LogLevelWarn,
+				},
+			}
+
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+
+			speakerDaemonSet := &appsv1.DaemonSet{}
+			Eventually(func() error {
+				return k8sClient.Get(
+					context.Background(),
+					types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: MetalLBTestNameSpace},
+					speakerDaemonSet)
+			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
+
+			Expect(speakerDaemonSet.Spec.Template.Spec.Containers).To(
+				ContainElement(
+					And(
+						WithTransform(nameGetter, Equal("speaker")),
+						WithTransform(argsGetter, ContainElement("--log-level=warn")),
+					)))
+
+			controllerDeployment := &appsv1.Deployment{}
+			Eventually(func() error {
+				return k8sClient.Get(
+					context.Background(),
+					types.NamespacedName{Name: consts.MetalLBDeploymentName, Namespace: MetalLBTestNameSpace},
+					controllerDeployment,
+				)
+			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
+
+			Expect(controllerDeployment.Spec.Template.Spec.Containers).To(
+				ContainElement(
+					And(
+						WithTransform(nameGetter, Equal("controller")),
+						WithTransform(argsGetter, ContainElement("--log-level=warn")),
+					)))
+		})
 	})
 })
 
@@ -157,6 +208,10 @@ func cleanTestNamespace() error {
 		return err
 	}
 	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.BGPPeer{}, client.InNamespace(MetalLBTestNameSpace))
+	if err != nil {
+		return err
+	}
+	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.BFDProfile{}, client.InNamespace(MetalLBTestNameSpace))
 	if err != nil {
 		return err
 	}
@@ -175,3 +230,7 @@ func cleanTestNamespace() error {
 	err = k8sClient.DeleteAllOf(context.Background(), &appsv1.DaemonSet{}, client.InNamespace(MetalLBTestNameSpace))
 	return err
 }
+
+// Gomega transformation functions for v1.Container
+func argsGetter(c v1.Container) []string { return c.Args }
+func nameGetter(c v1.Container) string   { return c.Name }

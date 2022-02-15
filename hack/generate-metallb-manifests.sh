@@ -41,6 +41,7 @@ yq e --inplace '. | select(.metadata.namespace == "metallb-system").metadata.nam
 # Furthermore, the sed has to be last since it breaks the yaml's syntax by adding the conditionals between
 yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.securityContext|="'"$(< ${METALLB_SC_FILE})"'"' ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
 sed -i 's/securityContext\: |-/securityContext\:/g' ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE} # Last because it breaks yaml syntax
+sed -i 's/--log-level=info/--log-level={{.LogLevel}}/' ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
 
 curl ${FRR_MANIFESTS_URL} -o _cache/${FRR_MANIFESTS_FILE}
 
@@ -63,6 +64,7 @@ yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker"
 yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.initContainers[] | select(.name == "cp-metrics").image)|="{{.SpeakerImage}}"' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller" and .spec.template.spec.securityContext.runAsUser == "65534").spec.template.spec.securityContext|="'"$(< ${METALLB_SC_FILE})"'"' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 yq e --inplace '. | select(.metadata.namespace == "metallb-system").metadata.namespace|="{{.NameSpace}}"' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
+sed -i 's/--log-level=info/--log-level={{.LogLevel}}/' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 
 # kube-rbac-proxy modifications
 yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.volumes += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}

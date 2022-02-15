@@ -299,7 +299,7 @@ spec:
         - args:
             - --port=7472
             - --config=config
-            - --log-level=info
+            - --log-level={{.LogLevel}}
           env:
             - name: FRR_CONFIG_FILE
               value: /etc/frr_reloader/frr.conf
@@ -466,7 +466,7 @@ spec:
         - args:
             - --port=7472
             - --config=config
-            - --log-level=info
+            - --log-level={{.LogLevel}}
           env:
             - name: METALLB_ML_SECRET_NAME
               value: memberlist
