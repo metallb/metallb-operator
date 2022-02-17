@@ -310,8 +310,8 @@ spec:
             # FRR_LOGGING_LEVEL used to set logging level for all running frr processes.
             # Possible settings are :-
             #  informational, warning, errors and debugging.
-            - name: FRR_LOGGING_LEVEL
-              value: informational
+            # - name: FRR_LOGGING_LEVEL
+            #   value: informational
             - name: METALLB_NODE_NAME
               valueFrom:
                 fieldRef:
