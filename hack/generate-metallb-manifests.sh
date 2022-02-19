@@ -65,6 +65,8 @@ yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker"
 yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller" and .spec.template.spec.securityContext.runAsUser == "65534").spec.template.spec.securityContext|="'"$(< ${METALLB_SC_FILE})"'"' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 yq e --inplace '. | select(.metadata.namespace == "metallb-system").metadata.namespace|="{{.NameSpace}}"' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 sed -i 's/--log-level=info/--log-level={{.LogLevel}}/' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
+sed -i '/- name: FRR_LOGGING_LEVEL/ s//# &/' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
+sed -i '/  value: informational/ s//# &/' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 
 # kube-rbac-proxy modifications
 yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.volumes += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
