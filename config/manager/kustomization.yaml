@@ -7,4 +7,4 @@ patchesStrategicMerge:
 images:
   - name: controller
     newName: quay.io/metallb/metallb-operator
-    newTag: latest
+    newTag: v0.12.0
