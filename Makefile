@@ -98,6 +98,10 @@ deploy: manifests kustomize configure-operator-webhook ## Deploy controller in t
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
+undeploy: ## Undeploy the controller from the configured cluster
+	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl delete --ignore-not-found=true -f -
+	$(KUSTOMIZE) build config/metallb_rbac | kubectl delete --ignore-not-found=true -f -
+
 BIN_FILE ?= "metallb-operator.yaml"
 bin: manifests kustomize configure-operator-webhook ## Create manifests
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
