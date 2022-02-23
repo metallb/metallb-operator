@@ -3,9 +3,6 @@
 # It should be run by config/default
 resources:
   - bases/metallb.io_metallbs.yaml
-  - bases/metallb.io_addresspools.yaml
-  - bases/metallb.io_bgppeers.yaml
-  - bases/metallb.io_bfdprofiles.yaml
 
 # +kubebuilder:scaffold:crdkustomizeresource
 

@@ -1,19 +1,19 @@
 #!/bin/bash
 . $(dirname "$0")/common.sh
 
-METALLB_COMMIT_ID="46675f03d788549897ff59c6b3b268c162a394d0"
+METALLB_COMMIT_ID="b1cbd50148ef6ddc982a68948e873500d012646f"
 METALLB_SC_FILE=$(dirname "$0")/securityContext.yaml
 
-NATIVE_MANIFESTS_FILE="metallb.yaml"
-NATIVE_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/manifests/${NATIVE_MANIFESTS_FILE}"
+NATIVE_MANIFESTS_FILE="metallb-native.yaml"
+NATIVE_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/config/manifests/${NATIVE_MANIFESTS_FILE}"
 NATIVE_MANIFESTS_DIR="bindata/deployment/native"
 
 FRR_MANIFESTS_FILE="metallb-frr.yaml"
-FRR_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/manifests/${FRR_MANIFESTS_FILE}"
+FRR_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/config/manifests/${FRR_MANIFESTS_FILE}"
 FRR_MANIFESTS_DIR="bindata/deployment/frr"
 
 PROMETHEUS_OPERATOR_FILE="prometheus-operator.yaml"
-PROMETHEUS_OPERATOR_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/manifests/${PROMETHEUS_OPERATOR_FILE}"
+PROMETHEUS_OPERATOR_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/config/prometheus/${PROMETHEUS_OPERATOR_FILE}"
 PROMETHEUS_OPERATOR_MANIFESTS_DIR="bindata/deployment/prometheus-operator"
 
 if ! command -v yq &> /dev/null
@@ -67,27 +67,6 @@ yq e --inplace '. | select(.metadata.namespace == "metallb-system").metadata.nam
 sed -i 's/--log-level=info/--log-level={{.LogLevel}}/' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 sed -i '/- name: FRR_LOGGING_LEVEL/ s//# &/' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 sed -i '/  value: informational/ s//# &/' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-
-# kube-rbac-proxy modifications
-yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.volumes += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace '. | select(.kind == "DaemonSet" and .metadata.name == "speaker").spec.template.spec.volumes += {"name": "speaker-certs", "secret": {"secretName": "speaker-certs-secret"}}' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.volumes += {\"name\": \"{{ end }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-
-yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.volumes += [{\"name\": \"{{ if .DeployKubeRbacProxies }}\"}]" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller").spec.template.spec.volumes += {"name": "controller-certs", "secret": {"secretName": "controller-certs-secret"}}' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.volumes += {\"name\": \"{{ end }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-
-frr_kube_rbac=`cat $(dirname "$0")/kube-rbac-frr.json | tr -d " \t\n\r"`
-speaker_kube_rbac=`cat $(dirname "$0")/kube-rbac-speaker.json | tr -d " \t\n\r"`
-controller_kube_rbac=`cat $(dirname "$0")/kube-rbac-controller.json | tr -d " \t\n\r"`
-yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += ${frr_kube_rbac}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += ${speaker_kube_rbac}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += {\"name\": \"{{ end }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-
-yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += ${controller_kube_rbac}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
-yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += {\"name\": \"{{ end }}\"}" ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 
 # The next part is a bit ugly because we add the sc file content as the securityContext field.
 # The problem with it is that the content is added as a string and not as yaml fields, so we need to use sed to remove yaml's "|-"" mark for them to count as fields.
