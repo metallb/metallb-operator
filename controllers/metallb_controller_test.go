@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
@@ -38,12 +37,6 @@ var _ = Describe("MetalLB Controller", func() {
 			controllerImage := "test-controller:latest"
 			frrImage := "test-frr:latest"
 			kubeRbacImage := "test-kube-rbac-proxy:latest"
-			By("Setting the environment variables")
-			Expect(os.Setenv("SPEAKER_IMAGE", speakerImage)).To(Succeed())
-			Expect(os.Setenv("CONTROLLER_IMAGE", controllerImage)).To(Succeed())
-			Expect(os.Setenv("WATCH_NAMESPACE", MetalLBTestNameSpace)).To(Succeed())
-			Expect(os.Setenv("FRR_IMAGE", frrImage)).To(Succeed())
-			Expect(os.Setenv("KUBE_RBAC_PROXY_IMAGE", kubeRbacImage)).To(Succeed())
 
 			controllerContainers := map[string]string{
 				"controller":      controllerImage,

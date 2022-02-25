@@ -68,6 +68,12 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
+	By("Setting MetalLBReconcilier environment variables")
+	Expect(os.Setenv("SPEAKER_IMAGE", "test-speaker:latest")).To(Succeed())
+	Expect(os.Setenv("CONTROLLER_IMAGE", "test-controller:latest")).To(Succeed())
+	Expect(os.Setenv("FRR_IMAGE", "test-frr:latest")).To(Succeed())
+	Expect(os.Setenv("KUBE_RBAC_PROXY_IMAGE", "test-kube-rbac-proxy:latest")).To(Succeed())
+
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
