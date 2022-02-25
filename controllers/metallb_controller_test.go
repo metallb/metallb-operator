@@ -161,15 +161,18 @@ var _ = Describe("MetalLB Controller", func() {
 			err := k8sClient.Create(context.Background(), metallb)
 			Expect(err).ToNot(HaveOccurred())
 
-			speakerDaemonSet := &appsv1.DaemonSet{}
-			Eventually(func() error {
-				return k8sClient.Get(
+			Eventually(func() []v1.Container {
+				speakerDaemonSet := &appsv1.DaemonSet{}
+				err := k8sClient.Get(
 					context.Background(),
 					types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: MetalLBTestNameSpace},
 					speakerDaemonSet)
-			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
+				if err != nil {
+					return nil
+				}
 
-			Expect(speakerDaemonSet.Spec.Template.Spec.Containers).To(
+				return speakerDaemonSet.Spec.Template.Spec.Containers
+			}, 2*time.Second, 200*time.Millisecond).Should(
 				ContainElement(
 					And(
 						WithTransform(nameGetter, Equal("speaker")),
@@ -177,15 +180,17 @@ var _ = Describe("MetalLB Controller", func() {
 					)))
 
 			controllerDeployment := &appsv1.Deployment{}
-			Eventually(func() error {
-				return k8sClient.Get(
+			Eventually(func() []v1.Container {
+				err := k8sClient.Get(
 					context.Background(),
 					types.NamespacedName{Name: consts.MetalLBDeploymentName, Namespace: MetalLBTestNameSpace},
 					controllerDeployment,
 				)
-			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
-
-			Expect(controllerDeployment.Spec.Template.Spec.Containers).To(
+				if err != nil {
+					return nil
+				}
+				return controllerDeployment.Spec.Template.Spec.Containers
+			}, 2*time.Second, 200*time.Millisecond).Should(
 				ContainElement(
 					And(
 						WithTransform(nameGetter, Equal("controller")),
