@@ -22,7 +22,10 @@ import (
 
 var _ = Describe("metallb", func() {
 	BeforeEach(createMetalLBResource)
-	AfterEach(deleteMetalLBResource)
+	AfterEach(func() {
+		deleteMetalLBResource()
+		deleteTestCRs()
+	})
 	Context("with BFD profile", func() {
 		table.DescribeTable("should render the configmap properly", func(objects []client.Object, expectedConfigMap string) {
 			By("Creating AddressPool CR")
