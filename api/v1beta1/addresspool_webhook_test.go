@@ -24,6 +24,7 @@ func TestValidateAddressPool(t *testing.T) {
 			Protocol: "layer2",
 			Addresses: []string{
 				"1.1.1.1-1.1.1.100",
+				"1000::0-1000::100",
 			},
 			AutoAssign: &autoAssign,
 		},
@@ -84,6 +85,42 @@ func TestValidateAddressPool(t *testing.T) {
 					Protocol: "layer2",
 					Addresses: []string{
 						"1.1.1.0/24",
+					},
+					AutoAssign: &autoAssign,
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "overlaps with already defined CIDR",
+		},
+		{
+			desc: "Second AddressPool, overlapping IPv6 addresses defined by address range",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool2",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "layer2",
+					Addresses: []string{
+						"1000::50-1000::80",
+					},
+					AutoAssign: &autoAssign,
+				},
+			},
+			isNewAddressPool: true,
+			expectedError:    "overlaps with already defined CIDR",
+		},
+		{
+			desc: "Second AddressPool, overlapping IPv6 addresses defined by network prefix",
+			addressPool: &AddressPool{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-addresspool2",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: AddressPoolSpec{
+					Protocol: "layer2",
+					Addresses: []string{
+						"1000::/127",
 					},
 					AutoAssign: &autoAssign,
 				},
