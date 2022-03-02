@@ -727,6 +727,16 @@ var _ = Describe("metallb", func() {
 			err := testclient.Client.Create(context.Background(), firstAddressPool)
 			Expect(err).ToNot(HaveOccurred())
 
+			key := types.NamespacedName{
+				Name:      firstAddressPool.Name,
+				Namespace: OperatorNameSpace,
+			}
+			By("Checking AddressPool resource is created")
+			Eventually(func() error {
+				err := testclient.Client.Get(context.Background(), key, firstAddressPool)
+				return err
+			}, metallbutils.Timeout, metallbutils.Interval).Should(Succeed())
+
 			By("Creating second AddressPool resource with overlapping addresses defined by address range")
 			secondAdressPool := &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
