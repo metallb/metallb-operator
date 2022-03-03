@@ -17,10 +17,26 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: AddressPool is the Schema for the addresspools API
-      displayName: Address Pool
+    - description: AddressPool is the Schema for the addresspools API (v1alpha1 version
+        is the legacy version)
+      displayName: AddressPool
       kind: AddressPool
       name: addresspools.metallb.io
+      version: v1alpha1
+    - description: AddressPool is the Schema for the addresspools API
+      displayName: AddressPool
+      kind: AddressPool
+      name: addresspools.metallb.io
+      version: v1beta1
+    - description: BFDProfile is the Schema for the bfdprofiles API
+      displayName: BFDProfile
+      kind: BFDProfile
+      name: bfdprofiles.metallb.io
+      version: v1beta1
+    - description: BGPPeer is the Schema for the bgppeers API
+      displayName: BGPPeer
+      kind: BGPPeer
+      name: bgppeers.metallb.io
       version: v1beta1
     - description: MetalLB is the Schema for the metallbs API
       displayName: MetalLB
