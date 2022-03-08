@@ -11,11 +11,15 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
-  - create
   - get
   - list
-  - update
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - update
 - apiGroups:
   - metallb.io
   resources:

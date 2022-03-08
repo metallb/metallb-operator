@@ -29,6 +29,30 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
+      - kind: AddressPool
+        name: addresspools.metallb.io
+        version: v1alpha1
+      - kind: AddressPool
+        name: addresspools.metallb.io
+        version: v1beta1
+      - kind: BFDProfile
+        name: bfdprofiles.metallb.io
+        version: v1beta1
+      - kind: BGPAdvertisement
+        name: bgpadvertisements.metallb.io
+        version: v1beta1
+      - kind: BGPPeer
+        name: bgppeers.metallb.io
+        version: v1beta1
+      - kind: BGPPeer
+        name: bgppeers.metallb.io
+        version: v1beta2
+      - kind: IPPool
+        name: ippools.metallb.io
+        version: v1beta1
+      - kind: L2Advertisement
+        name: l2advertisements.metallb.io
+        version: v1beta1
       - description: MetalLB is the Schema for the metallbs API
         displayName: MetalLB
         kind: MetalLB
@@ -129,11 +153,15 @@ spec:
               resources:
                 - customresourcedefinitions
               verbs:
-                - create
                 - get
                 - list
-                - update
                 - watch
+            - apiGroups:
+                - ""
+              resources:
+                - namespaces
+              verbs:
+                - update
             - apiGroups:
                 - metallb.io
               resources:
