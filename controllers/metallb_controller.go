@@ -189,6 +189,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 				return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
 			}
 		}
+
 		if obj.GetKind() == "DaemonSet" &&
 			(len(config.Spec.SpeakerNodeSelector) > 0 || len(config.Spec.SpeakerTolerations) > 0) {
 			scheme := kscheme.Scheme
