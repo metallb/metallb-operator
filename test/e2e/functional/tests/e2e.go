@@ -43,6 +43,7 @@ func init() {
 }
 
 var _ = Describe("metallb", func() {
+	AfterEach(deleteTestCRs)
 	Context("MetalLB deploy", func() {
 		var metallb *metallbv1beta1.MetalLB
 		var metallbCRExisted bool
@@ -183,9 +184,9 @@ var _ = Describe("metallb", func() {
 
 			assertConfigMapMatchYAML("{}")
 		},
-			table.Entry("Test AddressPool object with default auto assign", "addresspool1", &metallbv1beta1.AddressPool{
+			table.Entry("Test AddressPool object with default auto assign", "test-addresspool1", &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool1",
+					Name:      "test-addresspool1",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.AddressPoolSpec{
@@ -195,14 +196,14 @@ var _ = Describe("metallb", func() {
 					},
 				},
 			}, `address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
 `),
-			table.Entry("Test AddressPool object v1alpha1", "addresspool1", &metallbv1alpha1.AddressPool{
+			table.Entry("Test AddressPool object v1alpha1", "test-addresspool1", &metallbv1alpha1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool1",
+					Name:      "test-addresspool1",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1alpha1.AddressPoolSpec{
@@ -212,14 +213,14 @@ var _ = Describe("metallb", func() {
 					},
 				},
 			}, `address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
 `),
-			table.Entry("Test AddressPool object with auto assign set to false", "addresspool2", &metallbv1beta1.AddressPool{
+			table.Entry("Test AddressPool object with auto assign set to false", "test-addresspool2", &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool2",
+					Name:      "test-addresspool2",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.AddressPoolSpec{
@@ -230,15 +231,15 @@ var _ = Describe("metallb", func() {
 					AutoAssign: &autoAssign,
 				},
 			}, `address-pools:
-- name: addresspool2
+- name: test-addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
   - 2.2.2.1-2.2.2.100
 `),
-			table.Entry("Test AddressPool object with bgp-advertisements", "addresspool3", &metallbv1beta1.AddressPool{
+			table.Entry("Test AddressPool object with bgp-advertisements", "test-addresspool3", &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool3",
+					Name:      "test-addresspool3",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.AddressPoolSpec{
@@ -260,7 +261,7 @@ var _ = Describe("metallb", func() {
 					},
 				},
 			}, `address-pools:
-- name: addresspool3
+- name: test-addresspool3
   protocol: bgp
   auto-assign: false
   addresses:
@@ -273,9 +274,9 @@ var _ = Describe("metallb", func() {
     aggregation-length-v6: 124
     localpref: 100
 `),
-			table.Entry("Test AddressPool object with bgp-advertisements", "addresspool4", &metallbv1beta1.AddressPool{
+			table.Entry("Test AddressPool object with bgp-advertisements", "test-addresspool4", &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool4",
+					Name:      "test-addresspool4",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.AddressPoolSpec{
@@ -295,7 +296,7 @@ var _ = Describe("metallb", func() {
 					},
 				},
 			}, `address-pools:
-- name: addresspool4
+- name: test-addresspool4
   protocol: bgp
   auto-assign: false
   addresses:
@@ -399,7 +400,7 @@ var _ = Describe("metallb", func() {
 	Context("Testing create/delete Multiple AddressPools", func() {
 		addresspool1 := &metallbv1beta1.AddressPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "addresspool1",
+				Name:      "test-addresspool1",
 				Namespace: OperatorNameSpace,
 			},
 			Spec: metallbv1beta1.AddressPoolSpec{
@@ -411,7 +412,7 @@ var _ = Describe("metallb", func() {
 		}
 		addresspool2 := &metallbv1beta1.AddressPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "addresspool2",
+				Name:      "test-addresspool2",
 				Namespace: OperatorNameSpace,
 			},
 			Spec: metallbv1beta1.AddressPoolSpec{
@@ -430,7 +431,7 @@ var _ = Describe("metallb", func() {
 				Expect(testclient.Client.Create(context.Background(), addresspool1)).Should(Succeed())
 
 				key := types.NamespacedName{
-					Name:      "addresspool1",
+					Name:      "test-addresspool1",
 					Namespace: OperatorNameSpace,
 				}
 				By("Checking AddressPool1 resource is created")
@@ -441,7 +442,7 @@ var _ = Describe("metallb", func() {
 
 				By("Checking ConfigMap is created and matches addresspool1 configuration")
 				assertConfigMapMatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
@@ -452,7 +453,7 @@ var _ = Describe("metallb", func() {
 				Expect(testclient.Client.Create(context.Background(), addresspool2)).Should(Succeed())
 
 				key := types.NamespacedName{
-					Name:      "addresspool2",
+					Name:      "test-addresspool2",
 					Namespace: OperatorNameSpace,
 				}
 				By("Checking AddressPool2 resource is created")
@@ -463,11 +464,11 @@ var _ = Describe("metallb", func() {
 
 				By("Checking ConfigMap is created and matches addresspool2 configuration")
 				assertConfigMapMatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
-- name: addresspool2
+- name: test-addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
@@ -481,7 +482,7 @@ var _ = Describe("metallb", func() {
 
 				By("Checking ConfigMap matches the expected configuration")
 				assertConfigMapMatchYAML(`address-pools:
-- name: addresspool2
+- name: test-addresspool2
   protocol: layer2
   auto-assign: false
   addresses:
@@ -505,7 +506,7 @@ var _ = Describe("metallb", func() {
 
 		addresspool = &metallbv1beta1.AddressPool{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "addresspool1",
+				Name:      "test-addresspool1",
 				Namespace: OperatorNameSpace,
 			},
 			Spec: metallbv1beta1.AddressPoolSpec{
@@ -516,7 +517,7 @@ var _ = Describe("metallb", func() {
 			},
 		}
 		key = types.NamespacedName{
-			Name:      "addresspool1",
+			Name:      "test-addresspool1",
 			Namespace: OperatorNameSpace,
 		}
 		BeforeEach(createMetalLBResource)
@@ -533,7 +534,7 @@ var _ = Describe("metallb", func() {
 
 				By("Checking ConfigMap is created and matches addresspool configuration")
 				assertConfigMapMatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
@@ -556,7 +557,7 @@ var _ = Describe("metallb", func() {
 
 				By("Checking ConfigMap is created and matches updated configuration")
 				assertConfigMapMatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   auto-assign: false
   addresses:
@@ -567,7 +568,7 @@ var _ = Describe("metallb", func() {
 			By("Deleting the addresspool object", func() {
 				addresspool := &metallbv1beta1.AddressPool{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "addresspool1",
+						Name:      "test-addresspool1",
 						Namespace: OperatorNameSpace,
 					},
 					Spec: metallbv1beta1.AddressPoolSpec{
@@ -615,9 +616,9 @@ var _ = Describe("metallb", func() {
 
 			assertConfigMapMatchYAML("{}")
 		},
-			table.Entry("Test BGP Peer object", "peer1", &metallbv1beta1.BGPPeer{
+			table.Entry("Test BGP Peer object", "test-peer1", &metallbv1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "peer1",
+					Name:      "test-peer1",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.BGPPeerSpec{
@@ -653,9 +654,9 @@ var _ = Describe("metallb", func() {
   peer-asn: 64501
   router-id: 10.10.10.10 
 `),
-			table.Entry("Test BGP Peer object", "peer2", &metallbv1beta1.BGPPeer{
+			table.Entry("Test BGP Peer object", "test-peer2", &metallbv1beta1.BGPPeer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "peer2",
+					Name:      "test-peer2",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.BGPPeerSpec{
@@ -924,7 +925,7 @@ var _ = Describe("metallb", func() {
 			By("Creating AddressPool CR")
 			addressPool := &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool1",
+					Name:      "test-addresspool1",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.AddressPoolSpec{
@@ -949,7 +950,7 @@ var _ = Describe("metallb", func() {
 
 			By("Checking ConfigMap is created match the expected configuration")
 			assertConfigMapMatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
@@ -965,7 +966,7 @@ var _ = Describe("metallb", func() {
 
 			By("Checking ConfigMap is created match the expected configuration")
 			assertConfigMapMatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
@@ -976,7 +977,7 @@ var _ = Describe("metallb", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			assertConfigMapMatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
@@ -995,7 +996,7 @@ var _ = Describe("metallb", func() {
 			By("Creating AddressPool CR")
 			addressPool := &metallbv1beta1.AddressPool{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "addresspool1",
+					Name:      "test-addresspool1",
 					Namespace: OperatorNameSpace,
 				},
 				Spec: metallbv1beta1.AddressPoolSpec{
@@ -1036,7 +1037,7 @@ var _ = Describe("metallb", func() {
 				}
 				return configMap.Data[consts.MetalLBConfigMapName], err
 			}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(`address-pools:
-- name: addresspool1
+- name: test-addresspool1
   protocol: layer2
   addresses:
   - 1.1.1.1-1.1.1.100
@@ -1105,4 +1106,46 @@ func assertConfigMapMatchYAML(yaml string) {
 
 		return configmap.Data[consts.MetalLBConfigMapName]
 	}, metallbutils.Timeout, metallbutils.Interval).Should(MatchYAML(yaml))
+}
+
+func deleteTestCRs() {
+	By("Deleting AddressPool, BGPPeer, BFDProfile CRs")
+	CRs := []goclient.Object{
+		&metallbv1beta1.AddressPool{},
+		&metallbv1beta1.BGPPeer{},
+		&metallbv1beta1.BFDProfile{},
+	}
+	for _, cr := range CRs {
+		err := testclient.Client.DeleteAllOf(context.Background(), cr, goclient.InNamespace(OperatorNameSpace))
+		Expect(err).To(BeNil())
+	}
+
+	assertTestCRsNotFound()
+}
+
+func assertTestCRsNotFound() {
+	existingAddressPoollList := &metallbv1beta1.AddressPoolList{}
+	existingBGPPeerslList := &metallbv1beta1.BGPPeerList{}
+	existingBFDProfilelList := &metallbv1beta1.BFDProfileList{}
+
+	Eventually(func() int {
+		err := testclient.Client.List(context.Background(), existingAddressPoollList, goclient.InNamespace(OperatorNameSpace))
+		Expect(err).ToNot(HaveOccurred())
+
+		return len(existingAddressPoollList.Items)
+	}, metallbutils.Timeout, metallbutils.Interval).Should(BeZero())
+
+	Eventually(func() int {
+		err := testclient.Client.List(context.Background(), existingBGPPeerslList, goclient.InNamespace(OperatorNameSpace))
+		Expect(err).ToNot(HaveOccurred())
+
+		return len(existingBGPPeerslList.Items)
+	}, metallbutils.Timeout, metallbutils.Interval).Should(BeZero())
+
+	Eventually(func() int {
+		err := testclient.Client.List(context.Background(), existingBFDProfilelList, goclient.InNamespace(OperatorNameSpace))
+		Expect(err).ToNot(HaveOccurred())
+
+		return len(existingBFDProfilelList.Items)
+	}, metallbutils.Timeout, metallbutils.Interval).Should(BeZero())
 }
