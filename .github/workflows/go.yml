@@ -20,7 +20,7 @@ jobs:
       built_image: "metallb-operator:ci" # Arbitrary name
     strategy:
       matrix:
-        go: [ '1.16' ]
+        go: [ '1.17' ]
     name: Go ${{ matrix.go }}
     steps:
     - name: Checkout Metal LB Operator
