@@ -23,35 +23,12 @@ To install the MetalLB Operator using the prebuilt manifests, run the following:
 kubectl apply -f bin/metallb-operator.yaml
 ```
 
-To install the MetalLB Operator with the Validation Webhooks using the prebuilt manifests, run the following:
-
-Have cert-manager installed in your cluster, or install it using:
-```shell
-make deploy-cert-manager
-```
-
-Run:
-```shell
-kubectl apply -f bin/metallb-operator-with-webhooks.yaml
-```
-
-## AddressPool Validation Webhook
-
-When the AddressPool Validation Webhook is enabled, a request to apply an AddressPool with an already-defined IP range will be denied.
-
 ## Installation
 
 To install the MetalLB Operator using a prebuilt image, run the following:
 
 ```shell
 make deploy
-```
-
-To install the MetalLB Operator using a prebuilt image and enable the AddressPool Validation Webhook, run the following:
-
-```shell
-make deploy-cert-manager
-ENABLE_OPERATOR_WEBHOOK=true KUSTOMIZE_DEPLOY_DIR="config/webhook-with-certmanager/" make deploy
 ```
 
 ## Usage
@@ -74,8 +51,6 @@ metadata:
 
 A quick, local installation can be done using a [kind](https://kind.sigs.k8s.io/) cluster and a local registry. Follow the steps below to run a locally-built metallb-operator on kind.
 
-To enable the AddressPool Validation Webhook, set `ENABLE_OPERATOR_WEBHOOK=true`.
-
 **Install and run kind**
 
 Install kind using the instructions [here](https://kind.sigs.k8s.io/docs/user/quick-start/).
@@ -97,7 +72,6 @@ export IMAGE_NAME=metallb-operator
 
 make docker-build IMG=$IMAGE_NAME
 kind load docker-image $IMAGE_NAME
-make deploy-cert-manager
 IMG=$IMAGE_NAME KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
 ```
 
@@ -130,111 +104,6 @@ metadata:
   name: metallb
   namespace: metallb-system
 EOF
-```
-
-### Create an Address Pool object
-
-To create an address pool, an `AddressPool` resource needs to be created.
-Following is a sample resource:
-
-```yaml
-apiVersion: metallb.io/v1beta1
-kind: AddressPool
-metadata:
-  name: addresspool-sample1
-  namespace: metallb-system
-spec:
-  protocol: layer2
-  addresses:
-    - 172.18.0.100-172.18.0.255
-```
-
-When the address pool is successfully created, it will be added to the `config` ConfigMap used to configure MetalLB:
-
-```yaml
-kind: ConfigMap
-apiVersion: v1
-data:
-  config: |
-    address-pools:
-    - name: addresspool-sample1
-      protocol: layer2
-      addresses:
-      - 172.18.0.100-172.18.0.255
-```
-
-### Create a BGP Peer object
-
-To create a BGP peer, a `BGPPeer` resource needs to be created.
-Following is a sample resource:
-
-```yaml
-apiVersion: metallb.io/v1beta1
-kind: BGPPeer
-metadata:
-  name: peer-sample1
-  namespace: metallb-system
-spec:
-  peerAddress: 10.0.0.1
-  peerASN: 64501
-  myASN: 64500
-  routerID: 10.10.10.10
-  peerPort: 1
-  holdTime: "180s"
-  keepaliveTime: "180s"
-  sourceAddress: "1.1.1.1"
-  password: "test"
-  nodeSelectors:
-  - matchExpressions:
-    - key: kubernetes.io/hostname
-      operator: In
-      values: [hostA, hostB]
-```
-
-### Create a BFD Profile object
-
-To create a BFD profile, a `BFDProfile` resource needs to be created.
-Following is a sample resource:
-
-```yaml
-apiVersion: metallb.io/v1beta1
-kind: BFDProfile
-metadata:
-  name: bfdprofiledefault
-  namespace: metallb-system
-spec:
-  receiveInterval: 35
-  transmitInterval: 35
-  detectMultiplier: 37
-  echoInterval: 10
-  echoMode: true
-  passiveMode: true
-  minimumTtl: 10
-```
-
-### Sample MetalLB BGP configuration
-
-```yaml
-apiVersion: metallb.io/v1beta1
-kind: AddressPool
-metadata:
-  name: addresspool-bgp-sample
-  namespace: metallb-system
-spec:
-  protocol: bgp
-  addresses:
-    - 172.18.0.100-172.18.0.255
----
-apiVersion: metallb.io/v1beta1
-kind: BGPPeer
-metadata:
-  name: peer-sample
-  namespace: metallb-system
-spec:
-  peerAddress: 10.0.0.1
-  peerASN: 64501
-  myASN: 64500
-  routerID: 10.10.10.10
 ```
 
 ### Running tests

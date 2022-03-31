@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: bfdprofiles.metallb.io
+  name: l2advertisements.metallb.io
 spec:
   group: metallb.io
   names:
-    kind: BFDProfile
-    listKind: BFDProfileList
-    plural: bfdprofiles
-    singular: bfdprofile
+    kind: L2Advertisement
+    listKind: L2AdvertisementList
+    plural: l2advertisements
+    singular: l2advertisement
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: BFDProfile is the Schema for the bfdprofiles API.
+        description: L2Advertisement is the Schema for the l2advertisements API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,40 +34,17 @@ spec:
           metadata:
             type: object
           spec:
-            description: BFDProfileSpec defines the desired state of BFDProfile.
+            description: L2AdvertisementSpec defines the desired state of L2Advertisement.
             properties:
-              detectMultiplier:
-                format: int32
-                maximum: 255
-                minimum: 2
-                type: integer
-              echoInterval:
-                format: int32
-                maximum: 60000
-                minimum: 10
-                type: integer
-              echoMode:
-                type: boolean
-              minimumTtl:
-                format: int32
-                maximum: 254
-                minimum: 1
-                type: integer
-              passiveMode:
-                type: boolean
-              receiveInterval:
-                format: int32
-                maximum: 60000
-                minimum: 10
-                type: integer
-              transmitInterval:
-                format: int32
-                maximum: 60000
-                minimum: 10
-                type: integer
+              ipPools:
+                description: IPPools is the list of ippools to advertise via this
+                  advertisement.
+                items:
+                  type: string
+                type: array
             type: object
           status:
-            description: BFDProfileStatus defines the observed state of BFDProfile.
+            description: L2AdvertisementStatus defines the observed state of L2Advertisement.
             type: object
         type: object
     served: true

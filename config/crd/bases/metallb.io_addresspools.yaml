@@ -16,10 +16,12 @@ spec:
     singular: addresspool
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - deprecated: true
+    deprecationWarning: metallbio.io v1alpha1 AddressPool is deprecated
+    name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: AddressPool is the Schema for the addresspools API
+        description: AddressPool is the Schema for the addresspools API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +36,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AddressPoolSpec defines the desired state of AddressPool
+            description: AddressPoolSpec defines the desired state of AddressPool.
             properties:
               addresses:
                 description: A list of IP address ranges over which MetalLB has authority.
@@ -82,7 +84,7 @@ spec:
                 type: array
               protocol:
                 description: Protocol can be used to select how the announcement is
-                  done,
+                  done.
                 enum:
                 - layer2
                 - bgp
@@ -92,7 +94,7 @@ spec:
             - protocol
             type: object
           status:
-            description: AddressPoolStatus defines the observed state of AddressPool
+            description: AddressPoolStatus defines the observed state of AddressPool.
             type: object
         required:
         - spec
@@ -104,7 +106,7 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: AddressPool is the Schema for the addresspools API
+        description: AddressPool is the Schema for the addresspools API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -119,7 +121,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AddressPoolSpec defines the desired state of AddressPool
+            description: AddressPoolSpec defines the desired state of AddressPool.
             properties:
               addresses:
                 description: A list of IP address ranges over which MetalLB has authority.
@@ -133,6 +135,11 @@ spec:
                 default: true
                 description: AutoAssign flag used to prevent MetallB from automatic
                   allocation for a pool.
+                type: boolean
+              avoidBuggyIPs:
+                default: false
+                description: AvoidBuggyIPs prevents addresses ending with .0 and .255
+                  to be used by a pool.
                 type: boolean
               bgpAdvertisements:
                 description: When an IP is allocated from this pool, how should it
@@ -167,7 +174,7 @@ spec:
                 type: array
               protocol:
                 description: Protocol can be used to select how the announcement is
-                  done,
+                  done.
                 enum:
                 - layer2
                 - bgp
@@ -177,7 +184,7 @@ spec:
             - protocol
             type: object
           status:
-            description: AddressPoolStatus defines the observed state of AddressPool
+            description: AddressPoolStatus defines the observed state of AddressPool.
             type: object
         required:
         - spec

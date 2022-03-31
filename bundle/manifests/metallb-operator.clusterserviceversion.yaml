@@ -6,166 +6,6 @@ metadata:
       [
         {
           "apiVersion": "metallb.io/v1beta1",
-          "kind": "AddressPool",
-          "metadata": {
-            "name": "addresspool-sample1",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "addresses": [
-              "172.18.0.100-172.18.0.255"
-            ],
-            "protocol": "layer2"
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
-          "kind": "AddressPool",
-          "metadata": {
-            "name": "addresspool-sample2",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "addresses": [
-              "172.20.0.100/24"
-            ],
-            "autoAssign": false,
-            "protocol": "layer2"
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
-          "kind": "AddressPool",
-          "metadata": {
-            "name": "addresspool-sample3",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "addresses": [
-              "2002:2:2::1-2002:2:2::100"
-            ],
-            "protocol": "layer2"
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
-          "kind": "AddressPool",
-          "metadata": {
-            "name": "addresspool-sample4",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "addresses": [
-              "172.30.0.100-172.30.0.255"
-            ],
-            "bgpAdvertisements": [
-              {
-                "aggregationLength": 32,
-                "communities": [
-                  "65535:65282"
-                ],
-                "localPref": 100
-              },
-              {
-                "aggregationLength": 24,
-                "aggregationLengthV6": 120,
-                "communities": [
-                  "8000:800"
-                ]
-              }
-            ],
-            "protocol": "bgp"
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
-          "kind": "BFDProfile",
-          "metadata": {
-            "name": "bfdprofiledefault",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "detectMultiplier": 37,
-            "echoMode": true,
-            "echoReceiveInterval": 38,
-            "echoTransmitInterval": 39,
-            "minimumTtl": 10,
-            "passiveMode": true,
-            "receiveInterval": 35,
-            "transmitInterval": 35
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
-          "kind": "BFDProfile",
-          "metadata": {
-            "name": "bfdprofilefull",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "detectMultiplier": 37,
-            "echoMode": true,
-            "echoReceiveInterval": 38,
-            "echoTransmitInterval": 39,
-            "minimumTtl": 10,
-            "passiveMode": true,
-            "receiveInterval": 35,
-            "transmitInterval": 35
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
-          "kind": "BGPPeer",
-          "metadata": {
-            "name": "peer-bfd",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "bfdProfile": "bfdprofilefull",
-            "holdTime": "10s",
-            "myASN": 64500,
-            "peerASN": 64501,
-            "peerAddress": "10.0.0.2",
-            "peerPort": 1,
-            "routerID": "10.10.10.10",
-            "sourceAddress": "1.1.1.1"
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
-          "kind": "BGPPeer",
-          "metadata": {
-            "name": "peer-sample1",
-            "namespace": "metallb-system"
-          },
-          "spec": {
-            "holdTime": "10s",
-            "keepaliveTime": "3s",
-            "myASN": 64500,
-            "nodeSelectors": [
-              {
-                "matchExpressions": [
-                  {
-                    "key": "kubernetes.io/hostname",
-                    "operator": "In",
-                    "values": [
-                      "hostA",
-                      "hostB"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "password": "test",
-            "peerASN": 64501,
-            "peerAddress": "10.0.0.1",
-            "peerPort": 1,
-            "routerID": "10.10.10.10",
-            "sourceAddress": "1.1.1.1"
-          }
-        },
-        {
-          "apiVersion": "metallb.io/v1beta1",
           "kind": "MetalLB",
           "metadata": {
             "name": "metallb",
@@ -189,25 +29,29 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - description: AddressPool is the Schema for the addresspools API (v1alpha1 version is the legacy version)
-        displayName: AddressPool
-        kind: AddressPool
+      - kind: AddressPool
         name: addresspools.metallb.io
         version: v1alpha1
-      - description: AddressPool is the Schema for the addresspools API
-        displayName: AddressPool
-        kind: AddressPool
+      - kind: AddressPool
         name: addresspools.metallb.io
         version: v1beta1
-      - description: BFDProfile is the Schema for the bfdprofiles API
-        displayName: BFDProfile
-        kind: BFDProfile
+      - kind: BFDProfile
         name: bfdprofiles.metallb.io
         version: v1beta1
-      - description: BGPPeer is the Schema for the bgppeers API
-        displayName: BGPPeer
-        kind: BGPPeer
+      - kind: BGPAdvertisement
+        name: bgpadvertisements.metallb.io
+        version: v1beta1
+      - kind: BGPPeer
         name: bgppeers.metallb.io
+        version: v1beta1
+      - kind: BGPPeer
+        name: bgppeers.metallb.io
+        version: v1beta2
+      - kind: IPPool
+        name: ippools.metallb.io
+        version: v1beta1
+      - kind: L2Advertisement
+        name: l2advertisements.metallb.io
         version: v1beta1
       - description: MetalLB is the Schema for the metallbs API
         displayName: MetalLB
@@ -252,16 +96,6 @@ spec:
                 - podsecuritypolicies
               verbs:
                 - use
-          serviceAccountName: controller
-        - rules:
-            - apiGroups:
-                - apiextensions.k8s.io
-              resources:
-                - customresourcedefinitions
-              verbs:
-                - get
-                - list
-                - watch
             - apiGroups:
                 - metallb.io
               resources:
@@ -274,28 +108,12 @@ spec:
             - apiGroups:
                 - metallb.io
               resources:
-                - addresspools/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - metallb.io
-              resources:
                 - bfdprofiles
               verbs:
                 - create
                 - get
                 - list
                 - watch
-            - apiGroups:
-                - metallb.io
-              resources:
-                - bfdprofiles/status
-              verbs:
-                - get
-                - patch
-                - update
             - apiGroups:
                 - metallb.io
               resources:
@@ -307,11 +125,37 @@ spec:
             - apiGroups:
                 - metallb.io
               resources:
-                - bgppeers/status
+                - l2advertisements
               verbs:
                 - get
-                - patch
-                - update
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgpadvertisements
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - ippools
+              verbs:
+                - get
+                - list
+                - watch
+          serviceAccountName: controller
+        - rules:
+            - apiGroups:
+                - apiextensions.k8s.io
+              resources:
+                - customresourcedefinitions
+              verbs:
+                - get
+                - list
+                - watch
             - apiGroups:
                 - metallb.io
               resources:
@@ -400,6 +244,54 @@ spec:
                 - podsecuritypolicies
               verbs:
                 - use
+            - apiGroups:
+                - metallb.io
+              resources:
+                - addresspools
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bfdprofiles
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgppeers
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - l2advertisements
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgpadvertisements
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - ippools
+              verbs:
+                - get
+                - list
+                - watch
           serviceAccountName: speaker
       deployments:
         - name: metallb-operator-controller-manager
@@ -424,8 +316,6 @@ spec:
                         value: quay.io/metallb/speaker:main
                       - name: CONTROLLER_IMAGE
                         value: quay.io/metallb/controller:main
-                      - name: ENABLE_OPERATOR_WEBHOOK
-                        value: "true"
                       - name: METALLB_BGP_TYPE
                         value: native
                       - name: FRR_IMAGE
@@ -442,10 +332,6 @@ spec:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
                     image: quay.io/metallb/metallb-operator:latest
                     name: manager
-                    ports:
-                      - containerPort: 9443
-                        name: webhook-server
-                        protocol: TCP
                     resources:
                       requests:
                         cpu: 50m
@@ -453,14 +339,6 @@ spec:
                 terminationGracePeriodSeconds: 10
       permissions:
         - rules:
-            - apiGroups:
-                - ""
-              resources:
-                - configmaps
-              verbs:
-                - get
-                - list
-                - watch
             - apiGroups:
                 - ""
               resources:
@@ -544,14 +422,6 @@ spec:
           serviceAccountName: default
         - rules:
             - apiGroups:
-                - ""
-              resources:
-                - configmaps
-              verbs:
-                - get
-                - list
-                - watch
-            - apiGroups:
                 - authentication.k8s.io
               resources:
                 - tokenreviews
@@ -600,44 +470,3 @@ spec:
   provider:
     name: Community
   version: 0.0.0
-  webhookdefinitions:
-    - admissionReviewVersions:
-        - v1
-      containerPort: 443
-      deploymentName: metallb-operator-controller-manager
-      failurePolicy: Fail
-      generateName: addresspoolvalidationwebhook.metallb.io
-      rules:
-        - apiGroups:
-            - metallb.io
-          apiVersions:
-            - v1beta1
-          operations:
-            - CREATE
-            - UPDATE
-          resources:
-            - addresspools
-      sideEffects: None
-      targetPort: 9443
-      type: ValidatingAdmissionWebhook
-      webhookPath: /validate-metallb-io-v1beta1-addresspool
-    - admissionReviewVersions:
-        - v1
-      containerPort: 443
-      deploymentName: metallb-operator-controller-manager
-      failurePolicy: Fail
-      generateName: bgppeervalidationwebhook.metallb.io
-      rules:
-        - apiGroups:
-            - metallb.io
-          apiVersions:
-            - v1beta1
-          operations:
-            - CREATE
-            - UPDATE
-          resources:
-            - bgppeers
-      sideEffects: None
-      targetPort: 9443
-      type: ValidatingAdmissionWebhook
-      webhookPath: /validate-metallb-io-v1beta1-bgppeer

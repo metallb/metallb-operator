@@ -33,7 +33,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
 	"github.com/metallb/metallb-operator/pkg/platform"
@@ -48,7 +47,6 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(metallbv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(metallbv1beta1.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	utilruntime.Must(appsv1.AddToScheme(scheme))
@@ -82,7 +80,6 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
-		Port:               9443,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "metallb.io.metallboperator",
 		Namespace:          watchNamespace,
@@ -109,27 +106,6 @@ func main() {
 	}).SetupWithManager(mgr, bgpType); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)
-	}
-
-	if err = (&controllers.ConfigMapReconciler{
-		Client:    mgr.GetClient(),
-		Log:       ctrl.Log.WithName("controllers").WithName("ConfigMap"),
-		Scheme:    mgr.GetScheme(),
-		Namespace: watchNamespace,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
-		os.Exit(1)
-	}
-
-	if os.Getenv("ENABLE_OPERATOR_WEBHOOK") == "true" {
-		if err = (&metallbv1beta1.AddressPool{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "AddressPool")
-			os.Exit(1)
-		}
-		if err = (&metallbv1beta1.BGPPeer{}).SetupWebhookWithManager(mgr, bgpType); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "BGPPeer")
-			os.Exit(1)
-		}
 	}
 	// +kubebuilder:scaffold:builder
 
