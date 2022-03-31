@@ -68,7 +68,6 @@ var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prome
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
 
 // Cluster Scoped
-// +kubebuilder:rbac:groups=core,resources=namespaces,verbs=update
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=get;list;watch;create;update;patch;delete
@@ -189,7 +188,6 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 				return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
 			}
 		}
-
 		if obj.GetKind() == "DaemonSet" &&
 			(len(config.Spec.SpeakerNodeSelector) > 0 || len(config.Spec.SpeakerTolerations) > 0) {
 			scheme := kscheme.Scheme

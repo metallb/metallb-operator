@@ -157,12 +157,6 @@ spec:
                 - list
                 - watch
             - apiGroups:
-                - ""
-              resources:
-                - namespaces
-              verbs:
-                - update
-            - apiGroups:
                 - metallb.io
               resources:
                 - metallbs

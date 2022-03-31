@@ -28,7 +28,7 @@ curl ${NATIVE_MANIFESTS_URL} -o _cache/${NATIVE_MANIFESTS_FILE}
 yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount")' _cache/${NATIVE_MANIFESTS_FILE} > config/metallb_rbac/${NATIVE_MANIFESTS_FILE}
 
 # Generate metallb deployment manifests
-yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition") | not)' _cache/${NATIVE_MANIFESTS_FILE} > ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
+yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition" or .kind == "Namespace") | not)' _cache/${NATIVE_MANIFESTS_FILE} > ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
 
 # Editing manifests to include templated variables
 yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].image|="{{.ControllerImage}}"' ${NATIVE_MANIFESTS_DIR}/${NATIVE_MANIFESTS_FILE}
@@ -49,7 +49,7 @@ curl ${FRR_MANIFESTS_URL} -o _cache/${FRR_MANIFESTS_FILE}
 yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount")' _cache/${FRR_MANIFESTS_FILE} > config/metallb_rbac/${FRR_MANIFESTS_FILE}
 
 # Generate metallb-frr deployment manifests
-yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition") | not)' _cache/${FRR_MANIFESTS_FILE} > ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
+yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition"  or .kind == "Namespace") | not)' _cache/${FRR_MANIFESTS_FILE} > ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
 
 # Editing metallb-frr manifests to include templated variables
 yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].image|="{{.ControllerImage}}"' ${FRR_MANIFESTS_DIR}/${FRR_MANIFESTS_FILE}
