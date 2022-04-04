@@ -7,6 +7,16 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update
+- apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
@@ -77,6 +87,16 @@ metadata:
   namespace: metallb-system
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update
+- apiGroups:
   - apps
   resources:
   - daemonsets
@@ -89,3 +109,23 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificates
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - issuers
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update

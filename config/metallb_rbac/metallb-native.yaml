@@ -28,6 +28,9 @@ rules:
       - secrets
     verbs:
       - create
+      - get
+      - list
+      - watch
   - apiGroups:
       - ""
     resourceNames:
@@ -44,73 +47,6 @@ rules:
       - deployments
     verbs:
       - get
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  labels:
-    app: metallb
-  name: pod-lister
-  namespace: metallb-system
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - list
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  creationTimestamp: null
-  name: manager-role
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - endpoints
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - node
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - service
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - service/status
-    verbs:
-      - update
-  - apiGroups:
-      - discovery.k8s.io
-    resources:
-      - endpointslices
-    verbs:
-      - get
-      - list
-      - watch
   - apiGroups:
       - metallb.io
     resources:
@@ -133,6 +69,101 @@ rules:
       - metallb.io
     resources:
       - bgppeers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - l2advertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bgpadvertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - ippools
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: metallb
+  name: pod-lister
+  namespace: metallb-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - addresspools
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bfdprofiles
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bgppeers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - l2advertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bgpadvertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - ippools
     verbs:
       - get
       - list
@@ -174,56 +205,6 @@ rules:
       - podsecuritypolicies
     verbs:
       - use
-  - apiGroups:
-      - metallb.io
-    resources:
-      - addresspools
-    verbs:
-      - create
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - bfdprofiles
-    verbs:
-      - create
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - bgppeers
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - l2advertisements
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - bgpadvertisements
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - ippools
-    verbs:
-      - get
-      - list
-      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -265,54 +246,6 @@ rules:
       - podsecuritypolicies
     verbs:
       - use
-  - apiGroups:
-      - metallb.io
-    resources:
-      - addresspools
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - bfdprofiles
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - bgppeers
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - l2advertisements
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - bgpadvertisements
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - metallb.io
-    resources:
-      - ippools
-    verbs:
-      - get
-      - list
-      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

@@ -112,7 +112,7 @@ var _ = BeforeSuite(func() {
 		Scheme:    scheme.Scheme,
 		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager, bgpType)
+	}).SetupWithManager(k8sManager, bgpType, os.Getenv("ENABLE_WEBHOOK"))
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
