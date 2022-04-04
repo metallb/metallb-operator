@@ -58,7 +58,8 @@ jobs:
 
     - name: Deploy Metal LB Operator
       run: |
-        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
+        make deploy-cert-manager
+        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" ENABLE_WEBHOOK="true" make deploy
 
     - name: E2E Tests
       run: |

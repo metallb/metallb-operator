@@ -96,58 +96,18 @@ spec:
                 - podsecuritypolicies
               verbs:
                 - use
-            - apiGroups:
-                - metallb.io
-              resources:
-                - addresspools
-              verbs:
-                - create
-                - get
-                - list
-                - watch
-            - apiGroups:
-                - metallb.io
-              resources:
-                - bfdprofiles
-              verbs:
-                - create
-                - get
-                - list
-                - watch
-            - apiGroups:
-                - metallb.io
-              resources:
-                - bgppeers
-              verbs:
-                - get
-                - list
-                - watch
-            - apiGroups:
-                - metallb.io
-              resources:
-                - l2advertisements
-              verbs:
-                - get
-                - list
-                - watch
-            - apiGroups:
-                - metallb.io
-              resources:
-                - bgpadvertisements
-              verbs:
-                - get
-                - list
-                - watch
-            - apiGroups:
-                - metallb.io
-              resources:
-                - ippools
-              verbs:
-                - get
-                - list
-                - watch
           serviceAccountName: controller
         - rules:
+            - apiGroups:
+                - admissionregistration.k8s.io
+              resources:
+                - validatingwebhookconfigurations
+              verbs:
+                - create
+                - delete
+                - get
+                - patch
+                - update
             - apiGroups:
                 - apiextensions.k8s.io
               resources:
@@ -244,6 +204,246 @@ spec:
                 - podsecuritypolicies
               verbs:
                 - use
+          serviceAccountName: speaker
+      deployments:
+        - name: metallb-operator-controller-manager
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                control-plane: controller-manager
+            strategy: {}
+            template:
+              metadata:
+                labels:
+                  control-plane: controller-manager
+              spec:
+                containers:
+                  - args:
+                      - --enable-leader-election
+                    command:
+                      - /manager
+                    env:
+                      - name: SPEAKER_IMAGE
+                        value: quay.io/metallb/speaker:main
+                      - name: CONTROLLER_IMAGE
+                        value: quay.io/metallb/controller:main
+                      - name: ENABLE_WEBHOOK
+                        value: "true"
+                      - name: METALLB_BGP_TYPE
+                        value: native
+                      - name: FRR_IMAGE
+                        value: quay.io/frrouting/frr:stable_7.5
+                      - name: KUBE_RBAC_PROXY_IMAGE
+                        value: quay.io/brancz/kube-rbac-proxy:v0.11.0
+                      - name: DEPLOY_KUBE_RBAC_PROXIES
+                        value: "false"
+                      - name: DEPLOY_PODMONITORS
+                        value: "true"
+                      - name: WATCH_NAMESPACE
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.annotations['olm.targetNamespaces']
+                    image: quay.io/metallb/metallb-operator:latest
+                    name: manager
+                    resources:
+                      requests:
+                        cpu: 50m
+                        memory: 20Mi
+                terminationGracePeriodSeconds: 10
+      permissions:
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - secrets
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resourceNames:
+                - memberlist
+              resources:
+                - secrets
+              verbs:
+                - list
+            - apiGroups:
+                - apps
+              resourceNames:
+                - controller
+              resources:
+                - deployments
+              verbs:
+                - get
+            - apiGroups:
+                - metallb.io
+              resources:
+                - addresspools
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bfdprofiles
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgppeers
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - l2advertisements
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgpadvertisements
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - ippools
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
+          serviceAccountName: controller
+        - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - coordination.k8s.io
+              resources:
+                - leases
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - events
+              verbs:
+                - create
+                - patch
+            - apiGroups:
+                - ""
+              resources:
+                - services
+              verbs:
+                - create
+                - delete
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets
+                - deployments
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - cert-manager.io
+              resources:
+                - certificates
+              verbs:
+                - create
+                - delete
+                - get
+                - patch
+                - update
+            - apiGroups:
+                - cert-manager.io
+              resources:
+                - issuers
+              verbs:
+                - create
+                - delete
+                - get
+                - patch
+                - update
+          serviceAccountName: default
+        - rules:
+            - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - list
+            - apiGroups:
+                - ""
+              resources:
+                - secrets
+              verbs:
+                - get
+                - list
+                - watch
             - apiGroups:
                 - metallb.io
               resources:
@@ -292,153 +492,6 @@ spec:
                 - get
                 - list
                 - watch
-          serviceAccountName: speaker
-      deployments:
-        - name: metallb-operator-controller-manager
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                control-plane: controller-manager
-            strategy: {}
-            template:
-              metadata:
-                labels:
-                  control-plane: controller-manager
-              spec:
-                containers:
-                  - args:
-                      - --enable-leader-election
-                    command:
-                      - /manager
-                    env:
-                      - name: SPEAKER_IMAGE
-                        value: quay.io/metallb/speaker:main
-                      - name: CONTROLLER_IMAGE
-                        value: quay.io/metallb/controller:main
-                      - name: METALLB_BGP_TYPE
-                        value: native
-                      - name: FRR_IMAGE
-                        value: quay.io/frrouting/frr:stable_7.5
-                      - name: KUBE_RBAC_PROXY_IMAGE
-                        value: quay.io/brancz/kube-rbac-proxy:v0.11.0
-                      - name: DEPLOY_KUBE_RBAC_PROXIES
-                        value: "false"
-                      - name: DEPLOY_PODMONITORS
-                        value: "true"
-                      - name: WATCH_NAMESPACE
-                        valueFrom:
-                          fieldRef:
-                            fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: quay.io/metallb/metallb-operator:latest
-                    name: manager
-                    resources:
-                      requests:
-                        cpu: 50m
-                        memory: 20Mi
-                terminationGracePeriodSeconds: 10
-      permissions:
-        - rules:
-            - apiGroups:
-                - ""
-              resources:
-                - secrets
-              verbs:
-                - create
-            - apiGroups:
-                - ""
-              resourceNames:
-                - memberlist
-              resources:
-                - secrets
-              verbs:
-                - list
-            - apiGroups:
-                - apps
-              resourceNames:
-                - controller
-              resources:
-                - deployments
-              verbs:
-                - get
-            - apiGroups:
-                - authentication.k8s.io
-              resources:
-                - tokenreviews
-              verbs:
-                - create
-            - apiGroups:
-                - authorization.k8s.io
-              resources:
-                - subjectaccessreviews
-              verbs:
-                - create
-          serviceAccountName: controller
-        - rules:
-            - apiGroups:
-                - ""
-              resources:
-                - configmaps
-              verbs:
-                - get
-                - list
-                - watch
-                - create
-                - update
-                - patch
-                - delete
-            - apiGroups:
-                - coordination.k8s.io
-              resources:
-                - leases
-              verbs:
-                - get
-                - list
-                - watch
-                - create
-                - update
-                - patch
-                - delete
-            - apiGroups:
-                - ""
-              resources:
-                - events
-              verbs:
-                - create
-                - patch
-            - apiGroups:
-                - apps
-              resources:
-                - daemonsets
-                - deployments
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-          serviceAccountName: default
-        - rules:
-            - apiGroups:
-                - authentication.k8s.io
-              resources:
-                - tokenreviews
-              verbs:
-                - create
-            - apiGroups:
-                - authorization.k8s.io
-              resources:
-                - subjectaccessreviews
-              verbs:
-                - create
-            - apiGroups:
-                - ""
-              resources:
-                - pods
-              verbs:
-                - list
             - apiGroups:
                 - security.openshift.io
               resourceNames:

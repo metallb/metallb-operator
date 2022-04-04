@@ -61,7 +61,8 @@ jobs:
 
     - name: Verify bin dir
       run: |
-        BIN_FILE="metallb-operator.yaml" make bin
+        BIN_FILE="metallb-operator.yaml" ENABLE_WEBHOOK=false make bin
+        BIN_FILE="metallb-operator-with-webhooks.yaml" ENABLE_WEBHOOK=true make bin
         git diff --exit-code bin/
 
     - name: Unit and Integration Tests

@@ -66,6 +66,9 @@ var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prome
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,namespace=metallb-system,resources=certificates,verbs=create;delete;get;update;patch
+// +kubebuilder:rbac:groups=cert-manager.io,namespace=metallb-system,resources=issuers,verbs=create;delete;get;update;patch
+// +kubebuilder:rbac:groups="",namespace=metallb-system,resources=services,verbs=create;delete;get;update;patch
 
 // Cluster Scoped
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs,verbs=get;list;watch;create;update;patch;delete
@@ -73,6 +76,7 @@ var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prome
 // +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/finalizers,verbs=delete;get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=create;delete;get;update;patch
 
 func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
@@ -130,14 +134,18 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) error {
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType, enableWebhook string) error {
 	if bgpType == "" {
 		bgpType = bgpNative
 	}
 	if bgpType != bgpNative && bgpType != bgpFrr {
 		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
 	}
-	ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
+	if enableWebhook == "true" {
+		ManifestPath = fmt.Sprintf("%s/%s-with-webhooks", ManifestPath, bgpType)
+	} else {
+		ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&metallbv1beta1.MetalLB{}).

@@ -103,7 +103,7 @@ func main() {
 		Scheme:       mgr.GetScheme(),
 		PlatformInfo: platformInfo,
 		Namespace:    watchNamespace,
-	}).SetupWithManager(mgr, bgpType); err != nil {
+	}).SetupWithManager(mgr, bgpType, os.Getenv("ENABLE_WEBHOOK")); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)
 	}

@@ -45,7 +45,7 @@ jobs:
         with:
           repository: metallb/metallb
           path: metallb
-          ref: b1cbd50148ef6ddc982a68948e873500d012646f
+          ref: 35e41dea662b43e91b5c2a7338b92d27eb059a4d
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -60,7 +60,8 @@ jobs:
           kind load docker-image ${built_image}
       - name: Deploy Metal LB Operator
         run: |
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
+          make deploy-cert-manager
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" ENABLE_WEBHOOK="true" make deploy
       - name: MetalLB E2E Tests
         run: |
           export KUBECONFIG=${HOME}/.kube/config
