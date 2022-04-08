@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -107,12 +108,13 @@ var _ = BeforeSuite(func() {
 	PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathControllerTest, "prometheus-operator")
 
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
+	webHookEnabled, _ := strconv.ParseBool(os.Getenv("ENABLE_WEBHOOK"))
 	err = (&MetalLBReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
 		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager, bgpType, os.Getenv("ENABLE_WEBHOOK"))
+	}).SetupWithManager(k8sManager, bgpType, webHookEnabled)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

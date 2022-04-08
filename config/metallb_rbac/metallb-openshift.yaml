@@ -1,0 +1,337 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: metallb
+  name: controller
+  namespace: metallb-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: metallb
+  name: speaker
+  namespace: metallb-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: metallb
+  name: controller
+  namespace: metallb-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resourceNames:
+      - memberlist
+    resources:
+      - secrets
+    verbs:
+      - list
+  - apiGroups:
+      - apps
+    resourceNames:
+      - controller
+    resources:
+      - deployments
+    verbs:
+      - get
+  - apiGroups:
+      - metallb.io
+    resources:
+      - addresspools
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bfdprofiles
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bgppeers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - l2advertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bgpadvertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - ippools
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: metallb
+  name: pod-lister
+  namespace: metallb-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - addresspools
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bfdprofiles
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bgppeers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - l2advertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - bgpadvertisements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - metallb.io
+    resources:
+      - ippools
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: allow-privileged
+rules:
+  - apiGroups:
+      - security.openshift.io
+    resourceNames:
+      - privileged
+    resources:
+      - securitycontextconstraints
+    verbs:
+      - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: metallb
+  name: metallb-system:controller
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services/status
+    verbs:
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - policy
+    resourceNames:
+      - controller
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: metallb
+  name: metallb-system:speaker
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - policy
+    resourceNames:
+      - speaker
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app: metallb
+  name: controller
+  namespace: metallb-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: controller
+subjects:
+  - kind: ServiceAccount
+    name: controller
+    namespace: metallb-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app: metallb
+  name: pod-lister
+  namespace: metallb-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pod-lister
+subjects:
+  - kind: ServiceAccount
+    name: speaker
+    namespace: metallb-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metallb-allow-privileged
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: allow-privileged
+subjects:
+  - kind: ServiceAccount
+    name: speaker
+    namespace: metallb-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: metallb
+  name: metallb-system:controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metallb-system:controller
+subjects:
+  - kind: ServiceAccount
+    name: controller
+    namespace: metallb-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: metallb
+  name: metallb-system:speaker
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metallb-system:speaker
+subjects:
+  - kind: ServiceAccount
+    name: speaker
+    namespace: metallb-system

@@ -134,19 +134,24 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType, enableWebhook string) error {
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string, enableWebhook bool) error {
 	if bgpType == "" {
 		bgpType = bgpNative
 	}
 	if bgpType != bgpNative && bgpType != bgpFrr {
 		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
 	}
-	if enableWebhook == "true" {
+	switch {
+	case r.PlatformInfo.IsOpenShift():
+		if bgpType != bgpFrr || !enableWebhook {
+			return fmt.Errorf("bgp type must be frr with webhook enabled for openshift cluster")
+		}
+		ManifestPath = fmt.Sprintf("%s/openshift", ManifestPath)
+	case enableWebhook:
 		ManifestPath = fmt.Sprintf("%s/%s-with-webhooks", ManifestPath, bgpType)
-	} else {
+	default:
 		ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
 	}
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&metallbv1beta1.MetalLB{}).
 		Complete(r)

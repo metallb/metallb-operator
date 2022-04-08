@@ -226,6 +226,7 @@ endif
 generate-metallb-manifests:  ## Generate MetalLB manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
+	hack/generate_ocp_webhook_manifests.sh
 
 validate-metallb-manifests:  ## Validate MetalLB manifests
 	@echo "Comparing newly generated MetalLB manifests to existing ones"
