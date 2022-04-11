@@ -175,6 +175,20 @@ metadata:
   name: frr-startup
   namespace: '{{.NameSpace}}'
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.openshift.io/serving-cert-secret-name: webhook-server-cert
+  name: webhook-service
+  namespace: '{{.NameSpace}}'
+spec:
+  ports:
+    - port: 443
+      targetPort: 9443
+  selector:
+    component: controller
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -200,6 +214,7 @@ spec:
     spec:
       containers:
         - args:
+            - --enable-webhook
             - --port=7472
             - --log-level={{.LogLevel}}
           env:
@@ -221,6 +236,9 @@ spec:
             timeoutSeconds: 1
           name: controller
           ports:
+            - containerPort: 9443
+              name: webhook-server
+              protocol: TCP
             - containerPort: 7472
               name: monitoring
           readinessProbe:
@@ -238,6 +256,10 @@ spec:
               drop:
                 - all
             readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
           command:
             - /controller
       nodeSelector:
@@ -249,6 +271,11 @@ spec:
         {{ end }}
       serviceAccountName: controller
       terminationGracePeriodSeconds: 0
+      volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: webhook-server-cert
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -408,9 +435,6 @@ spec:
             - cp -rLf /tmp/frr/* /etc/frr/
           image: '{{.FRRImage}}'
           name: cp-frr-files
-          securityContext:
-            runAsGroup: 101
-            runAsUser: 100
           volumeMounts:
             - mountPath: /tmp/frr
               name: frr-startup
@@ -455,3 +479,91 @@ spec:
           name: reloader
         - emptyDir: {}
           name: metrics
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+  name: validating-webhook-configuration
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta2-bgppeer
+    failurePolicy: Fail
+    name: bgppeersvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta2
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - bgppeers
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta1-addresspool
+    failurePolicy: Fail
+    name: addresspoolvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - addresspools
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta1-bgpadvertisement
+    failurePolicy: Fail
+    name: bgpadvertisementvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - bgpadvertisements
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta1-ippool
+    failurePolicy: Fail
+    name: ippoolvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - ippools
+    sideEffects: None

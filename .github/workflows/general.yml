@@ -25,7 +25,7 @@ jobs:
     - name: Verify
       uses: golangci/golangci-lint-action@v2
       with:
-        version: v1.41.1
+        version: v1.45.2
         args: --timeout=15m0s --verbose
 
   unit:
@@ -61,7 +61,8 @@ jobs:
 
     - name: Verify bin dir
       run: |
-        BIN_FILE="metallb-operator.yaml" make bin
+        BIN_FILE="metallb-operator.yaml" ENABLE_WEBHOOK=false make bin
+        BIN_FILE="metallb-operator-with-webhooks.yaml" ENABLE_WEBHOOK=true make bin
         git diff --exit-code bin/
 
     - name: Unit and Integration Tests

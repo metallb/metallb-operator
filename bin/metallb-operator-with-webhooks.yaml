@@ -1184,7 +1184,7 @@ spec:
         - name: CONTROLLER_IMAGE
           value: quay.io/metallb/controller:main
         - name: ENABLE_WEBHOOK
-          value: "false"
+          value: "true"
         - name: METALLB_BGP_TYPE
           value: native
         - name: FRR_IMAGE

@@ -172,6 +172,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  name: allow-privileged
+rules:
+  - apiGroups:
+      - security.openshift.io
+    resourceNames:
+      - privileged
+    resources:
+      - securitycontextconstraints
+    verbs:
+      - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
   labels:
     app: metallb
   name: metallb-system:controller
@@ -274,6 +288,19 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: pod-lister
+subjects:
+  - kind: ServiceAccount
+    name: speaker
+    namespace: metallb-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metallb-allow-privileged
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: allow-privileged
 subjects:
   - kind: ServiceAccount
     name: speaker

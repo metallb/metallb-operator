@@ -23,12 +23,30 @@ To install the MetalLB Operator using the prebuilt manifests, run the following:
 kubectl apply -f bin/metallb-operator.yaml
 ```
 
+To install the MetalLB Operator with the Validation Webhooks using the prebuilt manifests, run the following:
+
+Have cert-manager installed in your cluster, or install it using:
+```shell
+make deploy-cert-manager
+```
+
+Run:
+```shell
+kubectl apply -f bin/metallb-operator-with-webhooks.yaml
+```
+
 ## Installation
 
 To install the MetalLB Operator using a prebuilt image, run the following:
+```shell
+ENABLE_OPERATOR_WEBHOOK=false make deploy
+```
+
+To install the MetalLB Operator using a prebuilt image and enable Validation Webhooks, run the following:
 
 ```shell
-make deploy
+make deploy-cert-manager
+ENABLE_OPERATOR_WEBHOOK=true make deploy
 ```
 
 ## Usage
@@ -72,6 +90,7 @@ export IMAGE_NAME=metallb-operator
 
 make docker-build IMG=$IMAGE_NAME
 kind load docker-image $IMAGE_NAME
+make deploy-cert-manager
 IMG=$IMAGE_NAME KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
 ```
 
