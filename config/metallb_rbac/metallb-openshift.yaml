@@ -92,7 +92,7 @@ rules:
   - apiGroups:
       - metallb.io
     resources:
-      - ippools
+      - ipaddresspools
     verbs:
       - get
       - list
@@ -163,7 +163,7 @@ rules:
   - apiGroups:
       - metallb.io
     resources:
-      - ippools
+      - ipaddresspools
     verbs:
       - get
       - list

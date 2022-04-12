@@ -47,8 +47,8 @@ spec:
       - kind: BGPPeer
         name: bgppeers.metallb.io
         version: v1beta2
-      - kind: IPPool
-        name: ippools.metallb.io
+      - kind: IPAddressPool
+        name: ipaddresspools.metallb.io
         version: v1beta1
       - kind: L2Advertisement
         name: l2advertisements.metallb.io
@@ -323,7 +323,7 @@ spec:
             - apiGroups:
                 - metallb.io
               resources:
-                - ippools
+                - ipaddresspools
               verbs:
                 - get
                 - list
@@ -487,7 +487,7 @@ spec:
             - apiGroups:
                 - metallb.io
               resources:
-                - ippools
+                - ipaddresspools
               verbs:
                 - get
                 - list

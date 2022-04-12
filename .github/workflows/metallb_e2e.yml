@@ -45,7 +45,7 @@ jobs:
         with:
           repository: metallb/metallb
           path: metallb
-          ref: 35e41dea662b43e91b5c2a7338b92d27eb059a4d
+          ref: 569e3df8754ed4343f5dca5a267b48b2fd047d4c
       - name: Install Dependencies
         run: |
           sudo apt-get update
