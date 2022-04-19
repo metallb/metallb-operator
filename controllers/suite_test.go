@@ -21,15 +21,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,9 +37,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	metallbv1alpha1 "github.com/metallb/metallb-operator/api/v1alpha1"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/metallb/metallb-operator/pkg/apply"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -85,9 +81,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = metallbv1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
 	err = metallbv1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -115,20 +108,13 @@ var _ = BeforeSuite(func() {
 	PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathControllerTest, "prometheus-operator")
 
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
+	webHookEnabled, _ := strconv.ParseBool(os.Getenv("ENABLE_WEBHOOK"))
 	err = (&MetalLBReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
 		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager, bgpType)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&ConfigMapReconciler{
-		Client:    k8sClient,
-		Scheme:    scheme.Scheme,
-		Log:       ctrl.Log.WithName("controller").WithName("ConfigMap"),
-		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager)
+	}).SetupWithManager(k8sManager, bgpType, webHookEnabled)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
@@ -144,18 +130,3 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
-
-func validateConfigMatchesYaml(toMatch string) {
-	configmap := &corev1.ConfigMap{}
-	EventuallyWithOffset(1, func() (string, error) {
-		err := k8sClient.Get(context.Background(),
-			types.NamespacedName{Name: apply.MetalLBConfigMap, Namespace: MetalLBTestNameSpace}, configmap)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				return "", nil
-			}
-			return "", err
-		}
-		return configmap.Data[apply.MetalLBConfigMap], err
-	}, 2*time.Second, 200*time.Millisecond).Should(MatchYAML(toMatch))
-}

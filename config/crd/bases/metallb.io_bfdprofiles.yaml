@@ -19,7 +19,7 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: BFDProfile is the Schema for the bfdprofiles API
+        description: BFDProfile is the Schema for the bfdprofiles API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: BFDProfileSpec defines the desired state of BFDProfile
+            description: BFDProfileSpec defines the desired state of BFDProfile.
             properties:
               detectMultiplier:
                 format: int32
@@ -67,7 +67,7 @@ spec:
                 type: integer
             type: object
           status:
-            description: BFDProfileStatus defines the observed state of BFDProfile
+            description: BFDProfileStatus defines the observed state of BFDProfile.
             type: object
         type: object
     served: true

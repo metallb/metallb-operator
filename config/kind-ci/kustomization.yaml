@@ -4,5 +4,5 @@ patchesStrategicMerge:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- ../webhook-with-certmanager
+- ../default
 namespace: metallb-system

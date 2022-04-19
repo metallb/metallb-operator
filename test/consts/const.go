@@ -15,16 +15,8 @@ const (
 	MetalLBDeploymentName = "controller"
 	// MetalLBDaemonsetName contains the name of the MetalLB daemonset
 	MetalLBDaemonsetName = "speaker"
-	// MetalLBAddressPoolCRDName contains the name of MetallB AddressPool CRD
-	MetalLBAddressPoolCRDName = "addresspools.metallb.io"
-	// MetalLBPeerCRDName contains the name of MetallB BGP Peer CRD
-	MetalLBPeerCRDName = "bgppeers.metallb.io"
 	// MetalLBConfigMapName contains created configmap
 	MetalLBConfigMapName = apply.MetalLBConfigMap
 	// DefaultOperatorNameSpace is the default operator namespace
 	DefaultOperatorNameSpace = "metallb-system"
-	// AddressPoolValidationWebhookName contains the name of the AddressPool validation webhook
-	AddressPoolValidationWebhookName = "addresspoolvalidationwebhook.metallb.io"
-	// BGPPeerValidationWebhookName contains the name of the BGPPeer validation webhook
-	BGPPeerValidationWebhookName = "bgppeervalidationwebhook.metallb.io"
 )
