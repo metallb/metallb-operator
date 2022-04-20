@@ -17,7 +17,8 @@ export PATH=$PATH:$GOPATH/bin
 
 mkdir -p _cache
 
-export METALLB_COMMIT_ID="f7a062f1bbf4b20ec44eee35eeb1e0f3db0312e3"
+export METALLB_COMMIT_ID="00a10fa6a025b02f535c0be0d17481c93284f603"
+export METALLB_PATH=_cache/metallb
 
 export METALLB_SC_FILE=$(dirname "$0")/securityContext.yaml
 
@@ -83,4 +84,12 @@ function generate_metallb_native_manifest() {
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.securityContext|="'"$(< ${METALLB_SC_FILE})"'"' ${manifest_dir}/${manifest_name}
     sed -i 's/securityContext\: |-/securityContext\:/g' ${manifest_dir}/${manifest_name} # Last because it breaks yaml syntax
     sed -i 's/--log-level=info/--log-level={{.LogLevel}}/' ${manifest_dir}/${manifest_name}
+}
+
+function fetch_metallb() {
+    if [[ ! -d "$METALLB_PATH" ]]; then
+        curl -L https://github.com/metallb/metallb/tarball/"$METALLB_COMMIT_ID" | tar zx -C _cache
+        rm -rf "$METALLB_PATH"
+        mv _cache/metallb-metallb-* "$METALLB_PATH"
+    fi
 }
