@@ -49,3 +49,14 @@ curl ${PROMETHEUS_OPERATOR_MANIFESTS_URL} -o _cache/${PROMETHEUS_OPERATOR_FILE}
 yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount") | not)' _cache/${PROMETHEUS_OPERATOR_FILE} > ${PROMETHEUS_OPERATOR_MANIFESTS_DIR}/${PROMETHEUS_OPERATOR_FILE}
 yq e --inplace '. | select(.kind == "PodMonitor").metadata.namespace|="{{.NameSpace}}"' ${PROMETHEUS_OPERATOR_MANIFESTS_DIR}/${PROMETHEUS_OPERATOR_FILE}
 yq e --inplace '. | select(.kind == "PodMonitor").spec.namespaceSelector.matchNames|=["{{.NameSpace}}"]' ${PROMETHEUS_OPERATOR_MANIFESTS_DIR}/${PROMETHEUS_OPERATOR_FILE}
+
+fetch_metallb
+
+# we want to preserve the metallb crd
+ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^---$/d'
+ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^$/d'
+ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs rm 
+cp -r "$METALLB_PATH"/config/crd/bases config/crd
+ls -d bundle/manifests/metallb.io_* | grep -v metallb.io_metallbs | xargs rm 
+cp -r "$METALLB_PATH"/config/crd/bases/* bundle/manifests/
+ls -d bundle/manifests/metallb.io_* 
