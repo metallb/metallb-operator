@@ -4,20 +4,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: bfdprofiles.metallb.io
+  name: communities.metallb.io
 spec:
   group: metallb.io
   names:
-    kind: BFDProfile
-    listKind: BFDProfileList
-    plural: bfdprofiles
-    singular: bfdprofile
+    kind: Community
+    listKind: CommunityList
+    plural: communities
+    singular: community
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: BFDProfile is the Schema for the bfdprofiles API.
+        description: Community is the Schema for the communities API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -32,40 +32,22 @@ spec:
           metadata:
             type: object
           spec:
-            description: BFDProfileSpec defines the desired state of BFDProfile.
+            description: CommunitySpec defines the desired state of Community.
             properties:
-              detectMultiplier:
-                format: int32
-                maximum: 255
-                minimum: 2
-                type: integer
-              echoInterval:
-                format: int32
-                maximum: 60000
-                minimum: 10
-                type: integer
-              echoMode:
-                type: boolean
-              minimumTtl:
-                format: int32
-                maximum: 254
-                minimum: 1
-                type: integer
-              passiveMode:
-                type: boolean
-              receiveInterval:
-                format: int32
-                maximum: 60000
-                minimum: 10
-                type: integer
-              transmitInterval:
-                format: int32
-                maximum: 60000
-                minimum: 10
-                type: integer
+              communities:
+                items:
+                  properties:
+                    name:
+                      description: Name or identifier for the community.
+                      type: string
+                    value:
+                      description: BGP community value.
+                      type: string
+                  type: object
+                type: array
             type: object
           status:
-            description: BFDProfileStatus defines the observed state of BFDProfile.
+            description: CommunityStatus defines the observed state of Community.
             type: object
         type: object
     served: true
