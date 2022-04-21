@@ -223,7 +223,18 @@ else
 OPM=$(shell which opm)
 endif
 
-generate-metallb-manifests:  ## Generate MetalLB manifests
+# Get the current kubectl binary. If there isn't any, we'll use the
+# GOBIN path
+kubectl:
+ifeq (, $(shell which kubectl))
+	@{ \
+	set -e ;\
+	curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl > $(GOBIN)/kubectl ;\
+	chmod u+x $(GOBIN)/kubectl ;\
+	}
+endif
+
+generate-metallb-manifests: kubectl ## Generate MetalLB manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
 	hack/generate_ocp_webhook_manifests.sh
