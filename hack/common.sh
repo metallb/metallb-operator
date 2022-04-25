@@ -50,6 +50,27 @@ function generate_metallb_frr_manifest() {
     sed -i '/- name: FRR_LOGGING_LEVEL/ s//# &/' ${manifest_dir}/${manifest_name}
     sed -i '/  value: informational/ s//# &/' ${manifest_dir}/${manifest_name}
 
+    # kube-rbac-proxy modifications
+    yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.volumes += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${manifest_dir}/${manifest_name}
+    yq e --inplace '. | select(.kind == "DaemonSet" and .metadata.name == "speaker").spec.template.spec.volumes += {"name": "speaker-certs", "secret": {"secretName": "speaker-certs-secret"}}' ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.volumes += {\"name\": \"{{ end }}\"}" ${manifest_dir}/${manifest_name}
+
+    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.volumes += [{\"name\": \"{{ if .DeployKubeRbacProxies }}\"}]" ${manifest_dir}/${manifest_name}
+    yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller").spec.template.spec.volumes += {"name": "controller-certs", "secret": {"secretName": "controller-certs-secret"}}' ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.volumes += {\"name\": \"{{ end }}\"}" ${manifest_dir}/${manifest_name}
+
+    frr_kube_rbac=`cat $(dirname "$0")/kube-rbac-frr.json | tr -d " \t\n\r"`
+    speaker_kube_rbac=`cat $(dirname "$0")/kube-rbac-speaker.json | tr -d " \t\n\r"`
+    controller_kube_rbac=`cat $(dirname "$0")/kube-rbac-controller.json | tr -d " \t\n\r"`
+    yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += ${frr_kube_rbac}" ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += ${speaker_kube_rbac}" ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.containers += {\"name\": \"{{ end }}\"}" ${manifest_dir}/${manifest_name}
+
+    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += ${controller_kube_rbac}" ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += {\"name\": \"{{ end }}\"}" ${manifest_dir}/${manifest_name}
+
     # The next part is a bit ugly because we add the sc file content as the securityContext field.
     # The problem with it is that the content is added as a string and not as yaml fields, so we need to use sed to remove yaml's "|-"" mark for them to count as fields.
     # Furthermore, the sed has to be last since it breaks the yaml's syntax by adding the conditionals between

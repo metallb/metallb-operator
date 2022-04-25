@@ -262,6 +262,35 @@ spec:
               readOnly: true
           command:
             - /controller
+        {{ if .DeployKubeRbacProxies }}
+        - name: kube-rbac-proxy
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:27472
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://$(METALLB_HOST):7472/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: 27472
+              name: https-metrics
+          env:
+            - name: METALLB_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: controller-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        {{ end }}
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
@@ -276,6 +305,11 @@ spec:
           secret:
             defaultMode: 420
             secretName: webhook-server-cert
+        {{ if .DeployKubeRbacProxies }}
+        - name: controller-certs
+          secret:
+            secretName: controller-certs-secret
+        {{ end }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -427,6 +461,57 @@ spec:
               name: reloader
           command:
             - /speaker
+        {{ if .DeployKubeRbacProxies }}
+        - name: kube-rbac-proxy-frr
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:27473
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://127.0.0.1:7473/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: 27473
+              name: https-metrics
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: speaker-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        - name: kube-rbac-proxy
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:27472
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://$(METALLB_HOST):7472/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: 27472
+              name: https-metrics
+          env:
+            - name: METALLB_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: speaker-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        {{ end }}
       hostNetwork: true
       initContainers:
         - command:
@@ -479,6 +564,11 @@ spec:
           name: reloader
         - emptyDir: {}
           name: metrics
+        {{ if .DeployKubeRbacProxies }}
+        - name: speaker-certs
+          secret:
+            secretName: speaker-certs-secret
+        {{ end }}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
