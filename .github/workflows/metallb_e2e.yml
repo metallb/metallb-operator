@@ -18,7 +18,7 @@ jobs:
       built_image: "metallb-operator:ci" # Arbitrary name
     strategy:
       matrix:
-        go: ['1.17']
+        go: ["1.17"]
     name: Go ${{ matrix.go }}
     steps:
       - name: Checkout Metal LB Operator
@@ -46,6 +46,12 @@ jobs:
           repository: metallb/metallb
           path: metallb
           ref: 9985a602b7c93a51dcce6c5d6f9bb4ec98760115
+      - name: Checkout MetalLB v0.12.1
+        uses: actions/checkout@v2
+        with:
+          repository: metallb/metallb
+          path: metallb-0.12.1
+          ref: v0.12.1
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -62,12 +68,26 @@ jobs:
         run: |
           make deploy-cert-manager
           IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" ENABLE_WEBHOOK="true" make deploy
-      - name: MetalLB E2E Tests
+      - name: Enable MetalLB
         run: |
           export KUBECONFIG=${HOME}/.kube/config
           kubectl apply -f config/samples/metallb.yaml
+      - name: MetalLB E2E Tests
+        run: |
           cd ${GITHUB_WORKSPACE}/metallb
           sudo -E env "PATH=$PATH" inv e2etest --skip "IPV6|DUALSTACK" -e /tmp/kind_logs
+      - name: MetalLB E2E Tests - backward compatible
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            namespace: metallb-system
+            name: config
+          EOF
+          cd ${GITHUB_WORKSPACE}/metallb-0.12.1
+          FOCUS="L2.*should work for ExternalTrafficPolicy=Cluster|BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$|validate FRR running configuration"
+          sudo -E env "PATH=$PATH" inv e2etest --use-operator --focus "$FOCUS" -e /tmp/kind_logs
       - name: Change permissions for kind logs
         if: ${{ failure() }}
         run: |
