@@ -38,6 +38,7 @@ function generate_metallb_frr_manifest() {
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].command|= ["/controller"]' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "speaker").image)|="{{.SpeakerImage}}"' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "speaker").command)|= ["/speaker"]' ${manifest_dir}/${manifest_name}
+    yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "speaker").args)|= . + ["--ml-bindport={{.MLBindPort}}"]' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "frr").image)|="{{.FRRImage}}"' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "reloader").image)|="{{.FRRImage}}"' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "frr-metrics").image)|="{{.FRRImage}}"' ${manifest_dir}/${manifest_name}
@@ -79,6 +80,12 @@ function generate_metallb_frr_manifest() {
     sed -i 's/securityContext\: |-/securityContext\:/g' ${manifest_dir}/${manifest_name}
     sed -i "s/- name: '{{ if .DeployKubeRbacProxies }}'/{{ if .DeployKubeRbacProxies }}/g" ${manifest_dir}/${manifest_name}
     sed -i "s/- name: '{{ end }}'/{{ end }}/g" ${manifest_dir}/${manifest_name}
+
+    sed -i 's/7472/{{.MetricsPort}}/' ${manifest_dir}/${manifest_name}
+    sed -i 's/7473/{{.FRRMetricsPort}}/' ${manifest_dir}/${manifest_name}
+
+    sed -i "s/'{{.MetricsPortHttps}}'/{{.MetricsPortHttps}}/" ${manifest_dir}/${manifest_name}
+    sed -i "s/'{{.FRRMetricsPortHttps}}'/{{.FRRMetricsPortHttps}}/" ${manifest_dir}/${manifest_name}
 }
 
 
@@ -98,13 +105,19 @@ function generate_metallb_native_manifest() {
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].command|= ["/controller"]' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | select(.kind == "DaemonSet" and .metadata.name == "speaker" and .spec.template.spec.containers[0].name == "speaker").spec.template.spec.containers[0].image|="{{.SpeakerImage}}"' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | select(.kind == "DaemonSet" and .metadata.name == "speaker" and .spec.template.spec.containers[0].name == "speaker").spec.template.spec.containers[0].command|= ["/speaker"]' ${manifest_dir}/${manifest_name}
+    yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "speaker").args)|= . + ["--ml-bindport={{.MLBindPort}}"]' ${manifest_dir}/${manifest_name}
+
     yq e --inplace '. | select(.metadata.namespace == "metallb-system").metadata.namespace|="{{.NameSpace}}"' ${manifest_dir}/${manifest_name}
+    
+    
     # The next part is a bit ugly because we add the sc file content as the securityContext field.
     # The problem with it is that the content is added as a string and not as yaml fields, so we need to use sed to remove yaml's "|-"" mark for them to count as fields.
     # Furthermore, the sed has to be last since it breaks the yaml's syntax by adding the conditionals between
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.securityContext|="'"$(< ${METALLB_SC_FILE})"'"' ${manifest_dir}/${manifest_name}
     sed -i 's/securityContext\: |-/securityContext\:/g' ${manifest_dir}/${manifest_name} # Last because it breaks yaml syntax
     sed -i 's/--log-level=info/--log-level={{.LogLevel}}/' ${manifest_dir}/${manifest_name}
+    sed -i 's/7472/{{.MetricsPort}}/' ${manifest_dir}/${manifest_name}
+    sed -i "s/'{{.MetricsPortHttps}}'/{{.MetricsPortHttps}}/" ${manifest_dir}/${manifest_name}
 }
 
 function fetch_metallb() {

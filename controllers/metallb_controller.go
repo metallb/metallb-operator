@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -175,6 +176,28 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		data.Data["LogLevel"] = config.Spec.LogLevel
 	}
 
+	var err error
+	data.Data["MetricsPort"], err = valueWithDefault("METRICS_PORT", 7472)
+	if err != nil {
+		return err
+	}
+	data.Data["MetricsPortHttps"], err = valueWithDefault("HTTPS_METRICS_PORT", 27472)
+	if err != nil {
+		return err
+	}
+	data.Data["FRRMetricsPort"], err = valueWithDefault("FRR_METRICS_PORT", 7473)
+	if err != nil {
+		return err
+	}
+	data.Data["FRRMetricsPortHttps"], err = valueWithDefault("FRR_HTTPS_METRICS_PORT", 27473)
+	if err != nil {
+		return err
+	}
+	data.Data["MLBindPort"], err = valueWithDefault("MEMBER_LIST_BIND_PORT", 7946)
+	if err != nil {
+		return err
+	}
+
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")
@@ -234,4 +257,16 @@ func podMonitorAvailable(c client.Client) bool {
 	crd := &apiext.CustomResourceDefinition{}
 	err := c.Get(context.Background(), client.ObjectKey{Name: "podmonitors.monitoring.coreos.com"}, crd)
 	return err == nil
+}
+
+func valueWithDefault(name string, def int) (int, error) {
+	val := os.Getenv(name)
+	if val != "" {
+		res, err := strconv.Atoi(val)
+		if err != nil {
+			return 0, err
+		}
+		return res, nil
+	}
+	return def, nil
 }
