@@ -58,8 +58,8 @@ spec:
   hostNetwork: true
   hostPID: false
   hostPorts:
-    - max: 7472
-      min: 7472
+    - max: {{.MetricsPort}}
+      min: {{.MetricsPort}}
     - max: 7946
       min: 7946
   privileged: true
@@ -204,7 +204,7 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/port: "7472"
+        prometheus.io/port: "{{.MetricsPort}}"
         prometheus.io/scrape: "true"
       labels:
         app: metallb
@@ -213,7 +213,7 @@ spec:
       containers:
         - args:
             - --enable-webhook
-            - --port=7472
+            - --port={{.MetricsPort}}
             - --log-level={{.LogLevel}}
           env:
             - name: METALLB_BGP_TYPE
@@ -237,7 +237,7 @@ spec:
             - containerPort: 9443
               name: webhook-server
               protocol: TCP
-            - containerPort: 7472
+            - containerPort: {{.MetricsPort}}
               name: monitoring
           readinessProbe:
             failureThreshold: 3
@@ -260,6 +260,35 @@ spec:
               readOnly: true
           command:
             - /controller
+        {{ if .DeployKubeRbacProxies }}
+        - name: kube-rbac-proxy
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:{{.MetricsPortHttps}}
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://$(METALLB_HOST):{{.MetricsPort}}/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: {{.MetricsPortHttps}}
+              name: https-metrics
+          env:
+            - name: METALLB_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: controller-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        {{ end }}
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
@@ -274,6 +303,11 @@ spec:
           secret:
             defaultMode: 420
             secretName: webhook-server-cert
+        {{ if .DeployKubeRbacProxies }}
+        - name: controller-certs
+          secret:
+            secretName: controller-certs-secret
+        {{ end }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -291,7 +325,7 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/port: "7472"
+        prometheus.io/port: "{{.MetricsPort}}"
         prometheus.io/scrape: "true"
       labels:
         app: metallb
@@ -338,13 +372,13 @@ spec:
             - mountPath: /etc/frr_reloader
               name: reloader
         - args:
-            - --metrics-port=7473
+            - --metrics-port={{.FRRMetricsPort}}
           command:
             - /etc/frr_metrics/frr-metrics
           image: '{{.FRRImage}}'
           name: frr-metrics
           ports:
-            - containerPort: 7473
+            - containerPort: {{.FRRMetricsPort}}
               name: monitoring
           volumeMounts:
             - mountPath: /var/run/frr
@@ -354,8 +388,9 @@ spec:
             - mountPath: /etc/frr_metrics
               name: metrics
         - args:
-            - --port=7472
+            - --port={{.MetricsPort}}
             - --log-level={{.LogLevel}}
+            - --ml-bindport={{.MLBindPort}}
           env:
             - name: FRR_CONFIG_FILE
               value: /etc/frr_reloader/frr.conf
@@ -396,7 +431,7 @@ spec:
             timeoutSeconds: 1
           name: speaker
           ports:
-            - containerPort: 7472
+            - containerPort: {{.MetricsPort}}
               name: monitoring
             - containerPort: 7946
               name: memberlist-tcp
@@ -425,6 +460,57 @@ spec:
               name: reloader
           command:
             - /speaker
+        {{ if .DeployKubeRbacProxies }}
+        - name: kube-rbac-proxy-frr
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:{{.FRRMetricsPortHttps}}
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://127.0.0.1:{{.FRRMetricsPort}}/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: {{.FRRMetricsPortHttps}}
+              name: https-metrics
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: speaker-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        - name: kube-rbac-proxy
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:{{.MetricsPortHttps}}
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://$(METALLB_HOST):{{.MetricsPort}}/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: {{.MetricsPortHttps}}
+              name: https-metrics
+          env:
+            - name: METALLB_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: speaker-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        {{ end }}
       hostNetwork: true
       initContainers:
         - command:
@@ -480,6 +566,11 @@ spec:
           name: reloader
         - emptyDir: {}
           name: metrics
+        {{ if .DeployKubeRbacProxies }}
+        - name: speaker-certs
+          secret:
+            secretName: speaker-certs-secret
+        {{ end }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
