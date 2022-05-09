@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/go-logr/logr v0.3.0
+	github.com/go-logr/logr v1.2.3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/onsi/ginkgo v1.16.5
