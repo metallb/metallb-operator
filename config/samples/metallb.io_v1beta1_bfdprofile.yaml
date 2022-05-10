@@ -1,0 +1,8 @@
+apiVersion: metallb.io/v1beta1
+kind: BFDProfile
+metadata:
+  name: bfd-profile-sample
+  namespace: metallb-system
+spec:
+  receiveInterval: 380
+  transmitInterval: 270
