@@ -1,0 +1,76 @@
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: bgp-adv-sample1
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - ip-addresspool-sample1
+  peers:
+  - ebgp-single-hop0
+---
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: bgp-adv-sample2
+  namespace: metallb-system
+spec:
+  ipAddressPoolSelectors:
+  - matchLabels:
+      test: ipv6
+  - matchLabels:
+      test: ipv4
+---
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: bgp-adv-sample3
+  namespace: metallb-system
+spec:
+  aggregationLength: 32
+  aggregationLengthV6: 128
+  communities:
+  - 65535:65282
+  ipAddressPools:
+  - ip-addresspool-sample1
+  localPref: 50
+---
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  namespace: metallb-system
+  name: bgp-adv-sample4
+spec:
+  aggregationLength: 32
+  aggregationLengthV6: 128
+  communities:
+  - NO_ADVERTISE
+  ipAddressPools:
+  - ip-addresspool-sample1
+  localPref: 50
+---
+apiVersion: metallb.io/v1beta1
+kind: Community
+metadata:
+  name: community1
+  namespace: metallb-system
+spec:
+  communities:
+  - name: NO_ADVERTISE
+    value: 65535:65282
+---
+apiVersion: metallb.io/v1beta1
+kind: BGPAdvertisement
+metadata:
+  name: bgp-adv-sample5
+  namespace: metallb-system
+spec:
+  aggregationLength: 32
+  aggregationLengthV6: 128
+  ipAddressPools:
+  - ip-addresspool-sample1
+  nodeSelectors:
+  - matchLabels:
+      kubernetes.io/hostname: kind-control-plane
+  - matchLabels:
+      kubernetes.io/hostname: kind-worker

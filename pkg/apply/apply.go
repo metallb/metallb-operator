@@ -48,9 +48,6 @@ func ApplyObject(ctx context.Context, client k8sclient.Client, obj *uns.Unstruct
 			return err
 		}
 		log.Printf("successfully created %s", objDesc)
-	}
-
-	if existing == nil {
 		return nil
 	}
 

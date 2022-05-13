@@ -1,0 +1,401 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  labels:
+    app: metallb
+  name: controller
+spec:
+  allowPrivilegeEscalation: false
+  allowedCapabilities: []
+  allowedHostPaths: []
+  defaultAddCapabilities: []
+  defaultAllowPrivilegeEscalation: false
+  fsGroup:
+    ranges:
+      - max: 65535
+        min: 1
+    rule: MustRunAs
+  hostIPC: false
+  hostNetwork: false
+  hostPID: false
+  privileged: false
+  readOnlyRootFilesystem: true
+  requiredDropCapabilities:
+    - ALL
+  runAsUser:
+    ranges:
+      - max: 65535
+        min: 1
+    rule: MustRunAs
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    ranges:
+      - max: 65535
+        min: 1
+    rule: MustRunAs
+  volumes:
+    - configMap
+    - secret
+    - emptyDir
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  labels:
+    app: metallb
+  name: speaker
+spec:
+  allowPrivilegeEscalation: false
+  allowedCapabilities:
+    - NET_RAW
+  allowedHostPaths: []
+  defaultAddCapabilities: []
+  defaultAllowPrivilegeEscalation: false
+  fsGroup:
+    rule: RunAsAny
+  hostIPC: false
+  hostNetwork: true
+  hostPID: false
+  hostPorts:
+    - max: {{.MetricsPort}}
+      min: {{.MetricsPort}}
+    - max: 7946
+      min: 7946
+  privileged: true
+  readOnlyRootFilesystem: true
+  requiredDropCapabilities:
+    - ALL
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+    - configMap
+    - secret
+    - emptyDir
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+  namespace: '{{.NameSpace}}'
+spec:
+  ports:
+    - port: 443
+      targetPort: 9443
+  selector:
+    component: controller
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: metallb
+    component: controller
+  name: controller
+  namespace: '{{.NameSpace}}'
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: metallb
+      component: controller
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "{{.MetricsPort}}"
+        prometheus.io/scrape: "true"
+      labels:
+        app: metallb
+        component: controller
+    spec:
+      containers:
+        - args:
+            - --enable-webhook
+            - --port={{.MetricsPort}}
+            - --log-level={{.LogLevel}}
+          env:
+            - name: METALLB_ML_SECRET_NAME
+              value: memberlist
+            - name: METALLB_DEPLOYMENT
+              value: controller
+          image: '{{.ControllerImage}}'
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: controller
+          ports:
+            - containerPort: 9443
+              name: webhook-server
+              protocol: TCP
+            - containerPort: {{.MetricsPort}}
+              name: monitoring
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
+          command:
+            - /controller
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+        {{ if not .IsOpenShift }}
+        runAsUser: 65534
+        {{ end }}
+      serviceAccountName: controller
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: webhook-server-cert
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: metallb
+    component: speaker
+  name: speaker
+  namespace: '{{.NameSpace}}'
+spec:
+  selector:
+    matchLabels:
+      app: metallb
+      component: speaker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "{{.MetricsPort}}"
+        prometheus.io/scrape: "true"
+      labels:
+        app: metallb
+        component: speaker
+    spec:
+      containers:
+        - args:
+            - --port={{.MetricsPort}}
+            - --log-level={{.LogLevel}}
+            - --ml-bindport={{.MLBindPort}}
+          env:
+            - name: METALLB_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: METALLB_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: METALLB_ML_BIND_ADDR
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: METALLB_ML_LABELS
+              value: app=metallb,component=speaker
+            - name: METALLB_ML_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: secretkey
+                  name: memberlist
+          image: '{{.SpeakerImage}}'
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: speaker
+          ports:
+            - containerPort: {{.MetricsPort}}
+              name: monitoring
+            - containerPort: 7946
+              name: memberlist-tcp
+            - containerPort: 7946
+              name: memberlist-udp
+              protocol: UDP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - NET_RAW
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          command:
+            - /speaker
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: speaker
+      terminationGracePeriodSeconds: 2
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: serving-cert
+  namespace: '{{.NameSpace}}'
+spec:
+  dnsNames:
+    - webhook-service.metallb-system.svc
+    - webhook-service.metallb-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-issuer
+  namespace: '{{.NameSpace}}'
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: metallb-system/serving-cert
+  name: validating-webhook-configuration
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta2-bgppeer
+    failurePolicy: Fail
+    name: bgppeersvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta2
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - bgppeers
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta1-addresspool
+    failurePolicy: Fail
+    name: addresspoolvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - addresspools
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta1-bgpadvertisement
+    failurePolicy: Fail
+    name: bgpadvertisementvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - bgpadvertisements
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta1-community
+    failurePolicy: Fail
+    name: communityvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - communities
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: metallb-system
+        path: /validate-metallb-io-v1beta1-ipaddresspool
+    failurePolicy: Fail
+    name: ipaddresspoolvalidationwebhook.metallb.io
+    rules:
+      - apiGroups:
+          - metallb.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - ipaddresspools
+    sideEffects: None

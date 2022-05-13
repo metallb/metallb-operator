@@ -1,7 +1,9 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
 - metallb.yaml
-- metallb.io_v1beta1_bgppeer.yaml
 - metallb.io_v1beta1_bfdprofile.yaml
-- metallb.io_v1beta1_addresspool.yaml
+- metallb.io_v1beta2_bgppeer.yaml
+- metallb.io_v1beta1_ipaddresspool.yaml
+- metallb_v1beta1_bgpadvertisement.yaml
+- metallb_v1beta1_l2advertisement.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

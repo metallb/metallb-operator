@@ -7,6 +7,16 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update
+- apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
@@ -14,56 +24,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - metallb.io
-  resources:
-  - addresspools
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-- apiGroups:
-  - metallb.io
-  resources:
-  - addresspools/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - metallb.io
-  resources:
-  - bfdprofiles
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-- apiGroups:
-  - metallb.io
-  resources:
-  - bfdprofiles/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - metallb.io
-  resources:
-  - bgppeers
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - metallb.io
-  resources:
-  - bgppeers/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - metallb.io
   resources:
@@ -127,6 +87,16 @@ metadata:
   namespace: metallb-system
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update
+- apiGroups:
   - apps
   resources:
   - daemonsets
@@ -139,3 +109,23 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - certificates
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - issuers
+  verbs:
+  - create
+  - delete
+  - get
+  - patch
+  - update

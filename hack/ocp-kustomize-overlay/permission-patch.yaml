@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller
+  namespace: metallb-system
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        $patch: replace
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: speaker
+  namespace: metallb-system
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: cp-frr-files
+          securityContext:
+            $patch: delete
+

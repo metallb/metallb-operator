@@ -58,8 +58,8 @@ spec:
   hostNetwork: true
   hostPID: false
   hostPorts:
-    - max: 7472
-      min: 7472
+    - max: {{.MetricsPort}}
+      min: {{.MetricsPort}}
     - max: 7946
       min: 7946
   privileged: true
@@ -77,13 +77,7 @@ spec:
     - secret
     - emptyDir
 ---
-# FRR expects to have these files owned by frr:frr on startup.
-# Having them in a ConfigMap allows us to modify behaviors: for example enabling more daemons on startup.
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: frr-startup
-  namespace: '{{.NameSpace}}'
 data:
   daemons: |
     # This file tells the frr package which daemons to start.
@@ -166,9 +160,7 @@ data:
     # or you can use "all_wrap" for all daemons, e.g. to use perf record:
     #   all_wrap="/usr/bin/perf record --call-graph -"
     # the normal daemon command is added to this at the end.
-  vtysh.conf: |
-    service integrated-vtysh-config
-  frr.conf: |+
+  frr.conf: |
     ! This file gets overriden the first time the speaker renders a config.
     ! So anything configured here is only temporary.
     frr version 7.5.1
@@ -176,268 +168,12 @@ data:
     hostname Router
     line vty
     log file /etc/frr/frr.log informational
-
----
-apiVersion: apps/v1
-kind: DaemonSet
+  vtysh.conf: |
+    service integrated-vtysh-config
+kind: ConfigMap
 metadata:
-  labels:
-    app: metallb
-    component: speaker
-  name: speaker
+  name: frr-startup
   namespace: '{{.NameSpace}}'
-spec:
-  selector:
-    matchLabels:
-      app: metallb
-      component: speaker
-  template:
-    metadata:
-      annotations:
-        prometheus.io/scrape: 'true'
-      labels:
-        app: metallb
-        component: speaker
-    spec:
-      volumes:
-        - name: frr-sockets
-          emptyDir: {}
-        - name: frr-startup
-          configMap:
-            name: frr-startup
-        - name: frr-conf
-          emptyDir: {}
-        - name: reloader
-          emptyDir: {}
-        - name: metrics
-          emptyDir: {}
-        {{ if .DeployKubeRbacProxies }}
-        - name: speaker-certs
-          secret:
-            secretName: speaker-certs-secret
-        {{ end }}
-      initContainers:
-        # Copies the initial config files with the right permissions to the shared volume.
-        - name: cp-frr-files
-          securityContext:
-            runAsUser: 100
-            runAsGroup: 101
-          image: '{{.FRRImage}}'
-          command: ["/bin/sh", "-c", "cp -rLf /tmp/frr/* /etc/frr/"]
-          volumeMounts:
-            - name: frr-startup
-              mountPath: /tmp/frr
-            - name: frr-conf
-              mountPath: /etc/frr
-        # Copies the reloader to the shared volume between the speaker and reloader.
-        - name: cp-reloader
-          image: '{{.SpeakerImage}}'
-          command: ["/bin/sh", "-c", "cp -f /frr-reloader.sh /etc/frr_reloader/"]
-          volumeMounts:
-            - name: reloader
-              mountPath: /etc/frr_reloader
-        # Copies the metrics exporter
-        - name: cp-metrics
-          image: '{{.SpeakerImage}}'
-          command: ["/bin/sh", "-c", "cp -f /frr-metrics /etc/frr_metrics/"]
-          volumeMounts:
-            - name: metrics
-              mountPath: /etc/frr_metrics
-      containers:
-        - name: frr
-          securityContext:
-            capabilities:
-              add: ["NET_ADMIN", "NET_RAW", "SYS_ADMIN", "NET_BIND_SERVICE"]
-          image: '{{.FRRImage}}'
-          env:
-            - name: TINI_SUBREAPER
-              value: "true"
-          volumeMounts:
-            - name: frr-sockets
-              mountPath: /var/run/frr
-            - name: frr-conf
-              mountPath: /etc/frr
-          # The command is FRR's default entrypoint & waiting for the log file to appear and tailing it.
-          # If the log file isn't created in 60 seconds the tail fails and the container is restarted.
-          # This workaround is needed to have the frr logs as part of kubectl logs -c frr < speaker_pod_name >.
-          command:
-            - /bin/sh
-            - -c
-            - |
-              /sbin/tini -- /usr/lib/frr/docker-start &
-              attempts=0
-              until [[ -f /etc/frr/frr.log || $attempts -eq 60 ]]; do
-                sleep 1
-                attempts=$(( $attempts + 1 ))
-              done
-              tail -f /etc/frr/frr.log
-        - name: reloader
-          image: '{{.FRRImage}}'
-          command: ["/etc/frr_reloader/frr-reloader.sh"]
-          volumeMounts:
-            - name: frr-sockets
-              mountPath: /var/run/frr
-            - name: frr-conf
-              mountPath: /etc/frr
-            - name: reloader
-              mountPath: /etc/frr_reloader
-        - name: frr-metrics
-          image: '{{.FRRImage}}'
-          command: ["/etc/frr_metrics/frr-metrics"]
-          args:
-            - --metrics-port=7473
-          ports:
-            - containerPort: 7473
-              name: monitoring
-          volumeMounts:
-            - name: frr-sockets
-              mountPath: /var/run/frr
-            - name: frr-conf
-              mountPath: /etc/frr
-            - name: metrics
-              mountPath: /etc/frr_metrics
-        - args:
-            - --port=7472
-            - --config=config
-            - --log-level={{.LogLevel}}
-          env:
-            - name: FRR_CONFIG_FILE
-              value: /etc/frr_reloader/frr.conf
-            - name: FRR_RELOADER_PID_FILE
-              value: /etc/frr_reloader/reloader.pid
-            - name: METALLB_BGP_TYPE
-              value: frr
-            # FRR_LOGGING_LEVEL used to set logging level for all running frr processes.
-            # Possible settings are :-
-            #  informational, warning, errors and debugging.
-            # - name: FRR_LOGGING_LEVEL
-            #   value: informational
-            - name: METALLB_NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-            - name: METALLB_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: METALLB_ML_BIND_ADDR
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            # needed when another software is also using memberlist / port 7946
-            # when changing this default you also need to update the container ports definition
-            # and the PodSecurityPolicy hostPorts definition
-            #- name: METALLB_ML_BIND_PORT
-            #  value: "7946"
-            - name: METALLB_ML_LABELS
-              value: "app=metallb,component=speaker"
-            - name: METALLB_ML_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: memberlist
-                  key: secretkey
-          image: '{{.SpeakerImage}}'
-          name: speaker
-          volumeMounts:
-            - name: reloader
-              mountPath: /etc/frr_reloader
-          ports:
-            - containerPort: 7472
-              name: monitoring
-            - containerPort: 7946
-              name: memberlist-tcp
-            - containerPort: 7946
-              name: memberlist-udp
-              protocol: UDP
-          livenessProbe:
-            httpGet:
-              path: /metrics
-              port: monitoring
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 1
-            successThreshold: 1
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /metrics
-              port: monitoring
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 1
-            successThreshold: 1
-            failureThreshold: 3
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              add:
-                - NET_RAW
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
-          command:
-            - /speaker
-        {{ if .DeployKubeRbacProxies }}
-        - name: kube-rbac-proxy-frr
-          image: '{{.KubeRbacProxy}}'
-          imagePullPolicy: IfNotPresent
-          args:
-            - --logtostderr
-            - --secure-listen-address=:27473
-            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
-            - --upstream=http://127.0.0.1:7473/
-            - --tls-private-key-file=/etc/metrics/tls.key
-            - --tls-cert-file=/etc/metrics/tls.crt
-          ports:
-            - containerPort: 27473
-              name: https-metrics
-          resources:
-            requests:
-              cpu: 10m
-              memory: 20Mi
-          terminationMessagePolicy: FallbackToLogsOnError
-          volumeMounts:
-            - name: speaker-certs
-              mountPath: /etc/metrics
-              readOnly: true
-        - name: kube-rbac-proxy
-          image: '{{.KubeRbacProxy}}'
-          imagePullPolicy: IfNotPresent
-          args:
-            - --logtostderr
-            - --secure-listen-address=:27472
-            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
-            - --upstream=http://$(METALLB_HOST):7472/
-            - --tls-private-key-file=/etc/metrics/tls.key
-            - --tls-cert-file=/etc/metrics/tls.crt
-          ports:
-            - containerPort: 27472
-              name: https-metrics
-          env:
-            - name: METALLB_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-          resources:
-            requests:
-              cpu: 10m
-              memory: 20Mi
-          terminationMessagePolicy: FallbackToLogsOnError
-          volumeMounts:
-            - name: speaker-certs
-              mountPath: /etc/metrics
-              readOnly: true
-        {{ end }}
-      hostNetwork: true
-      shareProcessNamespace: true
-      nodeSelector:
-        kubernetes.io/os: linux
-      serviceAccountName: speaker
-      terminationGracePeriodSeconds: 2
-      tolerations:
-        - effect: NoSchedule
-          key: node-role.kubernetes.io/master
-          operator: Exists
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -456,45 +192,46 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/port: '7472'
-        prometheus.io/scrape: 'true'
+        prometheus.io/port: "{{.MetricsPort}}"
+        prometheus.io/scrape: "true"
       labels:
         app: metallb
         component: controller
     spec:
       containers:
         - args:
-            - --port=7472
-            - --config=config
+            - --port={{.MetricsPort}}
             - --log-level={{.LogLevel}}
           env:
+            - name: METALLB_BGP_TYPE
+              value: frr
             - name: METALLB_ML_SECRET_NAME
               value: memberlist
             - name: METALLB_DEPLOYMENT
               value: controller
           image: '{{.ControllerImage}}'
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
           name: controller
           ports:
-            - containerPort: 7472
+            - containerPort: {{.MetricsPort}}
               name: monitoring
-          livenessProbe:
-            httpGet:
-              path: /metrics
-              port: monitoring
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 1
-            successThreshold: 1
-            failureThreshold: 3
           readinessProbe:
+            failureThreshold: 3
             httpGet:
               path: /metrics
               port: monitoring
             initialDelaySeconds: 10
             periodSeconds: 10
-            timeoutSeconds: 1
             successThreshold: 1
-            failureThreshold: 3
+            timeoutSeconds: 1
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -509,13 +246,13 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - --logtostderr
-            - --secure-listen-address=:27472
+            - --secure-listen-address=:{{.MetricsPortHttps}}
             - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
-            - --upstream=http://$(METALLB_HOST):7472/
+            - --upstream=http://$(METALLB_HOST):{{.MetricsPort}}/
             - --tls-private-key-file=/etc/metrics/tls.key
             - --tls-cert-file=/etc/metrics/tls.crt
           ports:
-            - containerPort: 27472
+            - containerPort: {{.MetricsPortHttps}}
               name: https-metrics
           env:
             - name: METALLB_HOST
@@ -546,4 +283,265 @@ spec:
         - name: controller-certs
           secret:
             secretName: controller-certs-secret
+        {{ end }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: metallb
+    component: speaker
+  name: speaker
+  namespace: '{{.NameSpace}}'
+spec:
+  selector:
+    matchLabels:
+      app: metallb
+      component: speaker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "{{.MetricsPort}}"
+        prometheus.io/scrape: "true"
+      labels:
+        app: metallb
+        component: speaker
+    spec:
+      containers:
+        - command:
+            - /bin/sh
+            - -c
+            - |
+              /sbin/tini -- /usr/lib/frr/docker-start &
+              attempts=0
+              until [[ -f /etc/frr/frr.log || $attempts -eq 60 ]]; do
+                sleep 1
+                attempts=$(( $attempts + 1 ))
+              done
+              tail -f /etc/frr/frr.log
+          env:
+            - name: TINI_SUBREAPER
+              value: "true"
+          image: '{{.FRRImage}}'
+          name: frr
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+                - SYS_ADMIN
+                - NET_BIND_SERVICE
+          volumeMounts:
+            - mountPath: /var/run/frr
+              name: frr-sockets
+            - mountPath: /etc/frr
+              name: frr-conf
+        - command:
+            - /etc/frr_reloader/frr-reloader.sh
+          image: '{{.FRRImage}}'
+          name: reloader
+          volumeMounts:
+            - mountPath: /var/run/frr
+              name: frr-sockets
+            - mountPath: /etc/frr
+              name: frr-conf
+            - mountPath: /etc/frr_reloader
+              name: reloader
+        - args:
+            - --metrics-port={{.FRRMetricsPort}}
+          command:
+            - /etc/frr_metrics/frr-metrics
+          image: '{{.FRRImage}}'
+          name: frr-metrics
+          ports:
+            - containerPort: {{.FRRMetricsPort}}
+              name: monitoring
+          volumeMounts:
+            - mountPath: /var/run/frr
+              name: frr-sockets
+            - mountPath: /etc/frr
+              name: frr-conf
+            - mountPath: /etc/frr_metrics
+              name: metrics
+        - args:
+            - --port={{.MetricsPort}}
+            - --log-level={{.LogLevel}}
+            - --ml-bindport={{.MLBindPort}}
+          env:
+            - name: FRR_CONFIG_FILE
+              value: /etc/frr_reloader/frr.conf
+            - name: FRR_RELOADER_PID_FILE
+              value: /etc/frr_reloader/reloader.pid
+            - name: METALLB_BGP_TYPE
+              value: frr
+            - name: METALLB_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: METALLB_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: METALLB_ML_BIND_ADDR
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: METALLB_ML_LABELS
+              value: app=metallb,component=speaker
+            - name: METALLB_ML_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: secretkey
+                  name: memberlist
+          image: '{{.SpeakerImage}}'
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: speaker
+          ports:
+            - containerPort: {{.MetricsPort}}
+              name: monitoring
+            - containerPort: 7946
+              name: memberlist-tcp
+            - containerPort: 7946
+              name: memberlist-udp
+              protocol: UDP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /metrics
+              port: monitoring
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - NET_RAW
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /etc/frr_reloader
+              name: reloader
+          command:
+            - /speaker
+        {{ if .DeployKubeRbacProxies }}
+        - name: kube-rbac-proxy-frr
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:{{.FRRMetricsPortHttps}}
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://127.0.0.1:{{.FRRMetricsPort}}/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: {{.FRRMetricsPortHttps}}
+              name: https-metrics
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: speaker-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        - name: kube-rbac-proxy
+          image: '{{.KubeRbacProxy}}'
+          imagePullPolicy: IfNotPresent
+          args:
+            - --logtostderr
+            - --secure-listen-address=:{{.MetricsPortHttps}}
+            - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+            - --upstream=http://$(METALLB_HOST):{{.MetricsPort}}/
+            - --tls-private-key-file=/etc/metrics/tls.key
+            - --tls-cert-file=/etc/metrics/tls.crt
+          ports:
+            - containerPort: {{.MetricsPortHttps}}
+              name: https-metrics
+          env:
+            - name: METALLB_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: speaker-certs
+              mountPath: /etc/metrics
+              readOnly: true
+        {{ end }}
+      hostNetwork: true
+      initContainers:
+        - command:
+            - /bin/sh
+            - -c
+            - cp -rLf /tmp/frr/* /etc/frr/
+          image: '{{.FRRImage}}'
+          name: cp-frr-files
+          securityContext:
+            runAsGroup: 101
+            runAsUser: 100
+          volumeMounts:
+            - mountPath: /tmp/frr
+              name: frr-startup
+            - mountPath: /etc/frr
+              name: frr-conf
+        - command:
+            - /bin/sh
+            - -c
+            - cp -f /frr-reloader.sh /etc/frr_reloader/
+          image: '{{.SpeakerImage}}'
+          name: cp-reloader
+          volumeMounts:
+            - mountPath: /etc/frr_reloader
+              name: reloader
+        - command:
+            - /bin/sh
+            - -c
+            - cp -f /frr-metrics /etc/frr_metrics/
+          image: '{{.SpeakerImage}}'
+          name: cp-metrics
+          volumeMounts:
+            - mountPath: /etc/frr_metrics
+              name: metrics
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: speaker
+      shareProcessNamespace: true
+      terminationGracePeriodSeconds: 2
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+      volumes:
+        - emptyDir: {}
+          name: frr-sockets
+        - configMap:
+            name: frr-startup
+          name: frr-startup
+        - emptyDir: {}
+          name: frr-conf
+        - emptyDir: {}
+          name: reloader
+        - emptyDir: {}
+          name: metrics
+        {{ if .DeployKubeRbacProxies }}
+        - name: speaker-certs
+          secret:
+            secretName: speaker-certs-secret
         {{ end }}

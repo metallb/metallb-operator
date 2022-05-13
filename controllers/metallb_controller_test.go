@@ -201,23 +201,7 @@ var _ = Describe("MetalLB Controller", func() {
 })
 
 func cleanTestNamespace() error {
-	err := k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.AddressPool{}, client.InNamespace(MetalLBTestNameSpace))
-	if err != nil {
-		return err
-	}
-	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.BGPPeer{}, client.InNamespace(MetalLBTestNameSpace))
-	if err != nil {
-		return err
-	}
-	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.BFDProfile{}, client.InNamespace(MetalLBTestNameSpace))
-	if err != nil {
-		return err
-	}
-	err = k8sClient.DeleteAllOf(context.Background(), &v1.ConfigMap{}, client.InNamespace(MetalLBTestNameSpace))
-	if err != nil {
-		return err
-	}
-	err = k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.MetalLB{}, client.InNamespace(MetalLBTestNameSpace))
+	err := k8sClient.DeleteAllOf(context.Background(), &metallbv1beta1.MetalLB{}, client.InNamespace(MetalLBTestNameSpace))
 	if err != nil {
 		return err
 	}

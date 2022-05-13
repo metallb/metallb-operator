@@ -20,14 +20,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,7 +39,6 @@ import (
 	"github.com/metallb/metallb-operator/pkg/status"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
@@ -69,6 +67,9 @@ var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prome
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cert-manager.io,namespace=metallb-system,resources=certificates,verbs=create;delete;get;update;patch
+// +kubebuilder:rbac:groups=cert-manager.io,namespace=metallb-system,resources=issuers,verbs=create;delete;get;update;patch
+// +kubebuilder:rbac:groups="",namespace=metallb-system,resources=services,verbs=create;delete;get;update;patch
 
 // Cluster Scoped
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs,verbs=get;list;watch;create;update;patch;delete
@@ -76,6 +77,7 @@ var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prome
 // +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/finalizers,verbs=delete;get;update;patch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=create;delete;get;update;patch
 
 func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
@@ -133,15 +135,24 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) error {
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string, enableWebhook bool) error {
 	if bgpType == "" {
 		bgpType = bgpNative
 	}
 	if bgpType != bgpNative && bgpType != bgpFrr {
 		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
 	}
-	ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
-
+	switch {
+	case r.PlatformInfo.IsOpenShift():
+		if bgpType != bgpFrr || !enableWebhook {
+			return fmt.Errorf("bgp type must be frr with webhook enabled for openshift cluster")
+		}
+		ManifestPath = fmt.Sprintf("%s/openshift", ManifestPath)
+	case enableWebhook:
+		ManifestPath = fmt.Sprintf("%s/%s-with-webhooks", ManifestPath, bgpType)
+	default:
+		ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&metallbv1beta1.MetalLB{}).
 		Complete(r)
@@ -165,6 +176,28 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		data.Data["LogLevel"] = config.Spec.LogLevel
 	}
 
+	var err error
+	data.Data["MetricsPort"], err = valueWithDefault("METRICS_PORT", 7472)
+	if err != nil {
+		return err
+	}
+	data.Data["MetricsPortHttps"], err = valueWithDefault("HTTPS_METRICS_PORT", 27472)
+	if err != nil {
+		return err
+	}
+	data.Data["FRRMetricsPort"], err = valueWithDefault("FRR_METRICS_PORT", 7473)
+	if err != nil {
+		return err
+	}
+	data.Data["FRRMetricsPortHttps"], err = valueWithDefault("FRR_HTTPS_METRICS_PORT", 27473)
+	if err != nil {
+		return err
+	}
+	data.Data["MLBindPort"], err = valueWithDefault("MEMBER_LIST_BIND_PORT", 7946)
+	if err != nil {
+		return err
+	}
+
 	objs, err := render.RenderDir(ManifestPath, &data)
 	if err != nil {
 		logger.Error(err, "Fail to render config daemon manifests")
@@ -182,20 +215,6 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		objs = append(objs, podmonitors...)
 	} else {
 		logger.Info("PodMonitors Resource not available in the cluster. Will not try to apply them.")
-	}
-
-	cm := &corev1.ConfigMap{}
-	err = r.Get(context.TODO(), types.NamespacedName{Namespace: r.Namespace, Name: ConfigMapName}, cm)
-	if k8serrors.IsNotFound(err) {
-		cm.Name = ConfigMapName
-		cm.Namespace = r.Namespace
-		if err := controllerutil.SetControllerReference(config, cm, r.Scheme); err != nil {
-			return errors.Wrapf(err, "Failed to set controller reference to %s %s", cm.GetNamespace(), cm.GetName())
-		}
-		err = r.Create(context.TODO(), cm)
-		if err != nil {
-			r.Log.Error(err, "configmap creation failed", "config", err)
-		}
 	}
 
 	for _, obj := range objs {
@@ -238,4 +257,16 @@ func podMonitorAvailable(c client.Client) bool {
 	crd := &apiext.CustomResourceDefinition{}
 	err := c.Get(context.Background(), client.ObjectKey{Name: "podmonitors.monitoring.coreos.com"}, crd)
 	return err == nil
+}
+
+func valueWithDefault(name string, def int) (int, error) {
+	val := os.Getenv(name)
+	if val != "" {
+		res, err := strconv.Atoi(val)
+		if err != nil {
+			return 0, err
+		}
+		return res, nil
+	}
+	return def, nil
 }
