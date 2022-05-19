@@ -22,7 +22,7 @@ spec:
   scope: Namespaced
   versions:
   - deprecated: true
-    deprecationWarning: metallbio.io v1alpha1 AddressPool is deprecated
+    deprecationWarning: metallb.io v1alpha1 AddressPool is deprecated
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -109,7 +109,7 @@ spec:
     subresources:
       status: {}
   - deprecated: true
-    deprecationWarning: metallbio.io v1beta1 AddressPool is deprecated, consider using
+    deprecationWarning: metallb.io v1beta1 AddressPool is deprecated, consider using
       IPAddressPool
     name: v1beta1
     schema:
@@ -145,11 +145,6 @@ spec:
                 default: true
                 description: AutoAssign flag used to prevent MetallB from automatic
                   allocation for a pool.
-                type: boolean
-              avoidBuggyIPs:
-                default: false
-                description: AvoidBuggyIPs prevents addresses ending with .0 and .255
-                  to be used by a pool.
                 type: boolean
               bgpAdvertisements:
                 description: Drives how an IP allocated from this pool should translated
@@ -893,11 +888,6 @@ spec:
                 description: AutoAssign flag used to prevent MetallB from automatic
                   allocation for a pool.
                 type: boolean
-              avoidBuggyIPs:
-                default: false
-                description: AvoidBuggyIPs prevents addresses ending with .0 and .255
-                  to be used by a pool.
-                type: boolean
             required:
             - addresses
             type: object
@@ -1584,6 +1574,14 @@ rules:
   - metallb.io
   resources:
   - addresspools
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metallb.io
+  resources:
+  - bfdprofiles
   verbs:
   - get
   - list
