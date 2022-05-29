@@ -67,8 +67,6 @@ var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prome
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=cert-manager.io,namespace=metallb-system,resources=certificates,verbs=create;delete;get;update;patch
-// +kubebuilder:rbac:groups=cert-manager.io,namespace=metallb-system,resources=issuers,verbs=create;delete;get;update;patch
 // +kubebuilder:rbac:groups="",namespace=metallb-system,resources=services,verbs=create;delete;get;update;patch
 
 // Cluster Scoped
