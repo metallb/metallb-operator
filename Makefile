@@ -42,7 +42,6 @@ endif
 
 OPERATOR_SDK_VERSION=v1.8.1
 OLM_VERSION=v0.18.3
-CERT_MANAGER_VERSION=v1.5.4
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
@@ -80,11 +79,6 @@ install: manifests kustomize  ## Install CRDs into a cluster
 
 uninstall: manifests kustomize  ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
-
-deploy-cert-manager: ## Deploys cert-manager. Fetching from https://github.com/jetstack/cert-manager
-	set -e ;\
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml ;\
-	hack/wait_for_cert_manager.sh ;\
 
 deploy: manifests kustomize ## Deploy controller in the configured cluster
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
