@@ -355,6 +355,31 @@ spec:
                 - podsecuritypolicies
               verbs:
                 - use
+            - apiGroups:
+                - admissionregistration.k8s.io
+              resources:
+                - validatingwebhookconfigurations
+                - mutatingwebhookconfigurations
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - apiextensions.k8s.io
+              resources:
+                - customresourcedefinitions
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
           serviceAccountName: controller
         - rules:
             - apiGroups:
@@ -518,8 +543,11 @@ spec:
                 - secrets
               verbs:
                 - create
+                - delete
                 - get
                 - list
+                - patch
+                - update
                 - watch
             - apiGroups:
                 - ""
