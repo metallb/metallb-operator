@@ -83,7 +83,7 @@ jobs:
     - name: Deploy Metal LB Operator
       run: |
         cd ${GITHUB_WORKSPACE}/metallboperator-main
-        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" ENABLE_WEBHOOK="true" make deploy
+        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/"  make deploy
     - name: E2E Tests
       run: |
         cd ${GITHUB_WORKSPACE}/metallboperator-main
