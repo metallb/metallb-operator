@@ -49,8 +49,6 @@ OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/r
 TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
 VALIDATION_TESTS_REPORTS_PATH ?= /tmp/test_validation_logs/
 
-ENABLE_WEBHOOK ?= true
-
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 test: generate fmt vet manifests ## Run unit and integration tests
 	mkdir -p ${ENVTEST_ASSETS_DIR}
@@ -83,15 +81,12 @@ install: manifests kustomize  ## Install CRDs into a cluster
 uninstall: manifests kustomize  ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-configure-webhook:
-	ENABLE_WEBHOOK=$(ENABLE_WEBHOOK) hack/configure_webhook.sh
-
 deploy-cert-manager: ## Deploys cert-manager. Fetching from https://github.com/jetstack/cert-manager
 	set -e ;\
 	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml ;\
 	hack/wait_for_cert_manager.sh ;\
 
-deploy: manifests kustomize configure-webhook ## Deploy controller in the configured cluster
+deploy: manifests kustomize ## Deploy controller in the configured cluster
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd $(KUSTOMIZE_DEPLOY_DIR) && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
 	cd config/metallb_rbac && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
@@ -103,7 +98,7 @@ undeploy: ## Undeploy the controller from the configured cluster
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl delete --ignore-not-found=true -f -
 
 BIN_FILE ?= "metallb-operator.yaml"
-bin: manifests kustomize configure-webhook ## Create manifests
+bin: manifests kustomize ## Create manifests
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd $(KUSTOMIZE_DEPLOY_DIR) && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
 	cd config/metallb_rbac && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
@@ -131,7 +126,7 @@ docker-build:  ## Build the docker image
 docker-push:  ## Push the docker image
 	docker push ${IMG}
 
-bundle: operator-sdk manifests configure-webhook ## Generate bundle manifests and metadata, then validate generated files.
+bundle: operator-sdk manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests --interactive=false -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
@@ -237,7 +232,7 @@ endif
 generate-metallb-manifests: kubectl ## Generate MetalLB manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
-	hack/generate_ocp_webhook_manifests.sh
+	hack/generate_ocp_manifests.sh
 
 validate-metallb-manifests:  ## Validate MetalLB manifests
 	@echo "Comparing newly generated MetalLB manifests to existing ones"
