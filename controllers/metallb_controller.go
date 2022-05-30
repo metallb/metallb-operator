@@ -137,7 +137,7 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string, enableWebhook bool) error {
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) error {
 	if bgpType == "" {
 		bgpType = bgpNative
 	}
@@ -146,12 +146,10 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string, e
 	}
 	switch {
 	case r.PlatformInfo.IsOpenShift():
-		if bgpType != bgpFrr || !enableWebhook {
-			return fmt.Errorf("bgp type must be frr with webhook enabled for openshift cluster")
+		if bgpType != bgpFrr {
+			return fmt.Errorf("bgp type must be frr for openshift cluster")
 		}
 		ManifestPath = fmt.Sprintf("%s/openshift", ManifestPath)
-	case enableWebhook:
-		ManifestPath = fmt.Sprintf("%s/%s-with-webhooks", ManifestPath, bgpType)
 	default:
 		ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
 	}
