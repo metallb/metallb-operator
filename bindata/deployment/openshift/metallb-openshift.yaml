@@ -220,7 +220,7 @@ spec:
     spec:
       containers:
         - args:
-            - --enable-webhook
+            - --disable-cert-rotation=true
             - --port={{.MetricsPort}}
             - --log-level={{.LogLevel}}
           env:
