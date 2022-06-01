@@ -6,6 +6,18 @@ metadata:
   creationTimestamp: null
   name: bgppeers.metallb.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: webhook-service
+          namespace: metallb-system
+          path: /convert
+      conversionReviewVersions:
+      - v1beta1
+      - v1beta2
   group: metallb.io
   names:
     kind: BGPPeer

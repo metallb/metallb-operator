@@ -10,9 +10,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
-  creationTimestamp: null
   name: addresspools.metallb.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: webhook-service
+          namespace: metallb-system
+          path: /convert
+      conversionReviewVersions:
+      - v1alpha1
+      - v1beta1
   group: metallb.io
   names:
     kind: AddressPool
@@ -509,9 +520,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
-  creationTimestamp: null
   name: bgppeers.metallb.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: webhook-service
+          namespace: metallb-system
+          path: /convert
+      conversionReviewVersions:
+      - v1beta1
+      - v1beta2
   group: metallb.io
   names:
     kind: BGPPeer
