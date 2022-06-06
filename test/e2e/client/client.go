@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	discovery "k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -33,6 +34,7 @@ type ClientSet struct {
 	appsv1client.AppsV1Interface
 	rbacv1client.RbacV1Interface
 	discovery.DiscoveryInterface
+	apiextv1client.ApiextensionsV1Client
 	Config *rest.Config
 }
 
@@ -63,6 +65,7 @@ func New(kubeconfig string) *ClientSet {
 	clientSet.RbacV1Interface = rbacv1client.NewForConfigOrDie(config)
 	clientSet.DiscoveryInterface = discovery.NewDiscoveryClientForConfigOrDie(config)
 	clientSet.NetworkingV1Client = *networkv1client.NewForConfigOrDie(config)
+	clientSet.ApiextensionsV1Client = *apiextv1client.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	myScheme := runtime.NewScheme()

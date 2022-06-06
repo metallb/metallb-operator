@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/controllers"
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
@@ -35,43 +36,34 @@ func init() {
 
 var _ = Describe("metallb", func() {
 	Context("MetalLB deploy", func() {
-		var metallb *metallbv1beta1.MetalLB
-		var metallbCRExisted bool
-
-		BeforeEach(func() {
-			var err error
-			metallb, err = metallbutils.Get(OperatorNameSpace, UseMetallbResourcesFromFile)
-			Expect(err).ToNot(HaveOccurred())
-			metallbCRExisted = true
-			err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
-			if errors.IsNotFound(err) {
-				metallbCRExisted = false
-				Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
-			} else {
-				Expect(err).ToNot(HaveOccurred())
-			}
-		})
 
 		AfterEach(func() {
-			if !metallbCRExisted {
-				deployment, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+			// We recreate in case some test deleted it
+			metallb, err := metallbutils.Get(OperatorNameSpace, UseMetallbResourcesFromFile)
+			Expect(err).ToNot(HaveOccurred())
+			err = testclient.Client.Create(context.Background(), metallb)
+			if !errors.IsAlreadyExists(err) {
 				Expect(err).ToNot(HaveOccurred())
-				Expect(deployment.OwnerReferences).ToNot(BeNil())
-				Expect(deployment.OwnerReferences[0].Kind).To(Equal("MetalLB"))
-
-				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				Expect(daemonset.OwnerReferences).ToNot(BeNil())
-				Expect(daemonset.OwnerReferences[0].Kind).To(Equal("MetalLB"))
-
-				metallbutils.Delete(metallb)
 			}
+
+		})
+
+		It("should have the correct owner references", func() {
+			deployment, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deployment.OwnerReferences).ToNot(BeNil())
+			Expect(deployment.OwnerReferences[0].Kind).To(Equal("MetalLB"))
+
+			daemonset, err := testclient.Client.DaemonSets(OperatorNameSpace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(daemonset.OwnerReferences).ToNot(BeNil())
+			Expect(daemonset.OwnerReferences[0].Kind).To(Equal("MetalLB"))
 		})
 
 		It("should have MetalLB pods in running state", func() {
 			By("checking MetalLB controller deployment is in running state", func() {
 				Eventually(func() bool {
-					deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+					deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
 					if err != nil {
 						return false
 					}
@@ -82,7 +74,7 @@ var _ = Describe("metallb", func() {
 					LabelSelector: "component=controller"})
 				Expect(err).ToNot(HaveOccurred())
 
-				deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+				deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(pods.Items)).To(Equal(int(deploy.Status.Replicas)))
 
@@ -93,7 +85,7 @@ var _ = Describe("metallb", func() {
 
 			By("checking MetalLB daemonset is in running state", func() {
 				Eventually(func() bool {
-					daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+					daemonset, err := testclient.Client.DaemonSets(OperatorNameSpace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
 					if err != nil {
 						return false
 					}
@@ -104,7 +96,7 @@ var _ = Describe("metallb", func() {
 					LabelSelector: "component=speaker"})
 				Expect(err).ToNot(HaveOccurred())
 
-				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+				daemonset, err := testclient.Client.DaemonSets(OperatorNameSpace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(pods.Items)).To(Equal(int(daemonset.Status.DesiredNumberScheduled)))
 
@@ -115,7 +107,7 @@ var _ = Describe("metallb", func() {
 			By("checking MetalLB CR status is set", func() {
 				Eventually(func() bool {
 					config := &metallbv1beta1.MetalLB{}
-					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, config)
+					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: OperatorNameSpace, Name: controllers.DefaultMetalLBCrName}, config)
 					Expect(err).ToNot(HaveOccurred())
 					if config.Status.Conditions == nil {
 						return false
@@ -230,6 +222,35 @@ var _ = Describe("metallb", func() {
 					}, 30*time.Second, 5*time.Second).Should(BeTrue())
 				})
 			})
+		})
+	})
+
+	Context("Deleting MetalLB", func() {
+		It("should preserve the crds", func() {
+			instance := &metallbv1beta1.MetalLB{}
+			err := testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: OperatorNameSpace, Name: controllers.DefaultMetalLBCrName}, instance)
+			Expect(err).ToNot(HaveOccurred())
+
+			Consistently(func() error {
+				crds := []string{
+					"addresspools.metallb.io",
+					"bfdprofiles.metallb.io",
+					"bgpadvertisements.metallb.io",
+					"bgppeers.metallb.io",
+					"communities.metallb.io",
+					"ipaddresspools.metallb.io",
+					"l2advertisements.metallb.io",
+				}
+				for _, crd := range crds {
+					_, err := testclient.Client.CustomResourceDefinitions().Get(context.Background(), crd, metav1.GetOptions{})
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			}, 30*time.Second, 5*time.Second).Should(Not(HaveOccurred()))
+
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })
