@@ -31,7 +31,7 @@ function generate_metallb_frr_manifest() {
     yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount")' ${source_file} > config/metallb_rbac/${manifest_name}
 
     # Generate metallb-frr deployment manifests
-    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition"  or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
+    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
 
     # Editing metallb-frr manifests to include templated variables
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].image|="{{.ControllerImage}}"' ${manifest_dir}/${manifest_name}
@@ -98,7 +98,7 @@ function generate_metallb_native_manifest() {
     yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount")' ${source_file} > config/metallb_rbac/${manifest_name}
 
     # Generate metallb deployment manifests
-    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition" or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
+    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
 
     # Editing metallb manifests to include templated variables
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].image|="{{.ControllerImage}}"' ${manifest_dir}/${manifest_name}

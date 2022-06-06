@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"flag"
 	"os"
 	"strconv"
@@ -37,6 +39,9 @@ import (
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
 	"github.com/metallb/metallb-operator/pkg/platform"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -116,6 +121,11 @@ func main() {
 	}
 	// +kubebuilder:scaffold:builder
 
+	err = createMetallb(watchNamespace, os.Getenv("SPEAKER_NODE_SELECTOR"), mgr.GetClient())
+	if err != nil {
+		setupLog.Error(err, "failed to create metallb")
+		os.Exit(1)
+	}
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -130,4 +140,31 @@ func checkEnvVar(name string) string {
 		os.Exit(1)
 	}
 	return value
+}
+
+func createMetallb(namespace, selector string, c client.Client) error {
+	instance := &metallbv1beta1.MetalLB{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      controllers.DefaultMetalLBCrName,
+		},
+	}
+
+	if selector != "" {
+		err := json.Unmarshal([]byte(selector), &instance.Spec.SpeakerNodeSelector)
+		if err != nil {
+			setupLog.Error(err, "failed to parse node selector")
+			return err
+		}
+	}
+	err := c.Create(context.TODO(), instance)
+	if k8serrors.IsAlreadyExists(err) {
+		setupLog.Info("metallb already exists, not creating")
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	setupLog.Info("created metallb resource")
+	return nil
 }

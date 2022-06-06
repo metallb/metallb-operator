@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	defaultMetalLBCrName          = "metallb"
+	DefaultMetalLBCrName          = "metallb"
 	MetalLBManifestPathController = "./bindata/deployment"
 	MetalLBSpeakerDaemonSet       = "speaker"
 )
@@ -76,7 +76,7 @@ var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prome
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=policy,resources=podsecuritypolicies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs/finalizers,verbs=delete;get;update;patch
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=create;delete;get;update;patch
 
 func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -96,8 +96,8 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	if req.Name != defaultMetalLBCrName {
-		err := fmt.Errorf("MetalLB resource name must be '%s'", defaultMetalLBCrName)
+	if req.Name != DefaultMetalLBCrName {
+		err := fmt.Errorf("MetalLB resource name must be '%s'", DefaultMetalLBCrName)
 		logger.Error(err, "Invalid MetalLB resource name", "name", req.Name)
 		if err := status.Update(context.TODO(), r.Client, instance, status.ConditionDegraded, "IncorrectMetalLBResourceName", fmt.Sprintf("Incorrect MetalLB resource name: %s", req.Name)); err != nil {
 			logger.Error(err, "Failed to update metallb status", "Desired status", status.ConditionDegraded)
