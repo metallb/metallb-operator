@@ -68,10 +68,6 @@ jobs:
         run: |
           make deploy-cert-manager
           IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" ENABLE_WEBHOOK="true" make deploy
-      - name: Enable MetalLB
-        run: |
-          export KUBECONFIG=${HOME}/.kube/config
-          kubectl apply -f config/samples/metallb.yaml
       - name: MetalLB E2E Tests
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
