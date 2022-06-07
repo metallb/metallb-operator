@@ -43,6 +43,3 @@ ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^---$/d'
 ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^$/d'
 ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs rm 
 cp -r "$METALLB_PATH"/config/crd/bases config/crd
-ls -d bundle/manifests/metallb.io_* | grep -v metallb.io_metallbs | xargs rm 
-cp -r "$METALLB_PATH"/config/crd/bases/* bundle/manifests/
-ls -d bundle/manifests/metallb.io_* 
