@@ -77,6 +77,7 @@ jobs:
           sudo -E env "PATH=$PATH" inv e2etest --skip "IPV6|DUALSTACK" -e /tmp/kind_logs
       - name: MetalLB E2E Tests - backward compatible
         run: |
+          patch ${GITHUB_WORKSPACE}/metallb-0.12.1/e2etest/pkg/config/update.go < ${GITHUB_WORKSPACE}/metallb/e2etest/backwardcompatible/patchfile
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
           kind: ConfigMap
