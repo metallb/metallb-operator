@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: metallb
+    component: webhook-server
+  name: webhook-server
+  namespace: system
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: metallb
+      component: webhook-server
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: '7472'
+        prometheus.io/scrape: 'true'
+      labels:
+        app: metallb
+        component: webhook-server
+    spec:
+      containers:
+      - args:
+        - --webhook-mode=onlywebhook
+        - --port=7472
+        - --log-level=info
+        image: controller
+        name: webhook-server
+        ports:
+        - containerPort: 7472
+          name: monitoring
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: monitoring
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: monitoring
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+        env:
+          - name: METALLB_BGP_TYPE
+            value: "native"          
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      serviceAccountName: controller
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert

@@ -545,6 +545,82 @@ spec:
                         cpu: 50m
                         memory: 20Mi
                 terminationGracePeriodSeconds: 10
+        - name: metallb-operator-webhook-server
+          spec:
+            revisionHistoryLimit: 3
+            selector:
+              matchLabels:
+                app: metallb
+                component: webhook-server
+            strategy: {}
+            template:
+              metadata:
+                annotations:
+                  prometheus.io/port: "7472"
+                  prometheus.io/scrape: "true"
+                labels:
+                  app: metallb
+                  component: webhook-server
+              spec:
+                containers:
+                  - args:
+                      - --disable-cert-rotation=true
+                      - --port=7472
+                      - --log-level=info
+                      - --webhook-mode=onlywebhook
+                    env:
+                      - name: METALLB_BGP_TYPE
+                        value: native
+                    image: quay.io/metallb/controller:main
+                    livenessProbe:
+                      failureThreshold: 3
+                      httpGet:
+                        path: /metrics
+                        port: monitoring
+                      initialDelaySeconds: 10
+                      periodSeconds: 10
+                      successThreshold: 1
+                      timeoutSeconds: 1
+                    name: webhook-server
+                    ports:
+                      - containerPort: 7472
+                        name: monitoring
+                      - containerPort: 9443
+                        name: webhook-server
+                        protocol: TCP
+                    readinessProbe:
+                      failureThreshold: 3
+                      httpGet:
+                        path: /metrics
+                        port: monitoring
+                      initialDelaySeconds: 10
+                      periodSeconds: 10
+                      successThreshold: 1
+                      timeoutSeconds: 1
+                    resources: {}
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - all
+                      readOnlyRootFilesystem: true
+                    volumeMounts:
+                      - mountPath: /tmp/k8s-webhook-server/serving-certs
+                        name: cert
+                        readOnly: true
+                nodeSelector:
+                  kubernetes.io/os: linux
+                securityContext:
+                  fsGroup: 65534
+                  runAsNonRoot: true
+                  runAsUser: 65534
+                serviceAccountName: controller
+                terminationGracePeriodSeconds: 0
+                volumes:
+                  - name: cert
+                    secret:
+                      defaultMode: 420
+                      secretName: metallb-operator-webhook-server-cert
       permissions:
         - rules:
             - apiGroups:
@@ -793,13 +869,13 @@ spec:
           serviceAccountName: speaker
     strategy: deployment
   installModes:
-    - supported: true
+    - supported: false
       type: OwnNamespace
-    - supported: true
+    - supported: false
       type: SingleNamespace
     - supported: false
       type: MultiNamespace
-    - supported: false
+    - supported: true
       type: AllNamespaces
   keywords:
     - metallb-operator
@@ -813,3 +889,123 @@ spec:
   provider:
     name: Community
   version: 0.0.0
+  webhookdefinitions:
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
+      generateName: bgppeersvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta2
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - bgppeers
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta2-bgppeer
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
+      generateName: addresspoolvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - addresspools
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta1-addresspool
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
+      generateName: bfdprofilevalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - DELETE
+          resources:
+            - bfdprofiles
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta1-bfdprofile
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
+      generateName: bgpadvertisementvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - bgpadvertisements
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta1-bgpadvertisement
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
+      generateName: communityvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - communities
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta1-community
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
+      generateName: ipaddresspoolvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - ipaddresspools
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta1-ipaddresspool

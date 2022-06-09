@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-server
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+      - name: webhook-server
+        args:
+        - --disable-cert-rotation=true
+        - --port=7472
+        - --log-level=info
+        - --webhook-mode=onlywebhook
+
