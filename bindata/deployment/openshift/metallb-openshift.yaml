@@ -176,6 +176,12 @@ metadata:
   namespace: '{{.NameSpace}}'
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: webhook-server-cert
+  namespace: '{{.NameSpace}}'
+---
+apiVersion: v1
 kind: Service
 metadata:
   annotations:
@@ -214,7 +220,7 @@ spec:
     spec:
       containers:
         - args:
-            - --enable-webhook
+            - --disable-cert-rotation=true
             - --port={{.MetricsPort}}
             - --log-level={{.LogLevel}}
           env:
@@ -236,11 +242,11 @@ spec:
             timeoutSeconds: 1
           name: controller
           ports:
+            - containerPort: {{.MetricsPort}}
+              name: monitoring
             - containerPort: 9443
               name: webhook-server
               protocol: TCP
-            - containerPort: {{.MetricsPort}}
-              name: monitoring
           readinessProbe:
             failureThreshold: 3
             httpGet:

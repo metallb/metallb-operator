@@ -72,21 +72,20 @@ jobs:
     - name: Checkout Latest Metal LB Operator
       uses: actions/checkout@v2
       with:
-        path: metallboperator-main
-        ref: main
+        path: metallboperator-latest
         fetch-depth: 0 # Fetch all history for all tags and branches
     - name: Build image
       run: |
-        cd ${GITHUB_WORKSPACE}/metallboperator-main
+        cd ${GITHUB_WORKSPACE}/metallboperator-latest
         docker build . -t ${built_image}
         kind load docker-image ${built_image}
     - name: Deploy Metal LB Operator
       run: |
-        cd ${GITHUB_WORKSPACE}/metallboperator-main
-        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" ENABLE_WEBHOOK="true" make deploy
+        cd ${GITHUB_WORKSPACE}/metallboperator-latest
+        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/"  make deploy
     - name: E2E Tests
       run: |
-        cd ${GITHUB_WORKSPACE}/metallboperator-main
+        cd ${GITHUB_WORKSPACE}/metallboperator-latest
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
         make test-e2e

@@ -355,8 +355,45 @@ spec:
                 - podsecuritypolicies
               verbs:
                 - use
+            - apiGroups:
+                - admissionregistration.k8s.io
+              resources:
+                - validatingwebhookconfigurations
+                - mutatingwebhookconfigurations
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - apiextensions.k8s.io
+              resources:
+                - customresourcedefinitions
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
           serviceAccountName: controller
         - rules:
+            - apiGroups:
+                - ""
+              resources:
+                - secrets
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
             - apiGroups:
                 - admissionregistration.k8s.io
               resources:
@@ -487,8 +524,6 @@ spec:
                         value: quay.io/metallb/speaker:main
                       - name: CONTROLLER_IMAGE
                         value: quay.io/metallb/controller:main
-                      - name: ENABLE_WEBHOOK
-                        value: "true"
                       - name: METALLB_BGP_TYPE
                         value: native
                       - name: FRR_IMAGE
@@ -518,8 +553,11 @@ spec:
                 - secrets
               verbs:
                 - create
+                - delete
                 - get
                 - list
+                - patch
+                - update
                 - watch
             - apiGroups:
                 - ""
@@ -660,26 +698,6 @@ spec:
                 - patch
                 - update
                 - watch
-            - apiGroups:
-                - cert-manager.io
-              resources:
-                - certificates
-              verbs:
-                - create
-                - delete
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - cert-manager.io
-              resources:
-                - issuers
-              verbs:
-                - create
-                - delete
-                - get
-                - patch
-                - update
           serviceAccountName: default
         - rules:
             - apiGroups:

@@ -45,7 +45,7 @@ jobs:
         with:
           repository: metallb/metallb
           path: metallb
-          ref: f3c924088a8aea91feec456576b89cba74283eb7
+          ref: 1fc030d4541eb5299025dbd5e8b8773e1b7b6570
       - name: Checkout MetalLB v0.12.1
         uses: actions/checkout@v2
         with:
@@ -66,8 +66,7 @@ jobs:
           kind load docker-image ${built_image}
       - name: Deploy Metal LB Operator
         run: |
-          make deploy-cert-manager
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" ENABLE_WEBHOOK="true" make deploy
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
       - name: Enable MetalLB
         run: |
           export KUBECONFIG=${HOME}/.kube/config
@@ -78,6 +77,7 @@ jobs:
           sudo -E env "PATH=$PATH" inv e2etest --skip "IPV6|DUALSTACK" -e /tmp/kind_logs
       - name: MetalLB E2E Tests - backward compatible
         run: |
+          patch ${GITHUB_WORKSPACE}/metallb-0.12.1/e2etest/pkg/config/update.go < ${GITHUB_WORKSPACE}/metallb/e2etest/backwardcompatible/patchfile
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
           kind: ConfigMap

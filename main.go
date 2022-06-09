@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"os"
-	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -97,12 +96,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	webHookEnabled, err := strconv.ParseBool(os.Getenv("ENABLE_WEBHOOK"))
-	if err != nil {
-		setupLog.Error(err, "unable to get enable webhook parameter")
-		os.Exit(1)
-	}
-
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
 	if err = (&controllers.MetalLBReconciler{
 		Client:       mgr.GetClient(),
@@ -110,7 +103,7 @@ func main() {
 		Scheme:       mgr.GetScheme(),
 		PlatformInfo: platformInfo,
 		Namespace:    watchNamespace,
-	}).SetupWithManager(mgr, bgpType, webHookEnabled); err != nil {
+	}).SetupWithManager(mgr, bgpType); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)
 	}

@@ -17,7 +17,7 @@ spec:
           name: cert
           readOnly: true
         args:
-        - --enable-webhook
+        - --disable-cert-rotation=true
         - --port=7472
         - --log-level=info
       volumes:

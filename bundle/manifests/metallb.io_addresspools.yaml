@@ -6,6 +6,18 @@ metadata:
   creationTimestamp: null
   name: addresspools.metallb.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: webhook-service
+          namespace: metallb-system
+          path: /convert
+      conversionReviewVersions:
+      - v1alpha1
+      - v1beta1
   group: metallb.io
   names:
     kind: AddressPool
