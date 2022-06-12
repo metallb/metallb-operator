@@ -534,10 +534,10 @@ spec:
                         value: "false"
                       - name: DEPLOY_PODMONITORS
                         value: "true"
-                      - name: WATCH_NAMESPACE
+                      - name: OPERATOR_NAMESPACE
                         valueFrom:
                           fieldRef:
-                            fieldPath: metadata.annotations['olm.targetNamespaces']
+                            fieldPath: metadata.namespace
                     image: quay.io/metallb/metallb-operator:latest
                     name: manager
                     resources:
