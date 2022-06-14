@@ -31,9 +31,11 @@ function generate_metallb_frr_manifest() {
     yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount")' ${source_file} > config/metallb_rbac/${manifest_name}
 
     # Generate metallb-frr deployment manifests
-    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition"  or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
+    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition" or .kind == "Service" or .kind == "Secret" or .kind == "ValidatingWebhookConfiguration" or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
 
     # Editing metallb-frr manifests to include templated variables
+    yq e --inplace '. | (select(.kind == "Deployment" and .metadata.name == "controller") | .spec.template.spec.containers[] | select(.name == "controller").args)|= . + ["--webhook-mode=disabled"]' ${manifest_dir}/${manifest_name}
+
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].image|="{{.ControllerImage}}"' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].command|= ["/controller"]' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "speaker").image)|="{{.SpeakerImage}}"' ${manifest_dir}/${manifest_name}
@@ -56,7 +58,7 @@ function generate_metallb_frr_manifest() {
     yq e --inplace '. | select(.kind == "DaemonSet" and .metadata.name == "speaker").spec.template.spec.volumes += {"name": "speaker-certs", "secret": {"secretName": "speaker-certs-secret"}}' ${manifest_dir}/${manifest_name}
     yq e --inplace ". | select(.kind == \"DaemonSet\" and .metadata.name == \"speaker\").spec.template.spec.volumes += {\"name\": \"{{ end }}\"}" ${manifest_dir}/${manifest_name}
 
-    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.volumes += [{\"name\": \"{{ if .DeployKubeRbacProxies }}\"}]" ${manifest_dir}/${manifest_name}
+    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.volumes = [{\"name\": \"{{ if .DeployKubeRbacProxies }}\"}]" ${manifest_dir}/${manifest_name}
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller").spec.template.spec.volumes += {"name": "controller-certs", "secret": {"secretName": "controller-certs-secret"}}' ${manifest_dir}/${manifest_name}
     yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.volumes += {\"name\": \"{{ end }}\"}" ${manifest_dir}/${manifest_name}
 
@@ -71,6 +73,7 @@ function generate_metallb_frr_manifest() {
     yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += {\"name\": \"{{ if .DeployKubeRbacProxies }}\"}" ${manifest_dir}/${manifest_name}
     yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += ${controller_kube_rbac}" ${manifest_dir}/${manifest_name}
     yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec.containers += {\"name\": \"{{ end }}\"}" ${manifest_dir}/${manifest_name}
+    yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0]|= del(.volumeMounts)' ${manifest_dir}/${manifest_name}
 
     # The next part is a bit ugly because we add the sc file content as the securityContext field.
     # The problem with it is that the content is added as a string and not as yaml fields, so we need to use sed to remove yaml's "|-"" mark for them to count as fields.
@@ -98,9 +101,11 @@ function generate_metallb_native_manifest() {
     yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount")' ${source_file} > config/metallb_rbac/${manifest_name}
 
     # Generate metallb deployment manifests
-    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition" or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
+    yq e '. | select((.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount" or .kind == "CustomResourceDefinition" or .kind == "Service" or .kind == "Secret" or .kind == "ValidatingWebhookConfiguration" or .kind == "Namespace") | not)' ${source_file} > ${manifest_dir}/${manifest_name}
 
     # Editing metallb manifests to include templated variables
+    yq e --inplace '. | (select(.kind == "Deployment" and .metadata.name == "controller") | .spec.template.spec.containers[] | select(.name == "controller").args)|= . + ["--webhook-mode=disabled"]' ${manifest_dir}/${manifest_name}
+
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].image|="{{.ControllerImage}}"' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0].command|= ["/controller"]' ${manifest_dir}/${manifest_name}
     yq e --inplace '. | select(.kind == "DaemonSet" and .metadata.name == "speaker" and .spec.template.spec.containers[0].name == "speaker").spec.template.spec.containers[0].image|="{{.SpeakerImage}}"' ${manifest_dir}/${manifest_name}
@@ -108,7 +113,9 @@ function generate_metallb_native_manifest() {
     yq e --inplace '. | (select(.kind == "DaemonSet" and .metadata.name == "speaker") | .spec.template.spec.containers[] | select(.name == "speaker").args)|= . + ["--ml-bindport={{.MLBindPort}}"]' ${manifest_dir}/${manifest_name}
 
     yq e --inplace '. | select(.metadata.namespace == "metallb-system").metadata.namespace|="{{.NameSpace}}"' ${manifest_dir}/${manifest_name}
-    
+    yq e --inplace ". | select(.kind == \"Deployment\" and .metadata.name == \"controller\").spec.template.spec |= del(.volumes) " ${manifest_dir}/${manifest_name}
+    yq e --inplace '. | select(.kind == "Deployment" and .metadata.name == "controller" and .spec.template.spec.containers[0].name == "controller").spec.template.spec.containers[0]|= del(.volumeMounts)' ${manifest_dir}/${manifest_name}
+
     
     # The next part is a bit ugly because we add the sc file content as the securityContext field.
     # The problem with it is that the content is added as a string and not as yaml fields, so we need to use sed to remove yaml's "|-"" mark for them to count as fields.

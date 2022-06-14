@@ -73,7 +73,7 @@ func main() {
 
 	setupLog.Info("git commit:", "id", build)
 
-	watchNamespace := checkEnvVar("WATCH_NAMESPACE")
+	operatorNamespace := checkEnvVar("OPERATOR_NAMESPACE")
 	checkEnvVar("SPEAKER_IMAGE")
 	checkEnvVar("CONTROLLER_IMAGE")
 
@@ -82,7 +82,7 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "metallb.io.metallboperator",
-		Namespace:          watchNamespace,
+		Namespace:          operatorNamespace,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -102,7 +102,7 @@ func main() {
 		Log:          ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Scheme:       mgr.GetScheme(),
 		PlatformInfo: platformInfo,
-		Namespace:    watchNamespace,
+		Namespace:    operatorNamespace,
 	}).SetupWithManager(mgr, bgpType); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)

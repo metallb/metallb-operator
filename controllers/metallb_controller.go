@@ -26,9 +26,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -242,19 +240,6 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 			err = scheme.Convert(ds, obj, nil)
 			if err != nil {
 				logger.Error(err, "Fail to convert DaemonSet to MetalLB object")
-				return err
-			}
-		}
-
-		if obj.GetKind() == "Secret" && obj.GetName() == MetalLBWebhookSecret {
-			secret := &v1.Secret{}
-			err := r.Client.Get(context.TODO(), types.NamespacedName{Name: MetalLBWebhookSecret, Namespace: obj.GetNamespace()}, secret)
-			if err == nil {
-				logger.Info("Webhook secret already exist. Will not try to apply it.")
-				continue
-			}
-			if !apierrors.IsNotFound(err) {
-				logger.Error(err, "Failed to check if webhook secret already exist.")
 				return err
 			}
 		}

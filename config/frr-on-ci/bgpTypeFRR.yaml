@@ -11,3 +11,17 @@ spec:
           env:
             - name: METALLB_BGP_TYPE
               value: "frr"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-server
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+        - name: webhook-server
+          env:
+            - name: METALLB_BGP_TYPE
+              value: "frr"

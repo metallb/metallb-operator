@@ -1,0 +1,10 @@
+apiVersion: builtin
+kind: PrefixSuffixTransformer
+metadata:
+  name: customPrefixer
+prefix: metallb-operator-
+fieldSpecs:
+- kind: Deployment
+  path: metadata/name
+- kind: Daemonset
+  path: metadata/name
