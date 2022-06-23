@@ -60,7 +60,7 @@ spec:
               myASN:
                 description: AS number to use for the local end of the session.
                 format: int32
-                maximum: 65535
+                maximum: 4294967295
                 minimum: 0
                 type: integer
               nodeSelectors:
@@ -99,7 +99,7 @@ spec:
               peerASN:
                 description: AS number to expect from the remote end of the session.
                 format: int32
-                maximum: 65535
+                maximum: 4294967295
                 minimum: 0
                 type: integer
               peerAddress:
@@ -167,7 +167,7 @@ spec:
               myASN:
                 description: AS number to use for the local end of the session.
                 format: int32
-                maximum: 65535
+                maximum: 4294967295
                 minimum: 0
                 type: integer
               nodeSelectors:
@@ -241,7 +241,7 @@ spec:
               peerASN:
                 description: AS number to expect from the remote end of the session.
                 format: int32
-                maximum: 65535
+                maximum: 4294967295
                 minimum: 0
                 type: integer
               peerAddress:
