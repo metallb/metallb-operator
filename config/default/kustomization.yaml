@@ -9,7 +9,7 @@ resources:
 - ../crd
 - ../rbac
 - ../manager
-- ../webhook
+#- ../webhook
 
 transformers:
 - ./kustomizeconfig/add-prefix.yaml

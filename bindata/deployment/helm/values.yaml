@@ -1,0 +1,234 @@
+# Default values for metallb.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+loadBalancerClass: ""
+
+# To configure MetalLB, you must specify ONE of the following two
+# options.
+
+rbac:
+  # create specifies whether to install and use RBAC rules.
+  create: true
+
+psp:
+  # create specifies whether to install and use Pod Security Policies.
+  create: true
+
+prometheus:
+  # scrape annotations specifies whether to add Prometheus metric
+  # auto-collection annotations to pods. See
+  # https://github.com/prometheus/prometheus/blob/release-2.1/documentation/examples/prometheus-kubernetes.yml
+  # for a corresponding Prometheus configuration. Alternatively, you
+  # may want to use the Prometheus Operator
+  # (https://github.com/coreos/prometheus-operator) for more powerful
+  # monitoring configuration. If you use the Prometheus operator, this
+  # can be left at false.
+  scrapeAnnotations: false
+
+  # port both controller and speaker will listen on for metrics
+  metricsPort: 7472
+
+  # the service account used by prometheus
+  # required when .Values.prometheus.podMonitor.enabled == true
+  serviceAccount: ""
+
+  # the namespace where prometheus is deployed
+  # required when .Values.prometheus.podMonitor.enabled == true
+  namespace: ""
+
+  # Prometheus Operator PodMonitors
+  podMonitor:
+
+    # enable support for Prometheus Operator
+    enabled: false
+
+    # optional additionnal labels for podMonitors
+    additionalLabels: {}
+
+    # optional annotations for podMonitors
+    annotations: {}
+
+    # Job label for scrape target
+    jobLabel: "app.kubernetes.io/name"
+
+    # Scrape interval. If not set, the Prometheus default scrape interval is used.
+    interval:
+
+    # 	metric relabel configs to apply to samples before ingestion.
+    metricRelabelings: []
+    # - action: keep
+    #   regex: 'kube_(daemonset|deployment|pod|namespace|node|statefulset).+'
+    #   sourceLabels: [__name__]
+
+    # 	relabel configs to apply to samples before ingestion.
+    relabelings: []
+    # - sourceLabels: [__meta_kubernetes_pod_node_name]
+    #   separator: ;
+    #   regex: ^(.*)$
+    #   target_label: nodename
+    #   replacement: $1
+    #   action: replace
+
+  # Prometheus Operator alertmanager alerts
+  prometheusRule:
+
+    # enable alertmanager alerts
+    enabled: false
+
+    # optional additionnal labels for prometheusRules
+    additionalLabels: {}
+
+    # optional annotations for prometheusRules
+    annotations: {}
+
+    # MetalLBStaleConfig
+    staleConfig:
+      enabled: true
+      labels:
+        severity: warning
+
+    # MetalLBConfigNotLoaded
+    configNotLoaded:
+      enabled: true
+      labels:
+        severity: warning
+
+    # MetalLBAddressPoolExhausted
+    addressPoolExhausted:
+      enabled: true
+      labels:
+        severity: alert
+
+    addressPoolUsage:
+      enabled: true
+      thresholds:
+        - percent: 75
+          labels:
+            severity: warning
+        - percent: 85
+          labels:
+            severity: warning
+        - percent: 95
+          labels:
+            severity: alert
+
+    # MetalLBBGPSessionDown
+    bgpSessionDown:
+      enabled: true
+      labels:
+        severity: alert
+
+    extraAlerts: []
+
+# controller contains configuration specific to the MetalLB cluster
+# controller.
+controller:
+  enabled: true
+  # -- Controller log level. Must be one of: `all`, `debug`, `info`, `warn`, `error` or `none`
+  logLevel: info
+  image:
+    repository: quay.io/metallb/controller
+    tag:
+    pullPolicy:
+  serviceAccount:
+    # Specifies whether a ServiceAccount should be created
+    create: true
+    # The name of the ServiceAccount to use. If not set and create is
+    # true, a name is generated using the fullname template
+    name: ""
+    annotations: {}
+  securityContext:
+    runAsNonRoot: true
+    # nobody
+    runAsUser: 65534
+    fsGroup: 65534
+  resources: {}
+    # limits:
+      # cpu: 100m
+      # memory: 100Mi
+  nodeSelector: {}
+  tolerations: []
+  priorityClassName: ""
+  runtimeClassName: ""
+  affinity: {}
+  podAnnotations: {}
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readinessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+# speaker contains configuration specific to the MetalLB speaker
+# daemonset.
+speaker:
+  enabled: true
+  # -- Speaker log level. Must be one of: `all`, `debug`, `info`, `warn`, `error` or `none`
+  logLevel: info
+  tolerateMaster: true
+  memberlist:
+    enabled: true
+    mlBindPort: 7946
+  image:
+    repository: quay.io/metallb/speaker
+    tag:
+    pullPolicy:
+  serviceAccount:
+    # Specifies whether a ServiceAccount should be created
+    create: true
+    # The name of the ServiceAccount to use. If not set and create is
+    # true, a name is generated using the fullname template
+    name: ""
+    annotations: {}
+  ## Defines a secret name for the controller to generate a memberlist encryption secret
+  ## By default secretName: {{ "metallb.fullname" }}-memberlist
+  ##
+  # secretName:
+  resources: {}
+    # limits:
+      # cpu: 100m
+      # memory: 100Mi
+  nodeSelector: {}
+  tolerations: []
+  priorityClassName: ""
+  affinity: {}
+  ## Selects which runtime class will be used by the pod.
+  runtimeClassName: ""
+  podAnnotations: {}
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readinessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  # frr contains configuration specific to the MetalLB FRR container,
+  # for speaker running alongside FRR.
+  frr:
+    enabled: false
+    image:
+      repository: frrouting/frr
+      tag: v7.5.1
+      pullPolicy:
+
+crds:
+  enabled: true

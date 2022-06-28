@@ -33,12 +33,12 @@ const (
 	ConditionUpgradeable = "Upgradeable"
 )
 
-func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1beta1.MetalLB, condition string, reason string, message string) error {
-	conditions := getConditions(condition, reason, message)
+func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1beta1.MetalLB, condition, message string) error {
+	conditions := getConditions(condition, message)
 	if equality.Semantic.DeepEqual(conditions, metallb.Status.Conditions) {
 		return nil
 	}
-	metallb.Status.Conditions = getConditions(condition, reason, message)
+	metallb.Status.Conditions = getConditions(condition, message)
 
 	if err := client.Status().Update(ctx, metallb); err != nil {
 		return errors.Wrapf(err, "could not update status for object %+v", metallb)
@@ -46,19 +46,21 @@ func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1beta
 	return nil
 }
 
-func getConditions(condition string, reason string, message string) []metav1.Condition {
+func getConditions(condition, message string) []metav1.Condition {
 	conditions := getBaseConditions()
 	switch condition {
 	case ConditionAvailable:
 		conditions[0].Status = metav1.ConditionTrue
+		conditions[0].Reason = ConditionAvailable
 		conditions[1].Status = metav1.ConditionTrue
+		conditions[1].Reason = ConditionUpgradeable
 	case ConditionProgressing:
 		conditions[2].Status = metav1.ConditionTrue
-		conditions[2].Reason = reason
+		conditions[2].Reason = ConditionProgressing
 		conditions[2].Message = message
 	case ConditionDegraded:
 		conditions[3].Status = metav1.ConditionTrue
-		conditions[3].Reason = reason
+		conditions[3].Reason = ConditionDegraded
 		conditions[3].Message = message
 	}
 	return conditions
@@ -97,7 +99,7 @@ func getBaseConditions() []metav1.Condition {
 func IsMetalLBAvailable(ctx context.Context, client k8sclient.Client, namespace string) error {
 
 	ds := &appsv1.DaemonSet{}
-	err := client.Get(ctx, types.NamespacedName{Name: "speaker", Namespace: namespace}, ds)
+	err := client.Get(ctx, types.NamespacedName{Name: "metallb-speaker", Namespace: namespace}, ds)
 	if err != nil {
 		return err
 	}
@@ -105,7 +107,7 @@ func IsMetalLBAvailable(ctx context.Context, client k8sclient.Client, namespace 
 		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset not ready"}
 	}
 	deployment := &appsv1.Deployment{}
-	err = client.Get(ctx, types.NamespacedName{Name: "controller", Namespace: namespace}, deployment)
+	err = client.Get(ctx, types.NamespacedName{Name: "metallb-controller", Namespace: namespace}, deployment)
 	if err != nil {
 		return err
 	}

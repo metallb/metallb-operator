@@ -36,7 +36,10 @@ import (
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
 	"github.com/metallb/metallb-operator/pkg/platform"
+
 	// +kubebuilder:scaffold:imports
+
+	"helm.sh/helm/v3/pkg/cli"
 )
 
 var (
@@ -97,8 +100,10 @@ func main() {
 	}
 
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
+	os.Setenv("HELM_NAMESPACE", operatorNamespace)
 	if err = (&controllers.MetalLBReconciler{
 		Client:       mgr.GetClient(),
+		Settings:     cli.New(),
 		Log:          ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Scheme:       mgr.GetScheme(),
 		PlatformInfo: platformInfo,

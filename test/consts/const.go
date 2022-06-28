@@ -12,9 +12,9 @@ const (
 	// MetalLBCRFile contains the MetalLB custom resource deployment
 	MetalLBCRFile = "metallb.yaml"
 	// MetalLBDeploymentName contains the name of the MetalLB deployment
-	MetalLBDeploymentName = "controller"
+	MetalLBDeploymentName = "metallb-controller"
 	// MetalLBDaemonsetName contains the name of the MetalLB daemonset
-	MetalLBDaemonsetName = "speaker"
+	MetalLBDaemonsetName = "metallb-speaker"
 	// MetalLBConfigMapName contains created configmap
 	MetalLBConfigMapName = apply.MetalLBConfigMap
 	// DefaultOperatorNameSpace is the default operator namespace

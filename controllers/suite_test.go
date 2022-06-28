@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,11 +39,19 @@ import (
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	// +kubebuilder:scaffold:imports
+
+	"helm.sh/helm/v3/pkg/cli"
 )
 
 const (
-	MetalLBTestNameSpace              = "metallb-test-namespace"
 	MetalLBManifestPathControllerTest = "../bindata/deployment"
+)
+
+var (
+	MetalLBTestNameSpace = "metallb-test-namespace"
+	CAFilePath           = "../_cache/ca.cert"
+	CertFilePath         = "../_cache/client.cert"
+	KeyFilePath          = "../_cache/client.key"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -71,7 +80,7 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases", "metallb.io_metallbs.yaml")},
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -107,11 +116,36 @@ var _ = BeforeSuite(func() {
 	PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathControllerTest, "prometheus-operator")
 
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
+	kubeConfig := genericclioptions.NewConfigFlags(false)
+
+	caFile, err := os.Create(CAFilePath)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = caFile.Write(cfg.CAData)
+	Expect(err).ToNot(HaveOccurred())
+
+	certFile, err := os.Create(CertFilePath)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = certFile.Write(cfg.CertData)
+	Expect(err).ToNot(HaveOccurred())
+
+	keyFile, err := os.Create(KeyFilePath)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = keyFile.Write(cfg.KeyData)
+	Expect(err).ToNot(HaveOccurred())
+
+	kubeConfig.APIServer = &cfg.Host
+	kubeConfig.BearerToken = &cfg.BearerToken
+	kubeConfig.CAFile = &CAFilePath
+	kubeConfig.CertFile = &CertFilePath
+	kubeConfig.KeyFile = &KeyFilePath
+	kubeConfig.Namespace = &MetalLBTestNameSpace
 	err = (&MetalLBReconciler{
-		Client:    k8sClient,
-		Scheme:    scheme.Scheme,
-		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
-		Namespace: MetalLBTestNameSpace,
+		Client:     k8sClient,
+		Settings:   cli.New(),
+		KubeConfig: kubeConfig,
+		Scheme:     scheme.Scheme,
+		Log:        ctrl.Log.WithName("controllers").WithName("MetalLB"),
+		Namespace:  MetalLBTestNameSpace,
 	}).SetupWithManager(k8sManager, bgpType)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -126,5 +160,11 @@ var _ = AfterSuite(func() {
 	// restore Manifestpaths for both controller to their original value
 	ManifestPath = MetalLBManifestPathController
 	err := testEnv.Stop()
+	Expect(err).ToNot(HaveOccurred())
+	err = os.Remove(CAFilePath)
+	Expect(err).ToNot(HaveOccurred())
+	err = os.Remove(CertFilePath)
+	Expect(err).ToNot(HaveOccurred())
+	err = os.Remove(KeyFilePath)
 	Expect(err).ToNot(HaveOccurred())
 })

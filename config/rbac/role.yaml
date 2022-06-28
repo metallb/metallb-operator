@@ -10,6 +10,7 @@ rules:
   - ""
   resources:
   - secrets
+  - serviceaccounts
   verbs:
   - create
   - delete
@@ -33,8 +34,12 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - metallb.io
@@ -69,6 +74,7 @@ rules:
   - monitoring.coreos.com
   resources:
   - podmonitors
+  - prometheusrules
   verbs:
   - create
   - delete
@@ -84,6 +90,23 @@ rules:
   verbs:
   - create
   - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterrolebindings
+  - clusterroles
+  - rolebindings
+  - roles
+  verbs:
+  - bind
+  - create
+  - delete
+  - escalate
   - get
   - list
   - patch

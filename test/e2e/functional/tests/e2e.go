@@ -56,13 +56,11 @@ var _ = Describe("metallb", func() {
 			if !metallbCRExisted {
 				deployment, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(deployment.OwnerReferences).ToNot(BeNil())
-				Expect(deployment.OwnerReferences[0].Kind).To(Equal("MetalLB"))
+				Expect(deployment.OwnerReferences).To(BeNil())
 
 				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(daemonset.OwnerReferences).ToNot(BeNil())
-				Expect(daemonset.OwnerReferences[0].Kind).To(Equal("MetalLB"))
+				Expect(daemonset.OwnerReferences).To(BeNil())
 
 				metallbutils.Delete(metallb)
 			}
@@ -79,7 +77,7 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "component=controller"})
+					LabelSelector: "app.kubernetes.io/component=controller"})
 				Expect(err).ToNot(HaveOccurred())
 
 				deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
@@ -101,7 +99,7 @@ var _ = Describe("metallb", func() {
 				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 
 				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "component=speaker"})
+					LabelSelector: "app.kubernetes.io/component=speaker"})
 				Expect(err).ToNot(HaveOccurred())
 
 				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})

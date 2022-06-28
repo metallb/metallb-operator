@@ -83,9 +83,7 @@ uninstall: manifests kustomize  ## Uninstall CRDs from a cluster
 deploy: manifests kustomize ## Deploy controller in the configured cluster
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd $(KUSTOMIZE_DEPLOY_DIR) && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
-	cd config/metallb_rbac && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
-	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
 undeploy: ## Undeploy the controller from the configured cluster
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl delete --ignore-not-found=true -f -
@@ -213,6 +211,7 @@ generate-metallb-manifests: kubectl ## Generate MetalLB manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
 	hack/generate_ocp_manifests.sh
+	hack/generate-metallb-helm.sh
 
 validate-metallb-manifests:  ## Validate MetalLB manifests
 	@echo "Comparing newly generated MetalLB manifests to existing ones"
