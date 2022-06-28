@@ -8,7 +8,7 @@ require (
 	github.com/golang/glog v1.0.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.18.1
+	github.com/onsi/gomega v1.19.0
 	github.com/pkg/errors v0.9.1
 	k8s.io/api v0.24.1
 	k8s.io/apiextensions-apiserver v0.24.1
