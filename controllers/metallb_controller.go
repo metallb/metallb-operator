@@ -107,8 +107,9 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	result, condition, err := r.reconcileResource(ctx, req, instance)
 	if condition != "" {
-		errorMsg, wrappedErrMsg := "", ""
+		errorMsg, wrappedErrMsg := condition, ""
 		if err != nil {
+			errorMsg = err.Error()
 			if errors.Unwrap(err) != nil {
 				wrappedErrMsg = errors.Unwrap(err).Error()
 			}
