@@ -18,6 +18,10 @@ yq e --inplace '.spec.install.spec.deployments.[0].spec.template.spec.containers
 yq e --inplace '.spec.version |= "'$csv_version'"' bundle/manifests/metallb-operator.clusterserviceversion.yaml
 yq e --inplace '.images[] |= select (.name == "controller") |= .newTag="'$operator_version'"' config/manager/kustomization.yaml
 
+if [ "$operator_version" != "latest" ]; then
+sed -i "s/name: metallb-operator.v0.0.0/name: metallb-operator.v$operator_version/" bundle/manifests/metallb-operator.clusterserviceversion.yaml
+fi
+
 yq e --inplace '. |= select (.kind == "CatalogSource") |= .spec.image="quay.io/metallb/metallb-operator-bundle-index:'$operator_version'"' config/olm-install/install-resources.yaml
 
 sed -E -i "s/VERSION \?= .*$/VERSION \?= $operator_version/g" Makefile
