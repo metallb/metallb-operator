@@ -59,7 +59,7 @@ jobs:
           sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
       - name: Build image
         run: |
-          docker build . -t ${built_image}
+          IMG=${built_image} make docker-build
       - name: Create multi-node K8s Kind Cluster
         run: |
           ./hack/kind-multi-node-cluster-without-registry.sh
