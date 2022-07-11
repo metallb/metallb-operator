@@ -49,7 +49,7 @@ jobs:
 
     - name: Build image
       run: |
-        docker build . -t ${built_image}
+        IMG=${built_image} make docker-build
 
     - name: Create K8s Kind Cluster
       run: |
