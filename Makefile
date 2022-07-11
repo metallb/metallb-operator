@@ -122,7 +122,7 @@ generate: controller-gen  ## Generate code
 
 # Build the docker image
 docker-build:  ## Build the docker image
-	docker build . -t ${IMG}
+	docker buildx build --load --platform linux/amd64 -t ${IMG} --build-arg GIT_COMMIT="$(shell git rev-parse HEAD)" .
 
 docker-push:  ## Push the docker image
 	docker push ${IMG}
