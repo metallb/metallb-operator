@@ -38,7 +38,7 @@ jobs:
 
     - name: Build image
       run: |
-        docker build . -t ${built_image_prev_release}
+        IMG=${built_image_prev_release} make docker-build
     - name: Create K8s Kind Cluster
       run: |
         ./hack/kind-cluster-without-registry.sh
@@ -77,7 +77,7 @@ jobs:
     - name: Build image
       run: |
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
-        docker build . -t ${built_image}
+        IMG=${built_image} make docker-build
         kind load docker-image ${built_image}
     - name: Deploy Metal LB Operator
       run: |
