@@ -24,6 +24,10 @@ jobs:
         go: [ '1.17' ]
     name: Go ${{ matrix.go }}
     steps:
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.9.1
+      with:
+        access_token: ${{ github.token }}
     - name: Checkout Previous Release Metal LB Operator
       uses: actions/checkout@v2
       with:
