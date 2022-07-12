@@ -20,7 +20,6 @@ jobs:
       - name: Checkout Metal LB Operator
         uses: actions/checkout@v2
         with:
-          path: metallboperator
           fetch-depth: 0 # Fetch all history for all tags and branches
 
       - uses: actions/setup-go@v2
