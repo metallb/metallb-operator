@@ -10,7 +10,7 @@ metadata:
   namespace: mymetallb
 spec:
   displayName: MetalLB Operator Upstream
-  image: quay.io/metallb/metallb-operator-bundle-index:v0.13.0
+  image: quay.io/metallb/metallb-operator-bundle-index:v0.13.2
   publisher: github.com/metallb/metallb-operator
   sourceType: grpc
 ---
