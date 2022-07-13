@@ -19,13 +19,13 @@ yq e --inplace '.spec.version |= "'$csv_version'"' bundle/manifests/metallb-oper
 yq e --inplace '.images[] |= select (.name == "controller") |= .newTag="'$operator_version'"' config/manager/kustomization.yaml
 
 if [ "$operator_version" != "main" ]; then
-sed -i "s/name: metallb-operator.v0.0.0/name: metallb-operator.$operator_version/" bundle/manifests/metallb-operator.clusterserviceversion.yaml
+sed -i "s/name: metallb-operator.v.*$/name: metallb-operator.$operator_version/" bundle/manifests/metallb-operator.clusterserviceversion.yaml
 fi
 
 yq e --inplace '. |= select (.kind == "CatalogSource") |= .spec.image="quay.io/metallb/metallb-operator-bundle-index:'$operator_version'"' config/olm-install/install-resources.yaml
 
 sed -E -i "s/VERSION \?= .*$/VERSION \?= $operator_version/g" Makefile
 
-sed -i "s/quay.io\/metallb\/speaker:main/quay.io\/metallb\/speaker:$metallb_version/g" bin/metallb-operator.yaml
-sed -i "s/quay.io\/metallb\/controller:main/quay.io\/metallb\/controller:$metallb_version/g" bin/metallb-operator.yaml
-sed -i "s/quay.io\/metallb\/metallb-operator:main/quay.io\/metallb\/metallb-operator:$operator_version/g" bin/metallb-operator.yaml
+sed -i "s/quay.io\/metallb\/speaker:.*$/quay.io\/metallb\/speaker:$metallb_version/g" bin/metallb-operator.yaml
+sed -i "s/quay.io\/metallb\/controller:.*$/quay.io\/metallb\/controller:$metallb_version/g" bin/metallb-operator.yaml
+sed -i "s/quay.io\/metallb\/metallb-operator:.*$/quay.io\/metallb\/metallb-operator:$operator_version/g" bin/metallb-operator.yaml
