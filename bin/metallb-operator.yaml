@@ -1519,9 +1519,9 @@ spec:
         - /manager
         env:
         - name: SPEAKER_IMAGE
-          value: quay.io/metallb/speaker:main
+          value: quay.io/metallb/speaker:v0.13.3
         - name: CONTROLLER_IMAGE
-          value: quay.io/metallb/controller:main
+          value: quay.io/metallb/controller:v0.13.3
         - name: METALLB_BGP_TYPE
           value: native
         - name: FRR_IMAGE
@@ -1536,7 +1536,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/metallb/metallb-operator:main
+        image: quay.io/metallb/metallb-operator:v0.13.0
         name: manager
         resources:
           requests:
@@ -1575,7 +1575,7 @@ spec:
         env:
         - name: METALLB_BGP_TYPE
           value: native
-        image: quay.io/metallb/controller:main
+        image: quay.io/metallb/controller:v0.13.3
         livenessProbe:
           failureThreshold: 3
           httpGet:
