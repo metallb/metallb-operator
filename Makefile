@@ -42,6 +42,7 @@ endif
 
 OPERATOR_SDK_VERSION=v1.8.1
 OLM_VERSION=v0.18.3
+OPM_VERSION=v1.23.2
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
@@ -143,7 +144,7 @@ deploy-with-olm: ## deploys the operator with OLM instead of manifests
 	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
 
 bundle-index-build: opm  ## Build the bundle index image.
-	$(OPM) index add --bundles $(BUNDLE_IMG) --tag $(BUNDLE_INDEX_IMG) -c docker
+	$(OPM) index add --bundles $(BUNDLE_IMG) --tag $(BUNDLE_INDEX_IMG) -c docker -i quay.io/operator-framework/opm:$(OPM_VERSION)
 
 build-and-push-bundle-images: docker-build docker-push  ## Generate and push bundle image and bundle index image
 	$(MAKE) bundle
@@ -190,8 +191,7 @@ opm:
 ifeq (, $(shell which opm))
 	@{ \
 	set -e ;\
-	opm_tool_latest_version=$$(curl -s $(OPM_TOOL_URL) | grep tag_name | grep -v -- '-rc' | head -1 | awk -F': ' '{print $$2}' | sed 's/,//' | xargs) ;\
-	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$$opm_tool_latest_version/linux-amd64-opm > $(GOBIN)/opm ;\
+	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$(OPM_VERSION)/linux-amd64-opm > $(GOBIN)/opm ;\
 	chmod u+x $(GOBIN)/opm ;\
 	}
 OPM=$(GOBIN)/opm
