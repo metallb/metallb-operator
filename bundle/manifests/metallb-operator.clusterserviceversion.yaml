@@ -1010,6 +1010,26 @@ spec:
       type: ValidatingAdmissionWebhook
       webhookPath: /validate-metallb-io-v1beta1-ipaddresspool
     - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
+      generateName: l2advertisementvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - l2advertisements
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta1-l2advertisement
+    - admissionReviewVersions:
         - v1alpha1
         - v1beta1
       containerPort: 443
