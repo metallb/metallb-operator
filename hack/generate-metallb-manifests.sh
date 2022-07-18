@@ -13,6 +13,8 @@ PROMETHEUS_OPERATOR_FILE="prometheus-operator.yaml"
 PROMETHEUS_OPERATOR_MANIFESTS_URL="https://raw.githubusercontent.com/metallb/metallb/${METALLB_COMMIT_ID}/config/prometheus/${PROMETHEUS_OPERATOR_FILE}"
 PROMETHEUS_OPERATOR_MANIFESTS_DIR="bindata/deployment/prometheus-operator"
 
+HELM_MANIFESTS_DIR="bindata/deployment/helm"
+
 if ! command -v yq &> /dev/null
 then
     echo "yq binary not found, installing... "
@@ -45,3 +47,23 @@ ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs rm
 cp -r "$METALLB_PATH"/config/crd/bases config/crd
 cp -r "$METALLB_PATH"/config/crd/crd-conversion-patch.yaml config/crd
 cp -r "$METALLB_PATH"/config/webhook config/webhook
+
+# generate metallb chart
+rm -rf "$METALLB_PATH"/charts/metallb/charts
+rm -f "$METALLB_PATH"/charts/metallb/templates/rbac.yaml
+rm -f "$METALLB_PATH"/charts/metallb/templates/service-accounts.yaml
+rm -f "$METALLB_PATH"/charts/metallb/templates/webhooks.yaml
+
+yq e --inplace 'del(."dependencies")' "$METALLB_PATH"/charts/metallb/Chart.yaml
+
+find "$METALLB_PATH"/charts/metallb -type f -exec sed -i -e 's/{{ template "metallb.fullname" . }}-//g' {} \;
+sed -i -e 's/app.kubernetes.io\///g' "$METALLB_PATH"/charts/metallb/templates/controller.yaml
+sed -i -e 's/metallb-webhook-service/webhook-service/g' "$METALLB_PATH"/charts/metallb/templates/controller.yaml
+sed -i -e 's/app.kubernetes.io\/component/component/g' "$METALLB_PATH"/charts/metallb/templates/speaker.yaml
+sed -i -e 's/app.kubernetes.io\/name/app/g' "$METALLB_PATH"/charts/metallb/templates/speaker.yaml
+sed -i '/app.kubernetes.io\/instance: {{ .Release.Name }}/d' "$METALLB_PATH"/charts/metallb/templates/_helpers.tpl
+sed -i -e 's/app.kubernetes.io\/name/app/g' "$METALLB_PATH"/charts/metallb/templates/_helpers.tpl
+
+mkdir -p ${HELM_MANIFESTS_DIR}
+cp -r "$METALLB_PATH"/charts/metallb/* ${HELM_MANIFESTS_DIR}
+rm -rf "$METALLB_PATH"
