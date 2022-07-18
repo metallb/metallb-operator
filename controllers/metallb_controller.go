@@ -19,51 +19,41 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
+	"github.com/metallb/metallb-operator/pkg/helm"
 	"github.com/metallb/metallb-operator/pkg/platform"
-	"github.com/metallb/metallb-operator/pkg/render"
 	"github.com/metallb/metallb-operator/pkg/status"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
-	defaultMetalLBCrName          = "metallb"
-	MetalLBManifestPathController = "./bindata/deployment"
-	MetalLBSpeakerDaemonSet       = "speaker"
-	MetalLBWebhookSecret          = "webhook-server-cert"
-)
-
-const (
-	bgpNative string = "native"
-	bgpFrr    string = "frr"
+	defaultMetalLBCrName              = "metallb"
+	MetalLBChartPathController        = "./bindata/deployment/helm"
+	bgpNative                  string = "native"
+	bgpFrr                     string = "frr"
 )
 
 // MetalLBReconciler reconciles a MetalLB object
 type MetalLBReconciler struct {
 	client.Client
+	helm         *helm.MetalLBChart
 	Log          logr.Logger
 	Scheme       *runtime.Scheme
 	PlatformInfo platform.PlatformInfo
 	Namespace    string
 }
 
-var ManifestPath = MetalLBManifestPathController
-var PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathController, "prometheus-operator")
+var MetalLBChartPath = MetalLBChartPathController
 
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
@@ -143,14 +133,10 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) e
 	if bgpType != bgpNative && bgpType != bgpFrr {
 		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
 	}
-	switch {
-	case r.PlatformInfo.IsOpenShift():
-		if bgpType != bgpFrr {
-			return fmt.Errorf("bgp type must be frr for openshift cluster")
-		}
-		ManifestPath = fmt.Sprintf("%s/openshift", ManifestPath)
-	default:
-		ManifestPath = fmt.Sprintf("%s/%s", ManifestPath, bgpType)
+	var err error
+	r.helm, err = helm.InitMetalLBChart(MetalLBChartPath, defaultMetalLBCrName, r.Namespace, r.Client, r.PlatformInfo.IsOpenShift())
+	if err != nil {
+		return err
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&metallbv1beta1.MetalLB{}).
@@ -160,112 +146,26 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) e
 func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
-	data := render.MakeRenderData()
-
-	data.Data["SpeakerImage"] = os.Getenv("SPEAKER_IMAGE")
-	data.Data["ControllerImage"] = os.Getenv("CONTROLLER_IMAGE")
-	data.Data["FRRImage"] = os.Getenv("FRR_IMAGE")
-	data.Data["IsOpenShift"] = r.PlatformInfo.IsOpenShift()
-	data.Data["NameSpace"] = r.Namespace
-	data.Data["KubeRbacProxy"] = os.Getenv("KUBE_RBAC_PROXY_IMAGE")
-	data.Data["DeployKubeRbacProxies"] = os.Getenv("DEPLOY_KUBE_RBAC_PROXIES") == "true"
-
-	data.Data["LogLevel"] = metallbv1beta1.LogLevelInfo
-	if config.Spec.LogLevel != "" {
-		data.Data["LogLevel"] = config.Spec.LogLevel
-	}
-
-	var err error
-	data.Data["MetricsPort"], err = valueWithDefault("METRICS_PORT", 7472)
+	objs, err := r.helm.GetObjects(config)
 	if err != nil {
 		return err
 	}
-	data.Data["MetricsPortHttps"], err = valueWithDefault("HTTPS_METRICS_PORT", 27472)
-	if err != nil {
-		return err
-	}
-	data.Data["FRRMetricsPort"], err = valueWithDefault("FRR_METRICS_PORT", 7473)
-	if err != nil {
-		return err
-	}
-	data.Data["FRRMetricsPortHttps"], err = valueWithDefault("FRR_HTTPS_METRICS_PORT", 27473)
-	if err != nil {
-		return err
-	}
-	data.Data["MLBindPort"], err = valueWithDefault("MEMBER_LIST_BIND_PORT", 7946)
-	if err != nil {
-		return err
-	}
-
-	objs, err := render.RenderDir(ManifestPath, &data)
-	if err != nil {
-		logger.Error(err, "Fail to render config daemon manifests")
-		return err
-	}
-
-	// We shouldn't spam the api server trying to apply PodMonitors if the resource isn't installed.
-	deployPodMonitors := os.Getenv("DEPLOY_PODMONITORS") == "true"
-	if podMonitorAvailable(r.Client) && deployPodMonitors {
-		podmonitors, err := render.RenderDir(PodMonitorsPath, &data)
-		if err != nil {
-			logger.Error(err, "Fail to render PodMonitors manifests")
-			return err
-		}
-		objs = append(objs, podmonitors...)
-	} else {
-		logger.Info("PodMonitors Resource not available in the cluster. Will not try to apply them.")
-	}
-
 	for _, obj := range objs {
+		objKind := obj.GetKind()
+		// Skip applying role and role binding object, because with the operator these are being set outside,
+		// either in manifests or via the csv.
+		if objKind == "Role" || objKind == "RoleBinding" {
+			continue
+		}
 		objNS := obj.GetNamespace()
 		if objNS != "" { // Avoid setting reference on a cluster-scoped resource.
 			if err := controllerutil.SetControllerReference(config, obj, r.Scheme); err != nil {
-				return errors.Wrapf(err, "Failed to set controller reference to %s %s", obj.GetNamespace(), obj.GetName())
+				return errors.Wrapf(err, "Failed to set controller reference to %s %s", objNS, obj.GetName())
 			}
 		}
-		if obj.GetKind() == "DaemonSet" &&
-			(len(config.Spec.SpeakerNodeSelector) > 0 || len(config.Spec.SpeakerTolerations) > 0) {
-			scheme := kscheme.Scheme
-			ds := &appsv1.DaemonSet{}
-			err = scheme.Convert(obj, ds, nil)
-			if err != nil {
-				logger.Error(err, "Fail to convert MetalLB object to DaemonSet")
-				return err
-			}
-			if len(config.Spec.SpeakerNodeSelector) > 0 {
-				ds.Spec.Template.Spec.NodeSelector = config.Spec.SpeakerNodeSelector
-			}
-			if len(config.Spec.SpeakerTolerations) > 0 {
-				ds.Spec.Template.Spec.Tolerations = config.Spec.SpeakerTolerations
-			}
-			err = scheme.Convert(ds, obj, nil)
-			if err != nil {
-				logger.Error(err, "Fail to convert DaemonSet to MetalLB object")
-				return err
-			}
-		}
-
 		if err := apply.ApplyObject(context.TODO(), r.Client, obj); err != nil {
-			return errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
+			return errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), objNS, obj.GetName())
 		}
 	}
 	return nil
-}
-
-func podMonitorAvailable(c client.Client) bool {
-	crd := &apiext.CustomResourceDefinition{}
-	err := c.Get(context.Background(), client.ObjectKey{Name: "podmonitors.monitoring.coreos.com"}, crd)
-	return err == nil
-}
-
-func valueWithDefault(name string, def int) (int, error) {
-	val := os.Getenv(name)
-	if val != "" {
-		res, err := strconv.Atoi(val)
-		if err != nil {
-			return 0, err
-		}
-		return res, nil
-	}
-	return def, nil
 }
