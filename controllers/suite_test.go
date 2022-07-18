@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,8 +40,8 @@ import (
 )
 
 const (
-	MetalLBTestNameSpace              = "metallb-test-namespace"
-	MetalLBManifestPathControllerTest = "../bindata/deployment"
+	MetalLBHelmChartPathControllerTest = "../bindata/deployment/helm"
+	MetalLBTestNameSpace               = "metallb-test-namespace"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -103,8 +102,7 @@ var _ = BeforeSuite(func() {
 	err = k8sClient.Create(context.Background(), testNamespace)
 	Expect(err).ToNot(HaveOccurred())
 
-	ManifestPath = MetalLBManifestPathControllerTest // This is needed as the tests need to reference a directory backward
-	PodMonitorsPath = fmt.Sprintf("%s/%s", MetalLBManifestPathControllerTest, "prometheus-operator")
+	MetalLBChartPath = MetalLBHelmChartPathControllerTest // This is needed as the tests need to reference a directory backward
 
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
 	err = (&MetalLBReconciler{
@@ -124,7 +122,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// restore Manifestpaths for both controller to their original value
-	ManifestPath = MetalLBManifestPathController
+	MetalLBChartPath = MetalLBChartPathController
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
