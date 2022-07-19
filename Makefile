@@ -213,7 +213,6 @@ endif
 generate-metallb-manifests: kubectl ## Generate MetalLB manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
-	hack/generate_ocp_manifests.sh
 
 validate-metallb-manifests:  ## Validate MetalLB manifests
 	@echo "Comparing newly generated MetalLB manifests to existing ones"
