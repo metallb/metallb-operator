@@ -43,4 +43,5 @@ ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^---$/d'
 ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^$/d'
 ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs rm 
 cp -r "$METALLB_PATH"/config/crd/bases config/crd
+cp -r "$METALLB_PATH"/config/crd/crd-conversion-patch.yaml config/crd
 cp -r "$METALLB_PATH"/config/webhook config/webhook
