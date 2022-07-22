@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 # Current Operator version
-VERSION ?= v0.12.0
+VERSION ?= v0.12.1
 CSV_VERSION = $(shell echo $(VERSION) | sed 's/v//')
 ifeq ($(VERSION), latest)
 CSV_VERSION := 0.0.0
