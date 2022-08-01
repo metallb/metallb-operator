@@ -33,6 +33,7 @@ import (
 	"github.com/metallb/metallb-operator/pkg/helm"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/status"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -58,6 +59,7 @@ var MetalLBChartPath = MetalLBChartPathController
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",namespace=metallb-system,resources=services,verbs=create;delete;get;update;patch
 
 // Cluster Scoped
@@ -146,7 +148,8 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) e
 func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
-	objs, err := r.helm.GetObjects(config)
+	withPrometheus := prometheusDeployed(r.Client)
+	objs, err := r.helm.GetObjects(config, withPrometheus)
 	if err != nil {
 		return err
 	}
@@ -168,4 +171,10 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		}
 	}
 	return nil
+}
+
+func prometheusDeployed(c client.Client) bool {
+	crd := &apiext.CustomResourceDefinition{}
+	err := c.Get(context.Background(), client.ObjectKey{Name: "servicemonitors.monitoring.coreos.com"}, crd)
+	return err == nil
 }

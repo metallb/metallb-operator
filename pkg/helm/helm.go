@@ -50,14 +50,14 @@ type MetalLBChart struct {
 
 // GetObjects retrieve manifests from chart after patching custom values passed in crdConfig
 // and environment variables.
-func (h *MetalLBChart) GetObjects(crdConfig *metallbv1beta1.MetalLB) ([]*unstructured.Unstructured, error) {
+func (h *MetalLBChart) GetObjects(crdConfig *metallbv1beta1.MetalLB, withPrometheus bool) ([]*unstructured.Unstructured, error) {
 	chartValueOpts := &values.Options{}
 	chartValues, err := chartValueOpts.MergeValues(getter.All(h.envSettings))
 	if err != nil {
 		return nil, err
 	}
 
-	patchToChartValues(h.config, crdConfig, chartValues)
+	patchToChartValues(h.config, crdConfig, withPrometheus, chartValues)
 
 	release, err := h.client.Run(h.chart, chartValues)
 	if err != nil {
@@ -97,7 +97,7 @@ func InitMetalLBChart(chartPath, chartName, namespace string,
 	if err != nil {
 		return nil, err
 	}
-	chart.config, err = loadConfig(client, isOpenshift)
+	chart.config, err = loadConfig(namespace, isOpenshift)
 	if err != nil {
 		return nil, err
 	}
