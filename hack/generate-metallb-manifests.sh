@@ -49,6 +49,7 @@ find "$METALLB_PATH"/charts/metallb -type f -exec sed -i -e 's/{{ template "meta
 sed -i -e 's/app.kubernetes.io\///g' "$METALLB_PATH"/charts/metallb/templates/controller.yaml
 sed -i -e 's/metallb-webhook-service/webhook-service/g' "$METALLB_PATH"/charts/metallb/templates/controller.yaml
 sed -i -e 's/app.kubernetes.io\/component/component/g' "$METALLB_PATH"/charts/metallb/templates/speaker.yaml
+sed -i -e 's/app.kubernetes.io\/component/component/g' "$METALLB_PATH"/charts/metallb/templates/servicemonitor.yaml
 sed -i -e 's/app.kubernetes.io\/name/app/g' "$METALLB_PATH"/charts/metallb/templates/speaker.yaml
 sed -i '/app.kubernetes.io\/instance: {{ .Release.Name }}/d' "$METALLB_PATH"/charts/metallb/templates/_helpers.tpl
 sed -i -e 's/app.kubernetes.io\/name/app/g' "$METALLB_PATH"/charts/metallb/templates/_helpers.tpl
