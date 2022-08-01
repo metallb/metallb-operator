@@ -17,27 +17,30 @@ limitations under the License.
 package helm
 
 import (
-	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/pkg/errors"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type chartConfig struct {
-	isOpenShift      bool
-	isFrrEnabled     bool
-	controllerImage  *imageInfo
-	speakerImage     *imageInfo
-	frrImage         *imageInfo
-	mlBindPort       int
-	frrMetricsPort   int
-	metricsPort      int
-	enablePodMonitor bool
+	namespace            string
+	isOpenShift          bool
+	isFrrEnabled         bool
+	controllerImage      *imageInfo
+	speakerImage         *imageInfo
+	frrImage             *imageInfo
+	kubeRbacProxyImage   *imageInfo
+	mlBindPort           int
+	frrMetricsPort       int
+	metricsPort          int
+	secureMetricsPort    int
+	secureFRRMetricsPort int
+	enablePodMonitor     bool
+	enableServiceMonitor bool
 }
 
 type imageInfo struct {
@@ -45,18 +48,71 @@ type imageInfo struct {
 	tag  string
 }
 
-func patchToChartValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueMap map[string]interface{}) {
-	withPrometheusValues(c, valueMap)
+func patchToChartValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, withPrometheus bool, valueMap map[string]interface{}) {
+	if withPrometheus {
+		withPrometheusValues(c, valueMap)
+	}
 	withControllerValues(c, crdConfig, valueMap)
 	withSpeakerValues(c, crdConfig, valueMap)
 }
 
 func withPrometheusValues(c *chartConfig, valueMap map[string]interface{}) {
+	speakerTLSConfig := map[string]interface{}{
+		"insecureSkipVerify": "true",
+	}
+	controllerTLSConfig := map[string]interface{}{
+		"insecureSkipVerify": "true",
+	}
+	speakerAnnotations := map[string]interface{}{}
+	controllerAnnotations := map[string]interface{}{}
+
+	speakerTLSSecret := ""
+	controllerTLSSecret := ""
+
+	if c.isOpenShift {
+		speakerTLSConfig = map[string]interface{}{
+			"caFile":     "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+			"serverName": fmt.Sprintf("speaker-monitor-service.%s.svc", c.namespace),
+			"certFile":   "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
+			"keyFile":    "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+		}
+		controllerTLSConfig = map[string]interface{}{
+			"caFile":     "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+			"serverName": fmt.Sprintf("controller-monitor-service.%s.svc", c.namespace),
+			"certFile":   "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
+			"keyFile":    "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+		}
+		speakerAnnotations = map[string]interface{}{
+			"service.beta.openshift.io/serving-cert-secret-name": "speaker-certs-secret",
+		}
+		controllerAnnotations = map[string]interface{}{
+			"service.beta.openshift.io/serving-cert-secret-name": "controller-certs-secret",
+		}
+		speakerTLSSecret = "speaker-certs-secret"
+		controllerTLSSecret = "controller-certs-secret"
+	}
+
 	valueMap["prometheus"] = map[string]interface{}{
-		"metricsPort": c.metricsPort,
+		"metricsPort":       c.metricsPort,
+		"secureMetricsPort": c.secureMetricsPort,
 		"podMonitor": map[string]interface{}{
 			"enabled": c.enablePodMonitor,
 		},
+		"serviceMonitor": map[string]interface{}{
+			"enabled": c.enableServiceMonitor,
+			"speaker": map[string]interface{}{
+				"annotations": speakerAnnotations,
+				"tlsConfig":   speakerTLSConfig,
+			},
+			"controller": map[string]interface{}{
+				"annotations": controllerAnnotations,
+				"tlsConfig":   controllerTLSConfig,
+			},
+		},
+		"serviceAccount":             "foo", // required by the chart, we won't render roles or rolebindings anyway
+		"namespace":                  "bar",
+		"speakerMetricsTLSSecret":    speakerTLSSecret,
+		"controllerMetricsTLSSecret": controllerTLSSecret,
 	}
 }
 
@@ -115,7 +171,8 @@ func withSpeakerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueM
 				"repository": c.frrImage.repo,
 				"tag":        c.frrImage.tag,
 			},
-			"metricsPort": c.frrMetricsPort,
+			"metricsPort":       c.frrMetricsPort,
+			"secureMetricsPort": c.secureFRRMetricsPort,
 		},
 		"memberlist": map[string]interface{}{
 			"enabled":    true,
@@ -124,15 +181,28 @@ func withSpeakerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueM
 		"logLevel": logLevel,
 	}
 	if crdConfig.Spec.SpeakerNodeSelector != nil {
-		valueMap["speaker"].(map[string]interface{})["nodeSelector"] = crdConfig.Spec.SpeakerNodeSelector
+		valueMap["speaker"].(map[string]interface{})["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
 	}
 	if crdConfig.Spec.SpeakerTolerations != nil {
 		valueMap["speaker"].(map[string]interface{})["tolerations"] = crdConfig.Spec.SpeakerTolerations
 	}
 }
 
-func loadConfig(client client.Client, isOCP bool) (*chartConfig, error) {
-	config := &chartConfig{isOpenShift: isOCP}
+func toInterfaceMap(m map[string]string) map[string]interface{} {
+	result := make(map[string]interface{})
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
+}
+
+func loadConfig(namespace string, isOCP bool) (*chartConfig, error) {
+	config := &chartConfig{
+		isOpenShift:        isOCP,
+		namespace:          namespace,
+		kubeRbacProxyImage: &imageInfo{},
+		frrImage:           &imageInfo{},
+	}
 	var err error
 	ctrlImage := os.Getenv("CONTROLLER_IMAGE")
 	if ctrlImage == "" {
@@ -146,7 +216,6 @@ func loadConfig(client client.Client, isOCP bool) (*chartConfig, error) {
 	}
 	speakerRepo, speakerTag := getImageNameTag(speakerImage)
 	config.speakerImage = &imageInfo{speakerRepo, speakerTag}
-	config.frrImage = &imageInfo{}
 	if os.Getenv("METALLB_BGP_TYPE") == bgpFrr {
 		config.isFrrEnabled = true
 		frrImage := os.Getenv("FRR_IMAGE")
@@ -163,15 +232,53 @@ func loadConfig(client client.Client, isOCP bool) (*chartConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	config.secureFRRMetricsPort, err = valueWithDefault("FRR_HTTPS_METRICS_PORT", 0)
+	if err != nil {
+		return nil, err
+	}
 	config.metricsPort, err = valueWithDefault("METRICS_PORT", 7472)
 	if err != nil {
 		return nil, err
 	}
+	config.secureMetricsPort, err = valueWithDefault("HTTPS_METRICS_PORT", 0)
+	if err != nil {
+		return nil, err
+	}
 	// We shouldn't spam the api server trying to apply PodMonitors if the resource isn't installed.
-	if os.Getenv("DEPLOY_PODMONITORS") == "true" && podMonitorAvailable(client) {
+	if os.Getenv("DEPLOY_PODMONITORS") == "true" {
 		config.enablePodMonitor = true
 	}
+	// We shouldn't spam the api server trying to apply PodMonitors if the resource isn't installed.
+	if os.Getenv("DEPLOY_SERVICEMONITORS") == "true" {
+		config.enableServiceMonitor = true
+	}
+
+	kubeRbacProxyImage := os.Getenv("KUBE_RBAC_PROXY_IMAGE")
+	if kubeRbacProxyImage == "" {
+		return nil, errors.Errorf("KUBE_RBAC_PROXY_IMAGE env variable must be set")
+	}
+	config.kubeRbacProxyImage.repo, config.kubeRbacProxyImage.tag = getImageNameTag(kubeRbacProxyImage)
+	err = validateConfig(config)
+	if err != nil {
+		return nil, err
+	}
 	return config, nil
+}
+
+func validateConfig(c *chartConfig) error {
+	if c.enablePodMonitor && c.enableServiceMonitor {
+		return fmt.Errorf("pod monitors and service monitors are mutually exclusive, only one can be enabled")
+	}
+	if c.secureMetricsPort != 0 && !c.enableServiceMonitor {
+		return fmt.Errorf("secureMetricsPort is available only if service monitors are enabled")
+	}
+	if c.secureFRRMetricsPort != 0 && !c.enableServiceMonitor {
+		return fmt.Errorf("secureFRRMetricsPort is available only if service monitors are enabled")
+	}
+	if c.isOpenShift && !c.enableServiceMonitor {
+		return fmt.Errorf("service monitors are required on OpenShift")
+	}
+	return nil
 }
 
 func valueWithDefault(name string, def int) (int, error) {
@@ -192,10 +299,4 @@ func getImageNameTag(envValue string) (string, string) {
 		return img[0], ""
 	}
 	return img[0], img[1]
-}
-
-func podMonitorAvailable(c client.Client) bool {
-	crd := &apiext.CustomResourceDefinition{}
-	err := c.Get(context.Background(), client.ObjectKey{Name: "podmonitors.monitoring.coreos.com"}, crd)
-	return err == nil
 }
