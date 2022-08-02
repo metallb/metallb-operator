@@ -1,0 +1,39 @@
+{
+    "apiVersion": "monitoring.coreos.com/v1",
+    "kind": "ServiceMonitor",
+    "metadata": {
+        "labels": {
+            "app": "metallb",
+            "app.kubernetes.io/component": "speaker",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/version": "v0.0.0",
+            "helm.sh/chart": "metallb-0.0.0"
+        },
+        "name": "controller-monitor",
+        "namespace": "metallb-test-namespace"
+    },
+    "spec": {
+        "endpoints": [
+            {
+                "bearerTokenFile": "/var/run/secrets/kubernetes.io/serviceaccount/token",
+                "honorLabels": true,
+                "port": "metricshttps",
+                "scheme": "https",
+                "tlsConfig": {
+                    "insecureSkipVerify": "true"
+                }
+            }
+        ],
+        "jobLabel": "app.kubernetes.io/name",
+        "namespaceSelector": {
+            "matchNames": [
+                "metallb-test-namespace"
+            ]
+        },
+        "selector": {
+            "matchLabels": {
+                "name": "controller-monitor-service"
+            }
+        }
+    }
+}

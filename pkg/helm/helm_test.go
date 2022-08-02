@@ -33,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -53,12 +52,6 @@ type envVar struct {
 
 func TestLoadMetalLBChart(t *testing.T) {
 	resetEnv()
-	oldServiceMonitorAvailable := serviceMonitorAvailable
-	serviceMonitorAvailable = func(_ client.Client) bool {
-		return true
-	}
-	defer func() { serviceMonitorAvailable = oldServiceMonitorAvailable }()
-
 	g := NewGomegaWithT(t)
 	setEnv()
 	_, err := InitMetalLBChart(invalidHelmChartPath, helmChartName, MetalLBTestNameSpace, nil, false)
@@ -71,12 +64,6 @@ func TestLoadMetalLBChart(t *testing.T) {
 
 func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 	resetEnv()
-
-	oldServiceMonitorAvailable := serviceMonitorAvailable
-	serviceMonitorAvailable = func(_ client.Client) bool {
-		return true
-	}
-	defer func() { serviceMonitorAvailable = oldServiceMonitorAvailable }()
 
 	g := NewGomegaWithT(t)
 	setEnv()
@@ -101,7 +88,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.GetObjects(metallb)
+	objs, err := chart.GetObjects(metallb, false)
 	g.Expect(err).To(BeNil())
 	var isSpeakerFound bool
 	for _, obj := range objs {
@@ -141,11 +128,6 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 }
 
 func TestParseOCPSecureMetrics(t *testing.T) {
-	oldServiceMonitorAvailable := serviceMonitorAvailable
-	serviceMonitorAvailable = func(_ client.Client) bool {
-		return true
-	}
-	defer func() { serviceMonitorAvailable = oldServiceMonitorAvailable }()
 	resetEnv()
 	setEnv(envVar{"DEPLOY_SERVICEMONITORS", "true"},
 		envVar{"DEPLOY_SERVICEMONITORS", "true"},
@@ -164,12 +146,54 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.GetObjects(metallb)
+	objs, err := chart.GetObjects(metallb, true)
 	g.Expect(err).To(BeNil())
 	for _, obj := range objs {
 		objKind := obj.GetKind()
 		if objKind == "DaemonSet" {
-			err = validateObject("ocp", "speaker", obj)
+			err = validateObject("ocp-metrics", "speaker", obj)
+			g.Expect(err).NotTo(HaveOccurred())
+		}
+		if objKind == "ServiceMonitor" {
+			err = validateObject("ocp-metrics", obj.GetName(), obj)
+			g.Expect(err).NotTo(HaveOccurred())
+		}
+		if objKind == "Deployment" {
+			err = validateObject("ocp-metrics", "controller", obj)
+			g.Expect(err).NotTo(HaveOccurred())
+		}
+	}
+}
+
+func TestParseSecureMetrics(t *testing.T) {
+	resetEnv()
+	setEnv(envVar{"DEPLOY_SERVICEMONITORS", "true"},
+		envVar{"DEPLOY_SERVICEMONITORS", "true"},
+		envVar{"HTTPS_METRICS_PORT", "9998"},
+		envVar{"FRR_HTTPS_METRICS_PORT", "9999"},
+		envVar{"METALLB_BGP_TYPE", "frr"},
+	)
+	g := NewGomegaWithT(t)
+	setEnv()
+	chart, err := InitMetalLBChart(helmChartPath, helmChartName, MetalLBTestNameSpace, nil, false)
+	g.Expect(err).To(BeNil())
+	metallb := &metallbv1beta1.MetalLB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "metallb",
+			Namespace: MetalLBTestNameSpace,
+		},
+	}
+
+	objs, err := chart.GetObjects(metallb, true)
+	g.Expect(err).To(BeNil())
+	for _, obj := range objs {
+		objKind := obj.GetKind()
+		if objKind == "DaemonSet" {
+			err = validateObject("vanilla-metrics", "speaker", obj)
+			g.Expect(err).NotTo(HaveOccurred())
+		}
+		if objKind == "ServiceMonitor" {
+			err = validateObject("vanilla-metrics", obj.GetName(), obj)
 			g.Expect(err).NotTo(HaveOccurred())
 		}
 	}
