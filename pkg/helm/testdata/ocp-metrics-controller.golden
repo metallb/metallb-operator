@@ -1,0 +1,167 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "Deployment",
+    "metadata": {
+        "labels": {
+            "app": "metallb",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/version": "v0.0.0",
+            "component": "controller",
+            "helm.sh/chart": "metallb-0.0.0"
+        },
+        "name": "controller",
+        "namespace": "metallb-test-namespace"
+    },
+    "spec": {
+        "selector": {
+            "matchLabels": {
+                "app": "metallb",
+                "component": "controller"
+            }
+        },
+        "template": {
+            "metadata": {
+                "labels": {
+                    "app": "metallb",
+                    "component": "controller"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "args": [
+                            "--port=7472",
+                            "--log-level=info",
+                            "--cert-service-name=webhook-service",
+                            "--webhook-mode=disabled"
+                        ],
+                        "command": [
+                            "/controller"
+                        ],
+                        "env": [
+                            {
+                                "name": "METALLB_ML_SECRET_NAME",
+                                "value": "metallb-memberlist"
+                            },
+                            {
+                                "name": "METALLB_DEPLOYMENT",
+                                "value": "controller"
+                            },
+                            {
+                                "name": "METALLB_BGP_TYPE",
+                                "value": "frr"
+                            }
+                        ],
+                        "image": "quay.io/metallb/controller:v0.0.0",
+                        "livenessProbe": {
+                            "failureThreshold": 3,
+                            "httpGet": {
+                                "path": "/metrics",
+                                "port": "monitoring"
+                            },
+                            "initialDelaySeconds": 10,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "name": "controller",
+                        "ports": [
+                            {
+                                "containerPort": 7472,
+                                "name": "monitoring"
+                            },
+                            {
+                                "containerPort": 9443,
+                                "name": "webhook-server",
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "failureThreshold": 3,
+                            "httpGet": {
+                                "path": "/metrics",
+                                "port": "monitoring"
+                            },
+                            "initialDelaySeconds": 10,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "capabilities": {
+                                "drop": [
+                                    "ALL"
+                                ]
+                            },
+                            "readOnlyRootFilesystem": true
+                        },
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/tmp/k8s-webhook-server/serving-certs",
+                                "name": "cert",
+                                "readOnly": true
+                            }
+                        ]
+                    },
+                    {
+                        "args": [
+                            "--logtostderr",
+                            "--secure-listen-address=:9998",
+                            "--upstream=http://127.0.0.1:7472/",
+                            "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+                            "--tls-private-key-file=/etc/metrics/tls.key",
+                            "--tls-cert-file=/etc/metrics/tls.crt"
+                        ],
+                        "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "kube-rbac-proxy",
+                        "ports": [
+                            {
+                                "containerPort": 9998,
+                                "name": "metricshttps"
+                            }
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "10m",
+                                "memory": "20Mi"
+                            }
+                        },
+                        "terminationMessagePolicy": "FallbackToLogsOnError",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/metrics",
+                                "name": "metrics-certs",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "nodeSelector": {
+                    "kubernetes.io/os": "linux"
+                },
+                "securityContext": {
+                    "runAsNonRoot": true
+                },
+                "serviceAccountName": "controller",
+                "terminationGracePeriodSeconds": 0,
+                "volumes": [
+                    {
+                        "name": "cert",
+                        "secret": {
+                            "defaultMode": 420,
+                            "secretName": "webhook-server-cert"
+                        }
+                    },
+                    {
+                        "name": "metrics-certs",
+                        "secret": {
+                            "secretName": "controller-certs-secret"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

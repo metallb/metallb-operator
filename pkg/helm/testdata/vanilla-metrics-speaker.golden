@@ -1,0 +1,409 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "DaemonSet",
+    "metadata": {
+        "labels": {
+            "app": "metallb",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/version": "v0.0.0",
+            "component": "speaker",
+            "helm.sh/chart": "metallb-0.0.0"
+        },
+        "name": "speaker",
+        "namespace": "metallb-test-namespace"
+    },
+    "spec": {
+        "selector": {
+            "matchLabels": {
+                "app": "metallb",
+                "component": "speaker"
+            }
+        },
+        "template": {
+            "metadata": {
+                "labels": {
+                    "app": "metallb",
+                    "component": "speaker"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "args": [
+                            "--port=7472",
+                            "--log-level=info"
+                        ],
+                        "command": [
+                            "/speaker"
+                        ],
+                        "env": [
+                            {
+                                "name": "METALLB_NODE_NAME",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "spec.nodeName"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "METALLB_HOST",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "status.hostIP"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "METALLB_ML_BIND_ADDR",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "status.podIP"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "METALLB_ML_LABELS",
+                                "value": "app=metallb,component=speaker"
+                            },
+                            {
+                                "name": "METALLB_ML_BIND_PORT",
+                                "value": "7946"
+                            },
+                            {
+                                "name": "METALLB_ML_SECRET_KEY",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "key": "secretkey",
+                                        "name": "metallb-memberlist"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "FRR_CONFIG_FILE",
+                                "value": "/etc/frr_reloader/frr.conf"
+                            },
+                            {
+                                "name": "FRR_RELOADER_PID_FILE",
+                                "value": "/etc/frr_reloader/reloader.pid"
+                            },
+                            {
+                                "name": "METALLB_BGP_TYPE",
+                                "value": "frr"
+                            }
+                        ],
+                        "image": "quay.io/metallb/speaker:v0.0.0",
+                        "livenessProbe": {
+                            "failureThreshold": 3,
+                            "httpGet": {
+                                "path": "/metrics",
+                                "port": "monitoring"
+                            },
+                            "initialDelaySeconds": 10,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "name": "speaker",
+                        "ports": [
+                            {
+                                "containerPort": 7472,
+                                "name": "monitoring"
+                            },
+                            {
+                                "containerPort": 7946,
+                                "name": "memberlist-tcp",
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 7946,
+                                "name": "memberlist-udp",
+                                "protocol": "UDP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "failureThreshold": 3,
+                            "httpGet": {
+                                "path": "/metrics",
+                                "port": "monitoring"
+                            },
+                            "initialDelaySeconds": 10,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "capabilities": {
+                                "add": [
+                                    "NET_RAW"
+                                ],
+                                "drop": [
+                                    "ALL"
+                                ]
+                            },
+                            "readOnlyRootFilesystem": true
+                        },
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/frr_reloader",
+                                "name": "reloader"
+                            }
+                        ]
+                    },
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "/sbin/tini -- /usr/lib/frr/docker-start \u0026\nattempts=0\nuntil [[ -f /etc/frr/frr.log || $attempts -eq 60 ]]; do\n  sleep 1\n  attempts=$(( $attempts + 1 ))\ndone\ntail -f /etc/frr/frr.log\n"
+                        ],
+                        "env": [
+                            {
+                                "name": "TINI_SUBREAPER",
+                                "value": "true"
+                            }
+                        ],
+                        "image": "frrouting/frr:v7.5.1",
+                        "name": "frr",
+                        "securityContext": {
+                            "capabilities": {
+                                "add": [
+                                    "NET_ADMIN",
+                                    "NET_RAW",
+                                    "SYS_ADMIN",
+                                    "NET_BIND_SERVICE"
+                                ]
+                            }
+                        },
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/frr",
+                                "name": "frr-sockets"
+                            },
+                            {
+                                "mountPath": "/etc/frr",
+                                "name": "frr-conf"
+                            }
+                        ]
+                    },
+                    {
+                        "command": [
+                            "/etc/frr_reloader/frr-reloader.sh"
+                        ],
+                        "image": "frrouting/frr:v7.5.1",
+                        "name": "reloader",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/frr",
+                                "name": "frr-sockets"
+                            },
+                            {
+                                "mountPath": "/etc/frr",
+                                "name": "frr-conf"
+                            },
+                            {
+                                "mountPath": "/etc/frr_reloader",
+                                "name": "reloader"
+                            }
+                        ]
+                    },
+                    {
+                        "args": [
+                            "--metrics-port=7473"
+                        ],
+                        "command": [
+                            "/etc/frr_metrics/frr-metrics"
+                        ],
+                        "image": "frrouting/frr:v7.5.1",
+                        "name": "frr-metrics",
+                        "ports": [
+                            {
+                                "containerPort": 7473,
+                                "name": "monitoring"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/frr",
+                                "name": "frr-sockets"
+                            },
+                            {
+                                "mountPath": "/etc/frr",
+                                "name": "frr-conf"
+                            },
+                            {
+                                "mountPath": "/etc/frr_metrics",
+                                "name": "metrics"
+                            }
+                        ]
+                    },
+                    {
+                        "args": [
+                            "--logtostderr",
+                            "--secure-listen-address=:9998",
+                            "--upstream=http://$(METALLB_HOST):7472/",
+                            "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
+                        ],
+                        "env": [
+                            {
+                                "name": "METALLB_HOST",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "status.hostIP"
+                                    }
+                                }
+                            }
+                        ],
+                        "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "kube-rbac-proxy",
+                        "ports": [
+                            {
+                                "containerPort": 9998,
+                                "name": "metricshttps"
+                            }
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "10m",
+                                "memory": "20Mi"
+                            }
+                        },
+                        "terminationMessagePolicy": "FallbackToLogsOnError"
+                    },
+                    {
+                        "args": [
+                            "--logtostderr",
+                            "--secure-listen-address=:9999",
+                            "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+                            "--upstream=http://$(METALLB_HOST):7473/"
+                        ],
+                        "env": [
+                            {
+                                "name": "METALLB_HOST",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "status.hostIP"
+                                    }
+                                }
+                            }
+                        ],
+                        "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "kube-rbac-proxy-frr",
+                        "ports": [
+                            {
+                                "containerPort": 9999,
+                                "name": "metricshttps"
+                            }
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "10m",
+                                "memory": "20Mi"
+                            }
+                        },
+                        "terminationMessagePolicy": "FallbackToLogsOnError"
+                    }
+                ],
+                "hostNetwork": true,
+                "initContainers": [
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "cp -rLf /tmp/frr/* /etc/frr/"
+                        ],
+                        "image": "frrouting/frr:v7.5.1",
+                        "name": "cp-frr-files",
+                        "securityContext": {
+                            "runAsGroup": 101,
+                            "runAsUser": 100
+                        },
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/tmp/frr",
+                                "name": "frr-startup"
+                            },
+                            {
+                                "mountPath": "/etc/frr",
+                                "name": "frr-conf"
+                            }
+                        ]
+                    },
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "cp -f /frr-reloader.sh /etc/frr_reloader/"
+                        ],
+                        "image": "quay.io/metallb/speaker:v0.0.0",
+                        "name": "cp-reloader",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/frr_reloader",
+                                "name": "reloader"
+                            }
+                        ]
+                    },
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "cp -f /frr-metrics /etc/frr_metrics/"
+                        ],
+                        "image": "quay.io/metallb/speaker:v0.0.0",
+                        "name": "cp-metrics",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/frr_metrics",
+                                "name": "metrics"
+                            }
+                        ]
+                    }
+                ],
+                "nodeSelector": {
+                    "kubernetes.io/os": "linux"
+                },
+                "serviceAccountName": "speaker",
+                "shareProcessNamespace": true,
+                "terminationGracePeriodSeconds": 0,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Exists"
+                    },
+                    {
+                        "effect": "NoSchedule",
+                        "key": "node-role.kubernetes.io/control-plane",
+                        "operator": "Exists"
+                    }
+                ],
+                "volumes": [
+                    {
+                        "emptyDir": {},
+                        "name": "frr-sockets"
+                    },
+                    {
+                        "configMap": {
+                            "name": "frr-startup"
+                        },
+                        "name": "frr-startup"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "frr-conf"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "reloader"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "metrics"
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,59 @@
+{
+    "apiVersion": "monitoring.coreos.com/v1",
+    "kind": "ServiceMonitor",
+    "metadata": {
+        "annotations": {
+            "service.beta.openshift.io/serving-cert-secret-name": "speaker-certs-secret"
+        },
+        "labels": {
+            "app": "metallb",
+            "app.kubernetes.io/component": "speaker",
+            "app.kubernetes.io/managed-by": "Helm",
+            "app.kubernetes.io/version": "v0.0.0",
+            "helm.sh/chart": "metallb-0.0.0"
+        },
+        "name": "speaker-monitor",
+        "namespace": "metallb-test-namespace"
+    },
+    "spec": {
+        "endpoints": [
+            {
+                "bearerTokenFile": "/var/run/secrets/kubernetes.io/serviceaccount/token",
+                "honorLabels": true,
+                "port": "metricshttps",
+                "scheme": "https",
+                "tlsConfig": {
+                    "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+                    "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
+                    "insecureSkipVerify": true,
+                    "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+                    "serverName": "metallb-speaker-monitor-service.metallb-test-namespace.svc"
+                }
+            },
+            {
+                "bearerTokenFile": "/var/run/secrets/kubernetes.io/serviceaccount/token",
+                "honorLabels": true,
+                "port": "frrmetricshttps",
+                "scheme": "https",
+                "tlsConfig": {
+                    "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+                    "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
+                    "insecureSkipVerify": true,
+                    "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+                    "serverName": "metallb-speaker-monitor-service.metallb-test-namespace.svc"
+                }
+            }
+        ],
+        "jobLabel": "app.kubernetes.io/name",
+        "namespaceSelector": {
+            "matchNames": [
+                "metallb-test-namespace"
+            ]
+        },
+        "selector": {
+            "matchLabels": {
+                "name": "speaker-monitor-service"
+            }
+        }
+    }
+}
