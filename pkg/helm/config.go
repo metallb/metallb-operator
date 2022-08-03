@@ -135,6 +135,8 @@ func withControllerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, val
 			"securityContext": map[string]interface{}{
 				"runAsNonRoot": true,
 			},
+			"command":     "/controller",
+			"webhookMode": "disabled",
 		}
 		return
 	}
@@ -147,7 +149,8 @@ func withControllerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, val
 			"create": false,
 			"name":   "controller",
 		},
-		"logLevel": logLevel,
+		"logLevel":    logLevel,
+		"webhookMode": "disabled",
 	}
 }
 
@@ -179,6 +182,7 @@ func withSpeakerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueM
 			"mlBindPort": c.mlBindPort,
 		},
 		"logLevel": logLevel,
+		"command":  "/speaker",
 	}
 	if crdConfig.Spec.SpeakerNodeSelector != nil {
 		valueMap["speaker"].(map[string]interface{})["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
