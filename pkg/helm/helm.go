@@ -58,7 +58,6 @@ func (h *MetalLBChart) GetObjects(crdConfig *metallbv1beta1.MetalLB, withPrometh
 	}
 
 	patchToChartValues(h.config, crdConfig, withPrometheus, chartValues)
-
 	release, err := h.client.Run(h.chart, chartValues)
 	if err != nil {
 		return nil, err
@@ -73,6 +72,17 @@ func (h *MetalLBChart) GetObjects(crdConfig *metallbv1beta1.MetalLB, withPrometh
 		objKind := obj.GetKind()
 		if objKind != "PodSecurityPolicy" {
 			obj.SetNamespace(h.namespace)
+		}
+		// we need to override the security context as helm values are added on top
+		// of hardcoded ones in values.yaml, so it's not possible to reset runAsUser
+		if isControllerDeployment(obj) && h.config.isOpenShift {
+			controllerSecurityContext := map[string]interface{}{
+				"runAsNonRoot": true,
+			}
+			err := unstructured.SetNestedMap(obj.Object, controllerSecurityContext, "spec", "template", "spec", "securityContext")
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return objs, nil
@@ -89,6 +99,7 @@ func InitMetalLBChart(chartPath, chartName, namespace string,
 	chart.client.ReleaseName = chartName
 	chart.client.DryRun = true
 	chart.client.ClientOnly = true
+	chart.client.Namespace = namespace
 	chartPath, err := chart.client.ChartPathOptions.LocateChart(chartPath, chart.envSettings)
 	if err != nil {
 		return nil, err
@@ -125,4 +136,8 @@ func parseManifest(manifest string) ([]*unstructured.Unstructured, error) {
 		out = append(out, &u)
 	}
 	return out, nil
+}
+
+func isControllerDeployment(obj *unstructured.Unstructured) bool {
+	return obj.GetKind() == "Deployment" && obj.GetName() == "controller"
 }
