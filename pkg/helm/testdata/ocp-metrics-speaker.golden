@@ -428,6 +428,9 @@
                     }
                 ]
             }
+        },
+        "updateStrategy": {
+            "type": "RollingUpdate"
         }
     }
 }

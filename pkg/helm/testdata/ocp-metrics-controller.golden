@@ -19,6 +19,9 @@
                 "component": "controller"
             }
         },
+        "strategy": {
+            "type": "RollingUpdate"
+        },
         "template": {
             "metadata": {
                 "labels": {
