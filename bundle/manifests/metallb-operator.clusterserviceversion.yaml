@@ -327,6 +327,18 @@ spec:
       clusterPermissions:
         - rules:
             - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
+            - apiGroups:
                 - ""
               resources:
                 - services
@@ -454,6 +466,18 @@ spec:
                 - update
                 - watch
             - apiGroups:
+                - monitoring.coreos.com
+              resources:
+                - servicemonitors
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
                 - policy
               resources:
                 - podsecuritypolicies
@@ -467,6 +491,18 @@ spec:
                 - watch
           serviceAccountName: default
         - rules:
+            - apiGroups:
+                - authentication.k8s.io
+              resources:
+                - tokenreviews
+              verbs:
+                - create
+            - apiGroups:
+                - authorization.k8s.io
+              resources:
+                - subjectaccessreviews
+              verbs:
+                - create
             - apiGroups:
                 - ""
               resources:
@@ -532,8 +568,6 @@ spec:
                         value: quay.io/brancz/kube-rbac-proxy:v0.11.0
                       - name: DEPLOY_KUBE_RBAC_PROXIES
                         value: "false"
-                      - name: DEPLOY_PODMONITORS
-                        value: "true"
                       - name: OPERATOR_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -706,18 +740,6 @@ spec:
                 - get
                 - list
                 - watch
-            - apiGroups:
-                - authentication.k8s.io
-              resources:
-                - tokenreviews
-              verbs:
-                - create
-            - apiGroups:
-                - authorization.k8s.io
-              resources:
-                - subjectaccessreviews
-              verbs:
-                - create
           serviceAccountName: controller
         - rules:
             - apiGroups:
@@ -776,18 +798,6 @@ spec:
                 - watch
           serviceAccountName: default
         - rules:
-            - apiGroups:
-                - authentication.k8s.io
-              resources:
-                - tokenreviews
-              verbs:
-                - create
-            - apiGroups:
-                - authorization.k8s.io
-              resources:
-                - subjectaccessreviews
-              verbs:
-                - create
             - apiGroups:
                 - ""
               resources:
