@@ -404,6 +404,9 @@
                     }
                 ]
             }
+        },
+        "updateStrategy": {
+            "type": "RollingUpdate"
         }
     }
 }

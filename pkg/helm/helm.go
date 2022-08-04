@@ -84,6 +84,12 @@ func (h *MetalLBChart) GetObjects(crdConfig *metallbv1beta1.MetalLB, withPrometh
 				return nil, err
 			}
 		}
+		if isServiceMonitor(obj) && h.config.isOpenShift {
+			err := setOcpMonitorFields(obj)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	return objs, nil
 }
@@ -140,4 +146,29 @@ func parseManifest(manifest string) ([]*unstructured.Unstructured, error) {
 
 func isControllerDeployment(obj *unstructured.Unstructured) bool {
 	return obj.GetKind() == "Deployment" && obj.GetName() == "controller"
+}
+
+func isServiceMonitor(obj *unstructured.Unstructured) bool {
+	return obj.GetKind() == "ServiceMonitor"
+}
+
+func setOcpMonitorFields(obj *unstructured.Unstructured) error {
+	eps, found, err := unstructured.NestedSlice(obj.Object, "spec", "endpoints")
+	if !found {
+		return errors.New("failed to find endpoints in ServiceMonitor " + obj.GetName())
+	}
+	if err != nil {
+		return err
+	}
+	for _, ep := range eps {
+		err := unstructured.SetNestedField(ep.(map[string]interface{}), false, "tlsConfig", "insecureSkipVerify")
+		if err != nil {
+			return err
+		}
+	}
+	err = unstructured.SetNestedSlice(obj.Object, eps, "spec", "endpoints")
+	if err != nil {
+		return err
+	}
+	return nil
 }
