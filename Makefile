@@ -153,6 +153,9 @@ build-and-push-bundle-images: docker-build docker-push  ## Generate and push bun
 	$(MAKE) bundle-index-build
 	$(MAKE) docker-push IMG=$(BUNDLE_INDEX_IMG)
 
+deploy-prometheus:
+	hack/deploy_prometheus.sh
+
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
