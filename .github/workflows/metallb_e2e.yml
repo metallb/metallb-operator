@@ -68,6 +68,9 @@ jobs:
         run: |
           ./hack/kind-multi-node-cluster-without-registry.sh
           kind load docker-image ${built_image}
+      - name: Deploy Prometheus
+        run: |
+          make deploy-prometheus
       - name: Deploy Metal LB Operator
         run: |
           IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
