@@ -7,9 +7,9 @@
         },
         "labels": {
             "app": "metallb",
-            "app.kubernetes.io/component": "speaker",
             "app.kubernetes.io/managed-by": "Helm",
             "app.kubernetes.io/version": "v0.0.0",
+            "component": "speaker",
             "helm.sh/chart": "metallb-0.0.0"
         },
         "name": "speaker-monitor",
@@ -25,9 +25,9 @@
                 "tlsConfig": {
                     "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
                     "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
-                    "insecureSkipVerify": true,
+                    "insecureSkipVerify": false,
                     "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
-                    "serverName": "metallb-speaker-monitor-service.metallb-test-namespace.svc"
+                    "serverName": "speaker-monitor-service.metallb-test-namespace.svc"
                 }
             },
             {
@@ -38,9 +38,9 @@
                 "tlsConfig": {
                     "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
                     "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
-                    "insecureSkipVerify": true,
+                    "insecureSkipVerify": false,
                     "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
-                    "serverName": "metallb-speaker-monitor-service.metallb-test-namespace.svc"
+                    "serverName": "speaker-monitor-service.metallb-test-namespace.svc"
                 }
             }
         ],

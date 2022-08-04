@@ -49,19 +49,17 @@ type imageInfo struct {
 }
 
 func patchToChartValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, withPrometheus bool, valueMap map[string]interface{}) {
-	if withPrometheus {
-		withPrometheusValues(c, valueMap)
-	}
+	withPrometheusValues(c, valueMap)
 	withControllerValues(c, crdConfig, valueMap)
 	withSpeakerValues(c, crdConfig, valueMap)
 }
 
 func withPrometheusValues(c *chartConfig, valueMap map[string]interface{}) {
 	speakerTLSConfig := map[string]interface{}{
-		"insecureSkipVerify": "true",
+		"insecureSkipVerify": true,
 	}
 	controllerTLSConfig := map[string]interface{}{
-		"insecureSkipVerify": "true",
+		"insecureSkipVerify": true,
 	}
 	speakerAnnotations := map[string]interface{}{}
 	controllerAnnotations := map[string]interface{}{}
@@ -71,16 +69,18 @@ func withPrometheusValues(c *chartConfig, valueMap map[string]interface{}) {
 
 	if c.isOpenShift {
 		speakerTLSConfig = map[string]interface{}{
-			"caFile":     "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
-			"serverName": fmt.Sprintf("speaker-monitor-service.%s.svc", c.namespace),
-			"certFile":   "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
-			"keyFile":    "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+			"caFile":             "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+			"serverName":         fmt.Sprintf("speaker-monitor-service.%s.svc", c.namespace),
+			"certFile":           "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
+			"keyFile":            "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+			"insecureSkipVerify": false,
 		}
 		controllerTLSConfig = map[string]interface{}{
-			"caFile":     "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
-			"serverName": fmt.Sprintf("controller-monitor-service.%s.svc", c.namespace),
-			"certFile":   "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
-			"keyFile":    "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+			"caFile":             "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+			"serverName":         fmt.Sprintf("controller-monitor-service.%s.svc", c.namespace),
+			"certFile":           "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
+			"keyFile":            "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+			"insecureSkipVerify": false,
 		}
 		speakerAnnotations = map[string]interface{}{
 			"service.beta.openshift.io/serving-cert-secret-name": "speaker-certs-secret",
