@@ -117,30 +117,7 @@ func withPrometheusValues(c *chartConfig, valueMap map[string]interface{}) {
 }
 
 func withControllerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueMap map[string]interface{}) {
-	logLevel := metallbv1beta1.LogLevelInfo
-	if crdConfig.Spec.LogLevel != "" {
-		logLevel = crdConfig.Spec.LogLevel
-	}
-	if c.isOpenShift {
-		valueMap["controller"] = map[string]interface{}{
-			"image": map[string]interface{}{
-				"repository": c.controllerImage.repo,
-				"tag":        c.controllerImage.tag,
-			},
-			"serviceAccount": map[string]interface{}{
-				"create": false,
-				"name":   "controller",
-			},
-			"logLevel": logLevel,
-			"securityContext": map[string]interface{}{
-				"runAsNonRoot": true,
-			},
-			"command":     "/controller",
-			"webhookMode": "disabled",
-		}
-		return
-	}
-	valueMap["controller"] = map[string]interface{}{
+	controllerValueMap := map[string]interface{}{
 		"image": map[string]interface{}{
 			"repository": c.controllerImage.repo,
 			"tag":        c.controllerImage.tag,
@@ -149,17 +126,38 @@ func withControllerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, val
 			"create": false,
 			"name":   "controller",
 		},
-		"logLevel":    logLevel,
 		"webhookMode": "disabled",
 	}
+	withCommonValues(crdConfig, controllerValueMap)
+	if c.isOpenShift {
+		controllerValueMap["securityContext"] = map[string]interface{}{
+			"runAsNonRoot": true,
+		}
+		controllerValueMap["command"] = "/controller"
+	}
+	if crdConfig.Spec.ControllerNodeSelector != nil {
+		controllerValueMap["nodeSelector"] = toInterfaceMap(crdConfig.Spec.ControllerNodeSelector)
+	}
+	if crdConfig.Spec.ControllerTolerations != nil {
+		controllerValueMap["tolerations"] = crdConfig.Spec.ControllerTolerations
+	}
+	otherConfigs := crdConfig.Spec.ControllerConfig
+	if otherConfigs != nil {
+		if otherConfigs.PriorityClassName != "" {
+			controllerValueMap["priorityClassName"] = otherConfigs.PriorityClassName
+		}
+		if otherConfigs.RuntimeClassName != "" {
+			controllerValueMap["runtimeClassName"] = otherConfigs.RuntimeClassName
+		}
+		if otherConfigs.Annotations != nil {
+			controllerValueMap["podAnnotations"] = toInterfaceMap(otherConfigs.Annotations)
+		}
+	}
+	valueMap["controller"] = controllerValueMap
 }
 
 func withSpeakerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueMap map[string]interface{}) {
-	logLevel := metallbv1beta1.LogLevelInfo
-	if crdConfig.Spec.LogLevel != "" {
-		logLevel = crdConfig.Spec.LogLevel
-	}
-	valueMap["speaker"] = map[string]interface{}{
+	speakerValueMap := map[string]interface{}{
 		"image": map[string]interface{}{
 			"repository": c.speakerImage.repo,
 			"tag":        c.speakerImage.tag,
@@ -181,15 +179,36 @@ func withSpeakerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueM
 			"enabled":    true,
 			"mlBindPort": c.mlBindPort,
 		},
-		"logLevel": logLevel,
-		"command":  "/speaker",
+		"command": "/speaker",
 	}
+	withCommonValues(crdConfig, speakerValueMap)
 	if crdConfig.Spec.SpeakerNodeSelector != nil {
-		valueMap["speaker"].(map[string]interface{})["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
+		speakerValueMap["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
 	}
 	if crdConfig.Spec.SpeakerTolerations != nil {
-		valueMap["speaker"].(map[string]interface{})["tolerations"] = crdConfig.Spec.SpeakerTolerations
+		speakerValueMap["tolerations"] = crdConfig.Spec.SpeakerTolerations
 	}
+	otherConfigs := crdConfig.Spec.SpeakerConfig
+	if otherConfigs != nil {
+		if otherConfigs.PriorityClassName != "" {
+			speakerValueMap["priorityClassName"] = otherConfigs.PriorityClassName
+		}
+		if otherConfigs.RuntimeClassName != "" {
+			speakerValueMap["runtimeClassName"] = otherConfigs.RuntimeClassName
+		}
+		if otherConfigs.Annotations != nil {
+			speakerValueMap["podAnnotations"] = toInterfaceMap(otherConfigs.Annotations)
+		}
+	}
+	valueMap["speaker"] = speakerValueMap
+}
+
+func withCommonValues(crdConfig *metallbv1beta1.MetalLB, manifestValueMap map[string]interface{}) {
+	logLevel := metallbv1beta1.LogLevelInfo
+	if crdConfig.Spec.LogLevel != "" {
+		logLevel = crdConfig.Spec.LogLevel
+	}
+	manifestValueMap["logLevel"] = logLevel
 }
 
 func toInterfaceMap(m map[string]string) map[string]interface{} {

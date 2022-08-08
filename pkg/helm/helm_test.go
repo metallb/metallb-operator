@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,6 +44,7 @@ const (
 	helmChartName        = "metallb"
 	MetalLBTestNameSpace = "metallb-test-namespace"
 	speakerDaemonSet     = "speaker"
+	controllerDeployment = "controller"
 )
 
 type envVar struct {
@@ -77,20 +79,52 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 		},
 	}
 	speakerNodeSelector := map[string]string{"kubernetes.io/os": "linux", "node-role.kubernetes.io/worker": "true"}
+	controllerTolerations := []v1.Toleration{
+		{
+			Key:      "example2",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoExecute,
+		},
+	}
+	controllerNodeSelector := map[string]string{"kubernetes.io/os": "linux", "node-role.kubernetes.io/worker": "true"}
+	controllerConfig := &metallbv1beta1.Config{
+		PriorityClassName: "high-priority",
+		RuntimeClassName:  "cri-o",
+		Annotations:       map[string]string{"unittest": "controller"},
+		Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
+		Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"app": "metallb",
+			}}}}}},
+	}
+	speakerConfig := &metallbv1beta1.Config{
+		PriorityClassName: "high-priority",
+		RuntimeClassName:  "cri-o",
+		Annotations:       map[string]string{"unittest": "speaker"},
+		Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(200, resource.DecimalSI)}},
+		Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"app": "metallb",
+			}}}}}},
+	}
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "metallb",
 			Namespace: MetalLBTestNameSpace,
 		},
 		Spec: metallbv1beta1.MetalLBSpec{
-			SpeakerNodeSelector: speakerNodeSelector,
-			SpeakerTolerations:  speakerTolerations,
+			SpeakerNodeSelector:    speakerNodeSelector,
+			SpeakerTolerations:     speakerTolerations,
+			ControllerNodeSelector: controllerNodeSelector,
+			ControllerTolerations:  controllerTolerations,
+			ControllerConfig:       controllerConfig,
+			SpeakerConfig:          speakerConfig,
 		},
 	}
 
 	objs, err := chart.GetObjects(metallb, false)
 	g.Expect(err).To(BeNil())
-	var isSpeakerFound bool
+	var isSpeakerFound, isControllerFound bool
 	for _, obj := range objs {
 		objKind := obj.GetKind()
 		if objKind == "DaemonSet" {
@@ -121,10 +155,53 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 				},
 			}))
 			g.Expect(speaker.Spec.Template.Spec.NodeSelector).To(Equal(speakerNodeSelector))
+			g.Expect(speaker.Spec.Template.Spec.PriorityClassName).To(Equal("high-priority"))
+			g.Expect(*speaker.Spec.Template.Spec.RuntimeClassName).To(Equal("cri-o"))
+			g.Expect(speaker.Spec.Template.Annotations["unittest"]).To(Equal("speaker"))
+			g.Expect(speaker.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"]).To(Equal("metallb"))
+			var speakerContainerFound bool
+			for _, container := range speaker.Spec.Template.Spec.Containers {
+				if container.Name == "speaker" {
+					g.Expect(container.Resources).NotTo(BeNil())
+					g.Expect(container.Resources.Limits.Cpu().MilliValue()).To(Equal(int64(200)))
+					speakerContainerFound = true
+				}
+			}
+			g.Expect(speakerContainerFound).To(BeTrue())
 			isSpeakerFound = true
+		}
+		if objKind == "Deployment" {
+			g.Expect(obj.GetName()).To(Equal(controllerDeployment))
+			controller := appsv1.Deployment{}
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &controller)
+			g.Expect(err).To(BeNil())
+			g.Expect(controller.GetName()).To(Equal(controllerDeployment))
+			g.Expect(controller.Spec.Template.Spec.Tolerations).To(Equal([]v1.Toleration{
+				{
+					Key:      "example2",
+					Operator: v1.TolerationOpExists,
+					Effect:   v1.TaintEffectNoExecute,
+				},
+			}))
+			g.Expect(controller.Spec.Template.Spec.NodeSelector).To(Equal(controllerNodeSelector))
+			g.Expect(controller.Spec.Template.Spec.PriorityClassName).To(Equal("high-priority"))
+			g.Expect(*controller.Spec.Template.Spec.RuntimeClassName).To(Equal("cri-o"))
+			g.Expect(controller.Spec.Template.Annotations["unittest"]).To(Equal("controller"))
+			g.Expect(controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"]).To(Equal("metallb"))
+			var controllerContainerFound bool
+			for _, container := range controller.Spec.Template.Spec.Containers {
+				if container.Name == "controller" {
+					g.Expect(container.Resources).NotTo(BeNil())
+					g.Expect(container.Resources.Limits.Cpu().MilliValue()).To(Equal(int64(100)))
+					controllerContainerFound = true
+				}
+			}
+			g.Expect(controllerContainerFound).To(BeTrue())
+			isControllerFound = true
 		}
 	}
 	g.Expect(isSpeakerFound).To(BeTrue())
+	g.Expect(isControllerFound).To(BeTrue())
 }
 
 func TestParseOCPSecureMetrics(t *testing.T) {

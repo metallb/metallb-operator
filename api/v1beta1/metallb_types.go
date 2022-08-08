@@ -43,10 +43,13 @@ type MetalLBSpec struct {
 
 	// Foo is an example field of MetalLB. Edit MetalLB_types.go to remove/update
 	MetalLBImage string `json:"image,omitempty"`
+
+	// node selector applied to MetalLB speaker daemonset.
 	// +optional
 	SpeakerNodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	// tolerations is a list of tolerations applied to metalLB controller
-	// deployments.
+
+	// tolerations is a list of tolerations applied to MetalLB speaker
+	// daemonset.
 	// +optional
 	SpeakerTolerations []corev1.Toleration `json:"speakerTolerations,omitempty"`
 
@@ -55,6 +58,46 @@ type MetalLBSpec struct {
 	// +optional
 	// +kubebuilder:validation:Enum=all;debug;info;warn;error;none
 	LogLevel MetalLBLogLevel `json:"logLevel,omitempty"`
+
+	// node selector applied to MetalLB controller deployment.
+	// +optional
+	ControllerNodeSelector map[string]string `json:"controllerNodeSelector,omitempty"`
+
+	// tolerations is a list of tolerations applied to MetalLB controller
+	// deployment.
+	// +optional
+	ControllerTolerations []corev1.Toleration `json:"controllerTolerations,omitempty"`
+
+	// additional configs to be applied on MetalLB Controller deployment.
+	// +optional
+	ControllerConfig *Config `json:"controllerOtherConfig,omitempty"`
+
+	// additional configs to be applied on MetalLB Speaker daemonset.
+	// +optional
+	SpeakerConfig *Config `json:"speakerOtherConfig,omitempty"`
+}
+
+type Config struct {
+	// Define priority class name
+	// +optional
+	PriorityClassName string `json:"priorityClassName,omitempty"`
+
+	// Define container runtime configuration class
+	// +optional
+	RuntimeClassName string `json:"runtimeClassName,omitempty"`
+
+	// If specified, the pod's scheduling constraints
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Annotations to be applied for MetalLB Operator
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Resource Requirements to be applied for containers which gets deployed
+	// via MetalLB Operator
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // MetalLBStatus defines the observed state of MetalLB

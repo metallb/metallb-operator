@@ -29,7 +29,9 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -66,12 +68,23 @@ func (h *MetalLBChart) GetObjects(crdConfig *metallbv1beta1.MetalLB, withPrometh
 	if err != nil {
 		return nil, err
 	}
-	for _, obj := range objs {
+	for i, obj := range objs {
 		// Set namespace explicitly into non cluster-scoped resource because helm doesn't
 		// patch namespace into manifests at client.Run.
 		objKind := obj.GetKind()
 		if objKind != "PodSecurityPolicy" {
 			obj.SetNamespace(h.namespace)
+		}
+		// patch affinity and resources parameters explicitly into appropriate obj.
+		// This is needed because helm template doesn't support loading non table
+		// structure values.
+		objs[i], err = overrideControllerParameters(crdConfig, objs[i])
+		if err != nil {
+			return nil, err
+		}
+		objs[i], err = overrideSpeakerParameters(crdConfig, objs[i])
+		if err != nil {
+			return nil, err
 		}
 		// we need to override the security context as helm values are added on top
 		// of hardcoded ones in values.yaml, so it's not possible to reset runAsUser
@@ -121,6 +134,56 @@ func InitMetalLBChart(chartPath, chartName, namespace string,
 	return chart, nil
 }
 
+func overrideControllerParameters(crdConfig *metallbv1beta1.MetalLB, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	controllerConfig := crdConfig.Spec.ControllerConfig
+	if controllerConfig == nil || !isControllerDeployment(obj) {
+		return obj, nil
+	}
+	var controller *appsv1.Deployment
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &controller)
+	if err != nil {
+		return nil, err
+	}
+	if controllerConfig.Affinity != nil {
+		controller.Spec.Template.Spec.Affinity = controllerConfig.Affinity
+	}
+	for j, container := range controller.Spec.Template.Spec.Containers {
+		if container.Name == "controller" && controllerConfig.Resources != nil {
+			controller.Spec.Template.Spec.Containers[j].Resources = *controllerConfig.Resources
+		}
+	}
+	objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(controller)
+	if err != nil {
+		return nil, err
+	}
+	return &unstructured.Unstructured{Object: objMap}, nil
+}
+
+func overrideSpeakerParameters(crdConfig *metallbv1beta1.MetalLB, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	speakerConfig := crdConfig.Spec.SpeakerConfig
+	if speakerConfig == nil || !isSpeakerDaemonSet(obj) {
+		return obj, nil
+	}
+	var speaker *appsv1.DaemonSet
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &speaker)
+	if err != nil {
+		return nil, err
+	}
+	if speakerConfig.Affinity != nil {
+		speaker.Spec.Template.Spec.Affinity = speakerConfig.Affinity
+	}
+	for j, container := range speaker.Spec.Template.Spec.Containers {
+		if container.Name == "speaker" && speakerConfig.Resources != nil {
+			speaker.Spec.Template.Spec.Containers[j].Resources = *speakerConfig.Resources
+		}
+	}
+	objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(speaker)
+	if err != nil {
+		return nil, err
+	}
+	return &unstructured.Unstructured{Object: objMap}, nil
+}
+
 func parseManifest(manifest string) ([]*unstructured.Unstructured, error) {
 	rendered := bytes.Buffer{}
 	rendered.Write([]byte(manifest))
@@ -146,6 +209,10 @@ func parseManifest(manifest string) ([]*unstructured.Unstructured, error) {
 
 func isControllerDeployment(obj *unstructured.Unstructured) bool {
 	return obj.GetKind() == "Deployment" && obj.GetName() == "controller"
+}
+
+func isSpeakerDaemonSet(obj *unstructured.Unstructured) bool {
+	return obj.GetKind() == "DaemonSet" && obj.GetName() == "speaker"
 }
 
 func isServiceMonitor(obj *unstructured.Unstructured) bool {
