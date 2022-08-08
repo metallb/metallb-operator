@@ -14,7 +14,10 @@ import (
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 	metallbutils "github.com/metallb/metallb-operator/test/e2e/metallb"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	schv1 "k8s.io/api/scheduling/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -229,6 +232,204 @@ var _ = Describe("metallb", func() {
 						return metallbutils.CheckConditionStatus(instance) == status.ConditionAvailable
 					}, 30*time.Second, 5*time.Second).Should(BeTrue())
 				})
+			})
+		})
+	})
+
+	Context("MetalLB configured extra config parameters", func() {
+		var correct_metallb *metallbv1beta1.MetalLB
+		var priorityClass *schv1.PriorityClass
+		priorityClassName := "high-priority"
+		BeforeEach(func() {
+			var err error
+			correct_metallb, err = metallbutils.Get(OperatorNameSpace, UseMetallbResourcesFromFile)
+			Expect(err).ToNot(HaveOccurred())
+			priorityClass = metallbutils.NewPriorityClass(priorityClassName, 10000)
+
+			Expect(testclient.Client.Create(context.Background(), priorityClass)).Should(Succeed())
+		})
+
+		AfterEach(func() {
+			metallbutils.Delete(correct_metallb)
+			metallbutils.DeletePriorityClass(priorityClass)
+		})
+
+		It("set with additional parameters", func() {
+			By("create and validate resources", func() {
+				metallb := metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
+					additionalConfig := &metallbv1beta1.Config{
+						PriorityClassName: priorityClass.GetName(),
+						Annotations:       map[string]string{"test": "e2e"},
+						Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
+						Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "metallb",
+							}},
+							TopologyKey: "kubernetes.io/hostname"}}}},
+					}
+					m.Spec.ControllerConfig = additionalConfig
+					m.Spec.SpeakerConfig = additionalConfig
+				})
+				Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
+
+				Eventually(func() bool {
+					deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+					if err != nil {
+						return false
+					}
+					return deploy.Status.ReadyReplicas > 0 && deploy.Status.ReadyReplicas == deploy.Status.Replicas
+				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
+				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+					LabelSelector: "component=controller"})
+				Expect(err).ToNot(HaveOccurred())
+				controller, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(pods.Items)).To(Equal(int(controller.Status.Replicas)))
+				var controllerContainerFound bool
+				for _, pod := range pods.Items {
+					Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+					for _, container := range pod.Spec.Containers {
+						if container.Name == "controller" {
+							Expect(container.Resources).NotTo(BeNil())
+							Expect(container.Resources.Limits.Cpu().MilliValue()).To(Equal(int64(100)))
+							controllerContainerFound = true
+						}
+					}
+				}
+				Expect(controllerContainerFound).To((Equal(true)))
+				Expect(controller.Spec.Template.Spec.PriorityClassName).To(Equal(priorityClassName))
+				Expect(controller.Spec.Template.Annotations["test"]).To(Equal("e2e"))
+				Expect(controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"]).To(Equal("metallb"))
+				Expect(controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].TopologyKey).To(Equal("kubernetes.io/hostname"))
+
+				Eventually(func() bool {
+					daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+					if err != nil {
+						return false
+					}
+					return daemonset.Status.DesiredNumberScheduled == daemonset.Status.NumberReady
+				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
+
+				pods, err = testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+					LabelSelector: "component=speaker"})
+				Expect(err).ToNot(HaveOccurred())
+				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(pods.Items)).To(Equal(int(daemonset.Status.DesiredNumberScheduled)))
+				var speakerContainerFound bool
+				for _, pod := range pods.Items {
+					Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+					for _, container := range pod.Spec.Containers {
+						if container.Name == "speaker" {
+							Expect(container.Resources).NotTo(BeNil())
+							Expect(container.Resources.Limits.Cpu().MilliValue()).To(Equal(int64(100)))
+							speakerContainerFound = true
+						}
+					}
+				}
+				Expect(speakerContainerFound).To((Equal(true)))
+				Expect(daemonset.Spec.Template.Spec.PriorityClassName).To(Equal(priorityClassName))
+				Expect(daemonset.Spec.Template.Annotations["test"]).To(Equal("e2e"))
+				Expect(daemonset.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"]).To(Equal("metallb"))
+
+				metallbutils.Delete(metallb)
+			})
+		})
+	})
+
+	Context("Update MetalLB resources", func() {
+		var metallb *metallbv1beta1.MetalLB
+		var priorityClass *schv1.PriorityClass
+		priorityClassName := "high-priority"
+		BeforeEach(func() {
+			var err error
+			metallb, err = metallbutils.Get(OperatorNameSpace, UseMetallbResourcesFromFile)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
+			priorityClass = metallbutils.NewPriorityClass(priorityClassName, 10000)
+			Expect(testclient.Client.Create(context.Background(), priorityClass)).Should(Succeed())
+		})
+
+		AfterEach(func() {
+			metallbutils.Delete(metallb)
+			metallbutils.DeletePriorityClass(priorityClass)
+		})
+		It("patch additional parameters", func() {
+			Eventually(func() bool {
+				deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+				if err != nil {
+					return false
+				}
+				return deploy.Status.ReadyReplicas > 0 && deploy.Status.ReadyReplicas == deploy.Status.Replicas
+			}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
+			pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+				LabelSelector: "component=controller"})
+			Expect(err).ToNot(HaveOccurred())
+			controller, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(pods.Items)).To(Equal(int(controller.Status.Replicas)))
+			var controllerContainerFound bool
+			for _, pod := range pods.Items {
+				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+				for _, container := range pod.Spec.Containers {
+					if container.Name == "controller" {
+						Expect(container.Resources).NotTo(BeNil())
+						Expect(container.Resources.Limits.Cpu().MilliValue()).To(Equal(int64(0)))
+						controllerContainerFound = true
+					}
+				}
+			}
+			Expect(controllerContainerFound).To((Equal(true)))
+			Expect(controller.Spec.Template.Spec.PriorityClassName).To(Equal(""))
+			Expect(controller.Spec.Template.Annotations["test"]).To(Equal(""))
+
+			instance := &metallbv1beta1.MetalLB{}
+			err = testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, instance)
+			Expect(err).ToNot(HaveOccurred())
+			additionalConfig := &metallbv1beta1.Config{
+				PriorityClassName: priorityClass.GetName(),
+				Annotations:       map[string]string{"test": "e2e"},
+				Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
+				Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "metallb",
+					}},
+					TopologyKey: "kubernetes.io/hostname"}}}},
+			}
+			instance.Spec.ControllerConfig = additionalConfig
+			err = testclient.Client.Update(context.TODO(), instance)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("checking MetalLB resource status", func() {
+				Eventually(func() bool {
+					controller, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+					if controller.Spec.Template.Spec.PriorityClassName != priorityClassName {
+						return false
+					}
+					if controller.Spec.Template.Annotations["test"] != "e2e" {
+						return false
+					}
+					if controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"] != "metallb" {
+						return false
+					}
+					if controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].TopologyKey != "kubernetes.io/hostname" {
+						return false
+					}
+					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+						LabelSelector: "component=controller"})
+					Expect(err).ToNot(HaveOccurred())
+					Expect(len(pods.Items)).To(Equal(int(controller.Status.Replicas)))
+					for _, pod := range pods.Items {
+						for _, container := range pod.Spec.Containers {
+							if container.Name == "controller" {
+								Expect(container.Resources).NotTo(BeNil())
+								return container.Resources.Limits.Cpu().MilliValue() == int64(100)
+							}
+						}
+					}
+					return false
+				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
 			})
 		})
 	})
