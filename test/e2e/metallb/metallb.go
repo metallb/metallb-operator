@@ -13,6 +13,7 @@ import (
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
+	schv1 "k8s.io/api/scheduling/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -25,6 +26,8 @@ const (
 	DeployTimeout = time.Minute * 3
 	Interval      = time.Second * 2
 )
+
+type CreateOption func(m *metallbv1beta1.MetalLB)
 
 // Delete and check the MetalLB custom resource is deleted to avoid status leak in between tests.
 func Delete(metallb *metallbv1beta1.MetalLB) {
@@ -76,6 +79,16 @@ func Get(operatorNamespace string, useMetallbResourcesFromFile bool) (*metallbv1
 
 }
 
+func New(operatorNamespace string, opts ...CreateOption) *metallbv1beta1.MetalLB {
+	metallb := &metallbv1beta1.MetalLB{}
+	metallb.SetName("metallb")
+	metallb.SetNamespace(operatorNamespace)
+	for _, opt := range opts {
+		opt(metallb)
+	}
+	return metallb
+}
+
 func CheckConditionStatus(instance *metallbv1beta1.MetalLB) string {
 	availableStatus := false
 	degradedStatus := false
@@ -109,4 +122,19 @@ func loadFromFile(metallb *metallbv1beta1.MetalLB, fileName string) error {
 	defer f.Close()
 
 	return decodeYAML(f, metallb)
+}
+
+func NewPriorityClass(name string, priority int32) *schv1.PriorityClass {
+	pc := &schv1.PriorityClass{}
+	pc.Name = name
+	pc.Value = priority
+	return pc
+}
+
+func DeletePriorityClass(pc *schv1.PriorityClass) {
+	err := testclient.Client.Delete(context.Background(), pc)
+	if errors.IsNotFound(err) { // Ignore err, could be already deleted.
+		return
+	}
+	Expect(err).ToNot(HaveOccurred())
 }
