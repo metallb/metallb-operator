@@ -93,6 +93,7 @@ func withPrometheusValues(c *chartConfig, valueMap map[string]interface{}) {
 	}
 
 	valueMap["prometheus"] = map[string]interface{}{
+		"scrapeAnnotations": true,
 		"metricsPort":       c.metricsPort,
 		"secureMetricsPort": c.secureMetricsPort,
 		"podMonitor": map[string]interface{}{

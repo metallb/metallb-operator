@@ -21,6 +21,9 @@
         },
         "template": {
             "metadata": {
+                "annotations": {
+                    "prometheus.io/scrape": "true"
+                },
                 "labels": {
                     "app": "metallb",
                     "component": "speaker"

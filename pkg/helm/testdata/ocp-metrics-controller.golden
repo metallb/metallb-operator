@@ -24,6 +24,10 @@
         },
         "template": {
             "metadata": {
+                "annotations": {
+                    "prometheus.io/port": "7472",
+                    "prometheus.io/scrape": "true"
+                },
                 "labels": {
                     "app": "metallb",
                     "component": "controller"
