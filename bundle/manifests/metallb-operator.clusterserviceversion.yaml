@@ -550,6 +550,16 @@ spec:
                 labels:
                   control-plane: controller-manager
               spec:
+                affinity:
+                  nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      nodeSelectorTerms:
+                        - matchExpressions:
+                            - key: node-role.kubernetes.io/master
+                              operator: Exists
+                        - matchExpressions:
+                            - key: node-role.kubernetes.io/control-plane
+                              operator: Exists
                 containers:
                   - args:
                       - --enable-leader-election
@@ -579,6 +589,13 @@ spec:
                         cpu: 50m
                         memory: 20Mi
                 terminationGracePeriodSeconds: 10
+                tolerations:
+                  - effect: NoSchedule
+                    key: node-role.kubernetes.io/master
+                    operator: Exists
+                  - effect: NoSchedule
+                    key: node-role.kubernetes.io/control-plane
+                    operator: Exists
         - name: metallb-operator-webhook-server
           spec:
             revisionHistoryLimit: 3
