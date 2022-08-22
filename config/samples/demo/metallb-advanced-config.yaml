@@ -1,0 +1,61 @@
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: myclass 
+handler: myconfiguration 
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000000
+---
+apiVersion: metallb.io/v1beta1
+kind: MetalLB
+metadata:
+  name: metallb
+  namespace: metallb-system
+spec:
+  logLevel: debug
+  nodeSelector:
+    feature.node.kubernetes.io/metalLB.capable: 'true'
+  speakerTolerations:
+  - key: "Example"
+    operator: "Exists"
+    effect: "NoExecute"
+  controllerNodeSelector:
+    feature.node.kubernetes.io/metalLB.capable: 'true'
+  controllerTolerations:
+  - key: "Example"
+    operator: "Exists"
+    effect: "NoExecute"
+  controllerConfig:
+    priorityClassName: high-priority
+    runtimeClassName: myclass
+    annotations:
+      controller: demo
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+             component: controller
+          topologyKey: kubernetes.io/hostname
+    resources:
+      limits:
+        cpu: "200m"
+  speakerConfig:
+    priorityClassName: high-priority
+    runtimeClassName: myclass
+    annotations:
+      speaker: demo
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+             component: speaker
+          topologyKey: kubernetes.io/hostname
+    resources:
+      limits:
+        cpu: "300m"
