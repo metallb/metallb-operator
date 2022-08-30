@@ -17,7 +17,7 @@ export PATH=$PATH:$GOPATH/bin
 
 mkdir -p _cache
 
-export METALLB_COMMIT_ID="f638c3ae1863070ac61ad7584a72fb793d6b2a88"
+export METALLB_COMMIT_ID="8b28ef52ec3383cfc6d844ac94a5565a261faa0d"
 export METALLB_PATH=_cache/metallb
 
 export METALLB_SC_FILE=$(dirname "$0")/securityContext.yaml
