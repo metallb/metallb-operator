@@ -257,18 +257,21 @@ var _ = Describe("metallb", func() {
 		It("set with additional parameters", func() {
 			By("create and validate resources", func() {
 				metallb := metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
-					additionalConfig := &metallbv1beta1.Config{
+					m.Spec.SpeakerConfig = &metallbv1beta1.Config{
+						PriorityClassName: priorityClass.GetName(),
+						Annotations:       map[string]string{"test": "e2e"},
+						Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
+					}
+					m.Spec.ControllerConfig = &metallbv1beta1.Config{
 						PriorityClassName: priorityClass.GetName(),
 						Annotations:       map[string]string{"test": "e2e"},
 						Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
 						Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"app": "metallb",
+								"component": "controller",
 							}},
 							TopologyKey: "kubernetes.io/hostname"}}}},
 					}
-					m.Spec.ControllerConfig = additionalConfig
-					m.Spec.SpeakerConfig = additionalConfig
 				})
 				Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
 
@@ -299,7 +302,7 @@ var _ = Describe("metallb", func() {
 				Expect(controllerContainerFound).To((Equal(true)))
 				Expect(controller.Spec.Template.Spec.PriorityClassName).To(Equal(priorityClassName))
 				Expect(controller.Spec.Template.Annotations["test"]).To(Equal("e2e"))
-				Expect(controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"]).To(Equal("metallb"))
+				Expect(controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["component"]).To(Equal("controller"))
 				Expect(controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].TopologyKey).To(Equal("kubernetes.io/hostname"))
 
 				Eventually(func() bool {
@@ -330,7 +333,6 @@ var _ = Describe("metallb", func() {
 				Expect(speakerContainerFound).To((Equal(true)))
 				Expect(daemonset.Spec.Template.Spec.PriorityClassName).To(Equal(priorityClassName))
 				Expect(daemonset.Spec.Template.Annotations["test"]).To(Equal("e2e"))
-				Expect(daemonset.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"]).To(Equal("metallb"))
 
 				metallbutils.Delete(metallb)
 			})
@@ -383,20 +385,47 @@ var _ = Describe("metallb", func() {
 			Expect(controller.Spec.Template.Spec.PriorityClassName).To(Equal(""))
 			Expect(controller.Spec.Template.Annotations["test"]).To(Equal(""))
 
+			Eventually(func() bool {
+				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+				if err != nil {
+					return false
+				}
+				return daemonset.Status.DesiredNumberScheduled == daemonset.Status.NumberReady
+			}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
+
+			Eventually(func() bool {
+				daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+				if err != nil {
+					return false
+				}
+				return daemonset.Status.DesiredNumberScheduled == daemonset.Status.NumberReady
+			}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
+
+			pods, err = testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+				LabelSelector: "component=speaker"})
+			Expect(err).ToNot(HaveOccurred())
+
+			daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(pods.Items)).To(Equal(int(daemonset.Status.DesiredNumberScheduled)))
+
+			for _, pod := range pods.Items {
+				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
+			}
+
 			instance := &metallbv1beta1.MetalLB{}
 			err = testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, instance)
 			Expect(err).ToNot(HaveOccurred())
-			additionalConfig := &metallbv1beta1.Config{
+			instance.Spec.ControllerConfig = &metallbv1beta1.Config{
 				PriorityClassName: priorityClass.GetName(),
 				Annotations:       map[string]string{"test": "e2e"},
 				Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
 				Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						"app": "metallb",
+						"component": "controller",
 					}},
 					TopologyKey: "kubernetes.io/hostname"}}}},
 			}
-			instance.Spec.ControllerConfig = additionalConfig
 			err = testclient.Client.Update(context.TODO(), instance)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -410,7 +439,7 @@ var _ = Describe("metallb", func() {
 					if controller.Spec.Template.Annotations["test"] != "e2e" {
 						return false
 					}
-					if controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"] != "metallb" {
+					if controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["component"] != "controller" {
 						return false
 					}
 					if controller.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].TopologyKey != "kubernetes.io/hostname" {
