@@ -70,11 +70,11 @@ type MetalLBSpec struct {
 
 	// additional configs to be applied on MetalLB Controller deployment.
 	// +optional
-	ControllerConfig *Config `json:"controllerOtherConfig,omitempty"`
+	ControllerConfig *Config `json:"controllerConfig,omitempty"`
 
 	// additional configs to be applied on MetalLB Speaker daemonset.
 	// +optional
-	SpeakerConfig *Config `json:"speakerOtherConfig,omitempty"`
+	SpeakerConfig *Config `json:"speakerConfig,omitempty"`
 }
 
 type Config struct {
