@@ -36,12 +36,7 @@ spec:
           spec:
             description: MetalLBSpec defines the desired state of MetalLB
             properties:
-              controllerNodeSelector:
-                additionalProperties:
-                  type: string
-                description: node selector applied to MetalLB controller deployment.
-                type: object
-              controllerOtherConfig:
+              controllerConfig:
                 description: additional configs to be applied on MetalLB Controller
                   deployment.
                 properties:
@@ -941,6 +936,11 @@ spec:
                     description: Define container runtime configuration class
                     type: string
                 type: object
+              controllerNodeSelector:
+                additionalProperties:
+                  type: string
+                description: node selector applied to MetalLB controller deployment.
+                type: object
               controllerTolerations:
                 description: tolerations is a list of tolerations applied to MetalLB
                   controller deployment.
@@ -1003,7 +1003,7 @@ spec:
                   type: string
                 description: node selector applied to MetalLB speaker daemonset.
                 type: object
-              speakerOtherConfig:
+              speakerConfig:
                 description: additional configs to be applied on MetalLB Speaker daemonset.
                 properties:
                   affinity:
