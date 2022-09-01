@@ -132,6 +132,8 @@ func withControllerValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, val
 	if c.isOpenShift {
 		controllerValueMap["securityContext"] = map[string]interface{}{
 			"runAsNonRoot": true,
+			"runAsUser":    nil,
+			"fsGroup":      nil,
 		}
 		controllerValueMap["command"] = "/controller"
 	}
