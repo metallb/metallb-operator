@@ -433,6 +433,14 @@ var _ = Describe("metallb", func() {
 				Eventually(func() bool {
 					controller, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
 					Expect(err).ToNot(HaveOccurred())
+					pods, err = testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+						LabelSelector: "component=controller"})
+					Expect(err).ToNot(HaveOccurred())
+					return len(pods.Items) == int(controller.Status.Replicas)
+				}, metallbutils.DeployTimeout, metallbutils.Interval).Should(BeTrue())
+				Eventually(func() bool {
+					controller, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
 					if controller.Spec.Template.Spec.PriorityClassName != priorityClassName {
 						return false
 					}
@@ -448,7 +456,6 @@ var _ = Describe("metallb", func() {
 					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
 						LabelSelector: "component=controller"})
 					Expect(err).ToNot(HaveOccurred())
-					Expect(len(pods.Items)).To(Equal(int(controller.Status.Replicas)))
 					for _, pod := range pods.Items {
 						for _, container := range pod.Spec.Containers {
 							if container.Name == "controller" {
