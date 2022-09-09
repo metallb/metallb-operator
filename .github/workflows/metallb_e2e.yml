@@ -68,6 +68,7 @@ jobs:
         run: |
           ./hack/kind-multi-node-cluster-without-registry.sh
           kind load docker-image ${built_image}
+          ./hack/create_second_interface.sh
       - name: Deploy Prometheus
         run: |
           make deploy-prometheus
