@@ -50,25 +50,30 @@ var _ = Describe("metallb", func() {
 
 	Context("MetalLB", func() {
 		It("should have the MetalLB Operator deployment in running state", func() {
-			Eventually(func() bool {
+			Eventually(func() error {
 				deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
 				if err != nil {
-					return false
+					return err
 				}
-				return deploy.Status.ReadyReplicas == deploy.Status.Replicas
-			}, metallb.DeployTimeout, metallb.Interval).Should(BeTrue())
 
-			pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("control-plane=%s", consts.MetalLBOperatorDeploymentLabel)})
-			Expect(err).ToNot(HaveOccurred())
+				pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("control-plane=%s", consts.MetalLBOperatorDeploymentLabel)})
+				if err != nil {
+					return err
+				}
 
-			deploy, err := testclient.Client.Deployments(OperatorNameSpace).Get(context.Background(), consts.MetalLBOperatorDeploymentName, metav1.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(len(pods.Items)).To(Equal(int(deploy.Status.Replicas)))
+				if len(pods.Items) != int(deploy.Status.Replicas) {
+					return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.MetalLBOperatorDeploymentName, deploy.Status.Replicas, len(pods.Items))
+				}
 
-			for _, pod := range pods.Items {
-				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
-			}
+				for _, pod := range pods.Items {
+					if pod.Status.Phase != corev1.PodRunning {
+						return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.MetalLBOperatorDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+					}
+				}
+
+				return nil
+			}, metallb.DeployTimeout, metallb.Interval).ShouldNot(HaveOccurred())
 		})
 
 		It("should have the MetalLB CRD available in the cluster", func() {
