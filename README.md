@@ -34,13 +34,7 @@ kubectl apply -f bin/metallb-operator-with-webhooks.yaml
 
 To install the MetalLB Operator using a prebuilt image, run the following:
 ```shell
-ENABLE_OPERATOR_WEBHOOK=false make deploy
-```
-
-To install the MetalLB Operator using a prebuilt image and enable Validation Webhooks, run the following:
-
-```shell
-ENABLE_OPERATOR_WEBHOOK=true make deploy
+make deploy
 ```
 
 ## Usage
