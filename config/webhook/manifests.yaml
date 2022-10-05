@@ -1,0 +1,28 @@
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: metallb-operator-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: metallb-operator-webhook-service
+      namespace: system
+      path: /validate-metallb-io-v1beta1-metallb
+  failurePolicy: Fail
+  name: metallbvalidationwebhook.metallb.io
+  rules:
+  - apiGroups:
+    - metallb.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - metallbs
+  sideEffects: None

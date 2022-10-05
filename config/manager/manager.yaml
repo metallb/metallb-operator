@@ -29,6 +29,10 @@ spec:
         - --enable-leader-election
         image: controller # Should be controller, this is the name that kustomize looks for and edits on deploy
         name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
         resources:
           requests:
             cpu: 50m
@@ -38,4 +42,13 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: metallb-operator-webhook-server-cert

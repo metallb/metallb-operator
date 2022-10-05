@@ -102,7 +102,9 @@ bin: manifests kustomize ## Create manifests
 	$(KUSTOMIZE) build config/metallb_rbac >> bin/$(BIN_FILE)
 
 manifests: controller-gen generate-metallb-manifests  ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	sed -i -e 's/validating-webhook-configuration/metallb-operator-webhook-configuration/g' config/webhook/manifests.yaml
+	sed -i -e 's/webhook-service/metallb-operator-webhook-service/g' config/webhook/manifests.yaml
 
 fmt:  ## Run go fmt against code
 	[ -z "`gofmt -s -w -l -e .`" ]

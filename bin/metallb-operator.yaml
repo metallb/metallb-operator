@@ -3232,8 +3232,10 @@ rules:
   - create
   - delete
   - get
+  - list
   - patch
   - update
+  - watch
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -3352,8 +3354,26 @@ subjects:
 apiVersion: v1
 kind: Secret
 metadata:
+  name: metallb-operator-webhook-server-cert
+  namespace: metallb-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
   name: webhook-server-cert
   namespace: metallb-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metallb-operator-webhook-service
+  namespace: metallb-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 9443
+  selector:
+    control-plane: controller-manager
 ---
 apiVersion: v1
 kind: Service
@@ -3408,11 +3428,24 @@ spec:
               fieldPath: metadata.namespace
         image: quay.io/metallb/metallb-operator:v0.13.7
         name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
         resources:
           requests:
             cpu: 50m
             memory: 20Mi
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
       terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: metallb-operator-webhook-server-cert
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -3494,6 +3527,33 @@ spec:
         secret:
           defaultMode: 420
           secretName: webhook-server-cert
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: metallb-operator-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: metallb-operator-webhook-service
+      namespace: metallb-system
+      path: /validate-metallb-io-v1beta1-metallb
+  failurePolicy: Fail
+  name: metallbvalidationwebhook.metallb.io
+  rules:
+  - apiGroups:
+    - metallb.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - metallbs
+  sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
