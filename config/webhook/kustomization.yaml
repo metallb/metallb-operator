@@ -3,5 +3,8 @@
 resources:
 - ./webhook
 - ./backend
+- manifests.yaml
+- secret.yaml
+- operator-service.yaml
 patchesStrategicMerge:
 - service.yaml

@@ -469,4 +469,103 @@ var _ = Describe("metallb", func() {
 			})
 		})
 	})
+
+	Context("Invalid MetalLB resources", func() {
+		var correct_metallb *metallbv1beta1.MetalLB
+		BeforeEach(func() {
+			var err error
+			correct_metallb, err = metallbutils.Get(OperatorNameSpace, UseMetallbResourcesFromFile)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			metallbutils.Delete(correct_metallb)
+		})
+		It("validate create with incorrect toleration", func() {
+			metallb := metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
+				tolerations := []corev1.Toleration{{Effect: corev1.TaintEffectNoSchedule, Key: "group",
+					Operator: corev1.TolerationOpEqual, TolerationSeconds: &resource.MaxMilliValue,
+					Value: "infra"}}
+				m.Spec.ControllerTolerations = tolerations
+			})
+			Expect(testclient.Client.Create(context.Background(), metallb)).ShouldNot(Succeed())
+		})
+		It("validate update with incorrect toleration", func() {
+			Expect(testclient.Client.Create(context.Background(), correct_metallb)).Should(Succeed())
+			instance := &metallbv1beta1.MetalLB{}
+			By("checking MetalLB CR status is set", func() {
+				Eventually(func() bool {
+					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: correct_metallb.Namespace, Name: correct_metallb.Name}, instance)
+					Expect(err).ToNot(HaveOccurred())
+					if instance.Status.Conditions == nil {
+						return false
+					}
+					for _, condition := range instance.Status.Conditions {
+						switch condition.Type {
+						case status.ConditionAvailable:
+							if condition.Status == metav1.ConditionFalse {
+								return false
+							}
+						case status.ConditionProgressing:
+							if condition.Status == metav1.ConditionTrue {
+								return false
+							}
+						case status.ConditionDegraded:
+							if condition.Status == metav1.ConditionTrue {
+								return false
+							}
+						case status.ConditionUpgradeable:
+							if condition.Status == metav1.ConditionFalse {
+								return false
+							}
+						}
+					}
+					return true
+				}, 5*time.Minute, 5*time.Second).Should(BeTrue())
+			})
+			instance.Spec.SpeakerTolerations = []corev1.Toleration{{Effect: corev1.TaintEffectNoSchedule, Key: "group",
+				Operator: corev1.TolerationOpEqual, TolerationSeconds: &resource.MaxMilliValue,
+				Value: "infra"}}
+			Expect(testclient.Client.Update(context.Background(), instance)).ShouldNot(Succeed())
+		})
+		It("validate incorrect affinity", func() {
+			metallb := metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
+				m.Spec.ControllerConfig = &metallbv1beta1.Config{
+					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
+						{Weight: 0, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
+							Operator: v1.NodeSelectorOpIn, Values: []string{"east"}}}}},
+					}}},
+				}
+			})
+			Expect(testclient.Client.Create(context.Background(), metallb)).ShouldNot(Succeed())
+			metallb = metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
+				m.Spec.SpeakerConfig = &metallbv1beta1.Config{
+					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
+						{Weight: 101, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
+							Operator: v1.NodeSelectorOpIn, Values: []string{"west"}}}}},
+					}}},
+				}
+			})
+			Expect(testclient.Client.Create(context.Background(), metallb)).ShouldNot(Succeed())
+			metallb = metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
+				m.Spec.ControllerConfig = &metallbv1beta1.Config{
+					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
+						{Weight: 10, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
+							Operator: v1.NodeSelectorOpIn, Values: []string{"east"}}}}},
+					}}},
+				}
+			})
+			Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
+			metallbutils.Delete(metallb)
+			metallb = metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
+				m.Spec.SpeakerConfig = &metallbv1beta1.Config{
+					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
+						{Weight: 100, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
+							Operator: v1.NodeSelectorOpIn, Values: []string{"west"}}}}},
+					}}},
+				}
+			})
+			Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
+		})
+	})
 })
