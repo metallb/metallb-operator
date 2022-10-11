@@ -52,6 +52,7 @@ A network load-balancer implementation for Kubernetes using standard routing pro
 | controller.strategy.type | string | `"RollingUpdate"` |  |
 | controller.tolerations | list | `[]` |  |
 | crds.enabled | bool | `true` |  |
+| crds.validationFailurePolicy | string | `"Fail"` |  |
 | fullnameOverride | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
 | loadBalancerClass | string | `""` |  |
@@ -85,6 +86,7 @@ A network load-balancer implementation for Kubernetes using standard routing pro
 | prometheus.prometheusRule.extraAlerts | list | `[]` |  |
 | prometheus.prometheusRule.staleConfig.enabled | bool | `true` |  |
 | prometheus.prometheusRule.staleConfig.labels.severity | string | `"warning"` |  |
+| prometheus.rbacPrometheus | bool | `true` |  |
 | prometheus.rbacProxy.repository | string | `"gcr.io/kubebuilder/kube-rbac-proxy"` |  |
 | prometheus.rbacProxy.tag | string | `"v0.12.0"` |  |
 | prometheus.scrapeAnnotations | bool | `false` |  |
@@ -109,6 +111,8 @@ A network load-balancer implementation for Kubernetes using standard routing pro
 | speaker.frr.image.repository | string | `"frrouting/frr"` |  |
 | speaker.frr.image.tag | string | `"v7.5.1"` |  |
 | speaker.frr.metricsPort | int | `7473` |  |
+| speaker.frr.resources | object | `{}` |  |
+| speaker.frrMetrics.resources | object | `{}` |  |
 | speaker.image.pullPolicy | string | `nil` |  |
 | speaker.image.repository | string | `"quay.io/metallb/speaker"` |  |
 | speaker.image.tag | string | `nil` |  |
@@ -130,6 +134,7 @@ A network load-balancer implementation for Kubernetes using standard routing pro
 | speaker.readinessProbe.periodSeconds | int | `10` |  |
 | speaker.readinessProbe.successThreshold | int | `1` |  |
 | speaker.readinessProbe.timeoutSeconds | int | `1` |  |
+| speaker.reloader.resources | object | `{}` |  |
 | speaker.resources | object | `{}` |  |
 | speaker.runtimeClassName | string | `""` |  |
 | speaker.serviceAccount.annotations | object | `{}` |  |
