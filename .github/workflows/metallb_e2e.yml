@@ -49,7 +49,7 @@ jobs:
         with:
           repository: metallb/metallb
           path: metallb
-          ref: fb96318bb4d01495098c3ee122f896b67cf9b177
+          ref: 163c53420284eff3df88543406cc19fcea33497d
       - name: Checkout MetalLB v0.12.1
         uses: actions/checkout@v2
         with:
