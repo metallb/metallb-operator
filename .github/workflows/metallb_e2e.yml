@@ -75,6 +75,9 @@ jobs:
       - name: Deploy Metal LB Operator
         run: |
           IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
+      - name: Sleep for 30 seconds
+        run: sleep 30s # Wait enough for webhook to get started properly in operator pod.
+        shell: bash
       - name: Enable MetalLB
         run: |
           export KUBECONFIG=${HOME}/.kube/config
