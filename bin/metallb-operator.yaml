@@ -3214,6 +3214,11 @@ status:
   conditions: []
   storedVersions: []
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metallb-operator
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -3398,7 +3403,7 @@ roleRef:
   name: leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: metallb-operator
   namespace: metallb-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -3412,7 +3417,7 @@ roleRef:
   name: manager-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: metallb-operator
   namespace: metallb-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -3425,7 +3430,7 @@ roleRef:
   name: manager-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: metallb-operator
   namespace: metallb-system
 ---
 apiVersion: v1
@@ -3481,6 +3486,7 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      serviceAccountName: metallb-operator
       containers:
       - args:
         - --enable-leader-election
@@ -3547,6 +3553,7 @@ spec:
         app: metallb
         component: webhook-server
     spec:
+      serviceAccountName: metallb-operator
       containers:
       - args:
         - --webhook-mode=onlywebhook
