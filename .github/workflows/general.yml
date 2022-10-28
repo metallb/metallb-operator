@@ -67,6 +67,7 @@ jobs:
     - name: Verify bin dir
       run: |
         BIN_FILE="metallb-operator.yaml" make bin
+        KUSTOMIZE_DEPLOY_DIR=config/frr BIN_FILE="metallb-operator-frr.yaml" make bin
         git diff --exit-code bin/
 
     - name: Unit and Integration Tests
