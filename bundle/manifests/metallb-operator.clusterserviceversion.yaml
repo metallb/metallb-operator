@@ -369,9 +369,38 @@ spec:
                 - use
             - apiGroups:
                 - admissionregistration.k8s.io
+              resourceNames:
+                - metallb-webhook-configuration
               resources:
                 - validatingwebhookconfigurations
                 - mutatingwebhookconfigurations
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - admissionregistration.k8s.io
+              resources:
+                - validatingwebhookconfigurations
+                - mutatingwebhookconfigurations
+              verbs:
+                - list
+            - apiGroups:
+                - apiextensions.k8s.io
+              resourceNames:
+                - addresspools.metallb.io
+                - bfdprofiles.metallb.io
+                - bgpadvertisements.metallb.io
+                - bgppeers.metallb.io
+                - ipaddresspools.metallb.io
+                - l2advertisements.metallb.io
+                - communities.metallb.io
+              resources:
+                - customresourcedefinitions
               verbs:
                 - create
                 - delete
@@ -385,13 +414,7 @@ spec:
               resources:
                 - customresourcedefinitions
               verbs:
-                - create
-                - delete
-                - get
                 - list
-                - patch
-                - update
-                - watch
           serviceAccountName: controller
         - rules:
             - apiGroups:
