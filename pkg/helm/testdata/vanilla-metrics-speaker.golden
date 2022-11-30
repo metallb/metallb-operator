@@ -70,13 +70,8 @@
                                 "value": "7946"
                             },
                             {
-                                "name": "METALLB_ML_SECRET_KEY",
-                                "valueFrom": {
-                                    "secretKeyRef": {
-                                        "key": "secretkey",
-                                        "name": "metallb-memberlist"
-                                    }
-                                }
+                                "name": "METALLB_ML_SECRET_KEY_PATH",
+                                "value": "/etc/ml_secret_key"
                             },
                             {
                                 "name": "FRR_CONFIG_FILE",
@@ -144,6 +139,10 @@
                             "readOnlyRootFilesystem": true
                         },
                         "volumeMounts": [
+                            {
+                                "mountPath": "/etc/ml_secret_key",
+                                "name": "memberlist"
+                            },
                             {
                                 "mountPath": "/etc/frr_reloader",
                                 "name": "reloader"
@@ -380,6 +379,13 @@
                     }
                 ],
                 "volumes": [
+                    {
+                        "name": "memberlist",
+                        "secret": {
+                            "defaultMode": 420,
+                            "secretName": "metallb-memberlist"
+                        }
+                    },
                     {
                         "emptyDir": {},
                         "name": "frr-sockets"
