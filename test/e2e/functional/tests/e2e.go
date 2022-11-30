@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
