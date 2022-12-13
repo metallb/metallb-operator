@@ -57,6 +57,7 @@ var _ = Describe("MetalLB Controller", func() {
 				"cp-frr-files": frrImage,
 				"cp-reloader":  speakerImage,
 				"cp-metrics":   speakerImage,
+				"cp-liveness":  speakerImage,
 			}
 
 			By("Creating a MetalLB resource")

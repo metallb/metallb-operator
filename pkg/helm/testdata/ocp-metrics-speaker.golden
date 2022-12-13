@@ -162,6 +162,15 @@
                             }
                         ],
                         "image": "frrouting/frr:v7.5.1",
+                        "livenessProbe": {
+                            "exec": {
+                                "command": [
+                                    "/etc/frr_liveness/liveness.sh"
+                                ]
+                            },
+                            "failureThreshold": 3,
+                            "periodSeconds": 5
+                        },
                         "name": "frr",
                         "securityContext": {
                             "capabilities": {
@@ -173,6 +182,15 @@
                                 ]
                             }
                         },
+                        "startupProbe": {
+                            "exec": {
+                                "command": [
+                                    "/etc/frr_liveness/liveness.sh"
+                                ]
+                            },
+                            "failureThreshold": 30,
+                            "periodSeconds": 5
+                        },
                         "volumeMounts": [
                             {
                                 "mountPath": "/var/run/frr",
@@ -181,6 +199,10 @@
                             {
                                 "mountPath": "/etc/frr",
                                 "name": "frr-conf"
+                            },
+                            {
+                                "mountPath": "/etc/frr_liveness",
+                                "name": "frr-liveness"
                             }
                         ]
                     },
@@ -366,6 +388,21 @@
                         "command": [
                             "/bin/sh",
                             "-c",
+                            "cp -f /liveness.sh /etc/frr_liveness/"
+                        ],
+                        "image": "quay.io/metallb/speaker:v0.0.0",
+                        "name": "cp-liveness",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/frr_liveness",
+                                "name": "frr-liveness"
+                            }
+                        ]
+                    },
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
                             "cp -f /frr-metrics /etc/frr_metrics/"
                         ],
                         "image": "quay.io/metallb/speaker:v0.0.0",
@@ -425,6 +462,10 @@
                     {
                         "emptyDir": {},
                         "name": "metrics"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "frr-liveness"
                     },
                     {
                         "name": "metrics-certs",
