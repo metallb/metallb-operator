@@ -342,6 +342,7 @@ spec:
                 - ""
               resources:
                 - services
+                - namespaces
               verbs:
                 - get
                 - list
@@ -534,6 +535,7 @@ spec:
                 - services
                 - endpoints
                 - nodes
+                - namespaces
               verbs:
                 - get
                 - list
