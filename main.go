@@ -19,6 +19,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -81,6 +83,7 @@ func main() {
 		disableCertRotation = flag.Bool("disable-cert-rotation", false, "disable automatic generation and rotation of webhook TLS certificates/keys")
 		certDir             = flag.String("cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The directory where certs are stored")
 		certServiceName     = flag.String("cert-service-name", "metallb-operator-webhook-service", "The service name used to generate the TLS cert's hostname")
+		port                = flag.Int("port", 8080, "HTTP listening port to check operator readiness")
 	)
 	flag.Parse()
 
@@ -133,6 +136,29 @@ func main() {
 	}
 
 	setupFinished := make(chan struct{})
+	go func() {
+		// Block until the setup (certificate generation) finishes.
+		setupLog.Info("waiting to create operator webhook for MetalLB CR")
+		<-setupFinished
+		setupLog.Info("creating operator webhook for MetalLB CR")
+		if err = (&metallbv1beta1.MetalLB{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "operator webhook", "MetalLB")
+			os.Exit(1)
+		}
+		setupLog.Info("operator webhook for MetalLB CR is created")
+
+		http.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(200)
+			_, err = w.Write([]byte("ok"))
+			if err != nil {
+				setupLog.Error(err, "error writing ok response", "readiness", "MetalLB")
+			}
+		})
+		err = http.ListenAndServe(net.JoinHostPort("", fmt.Sprint(*port)), nil)
+		if err != nil {
+			setupLog.Error(err, "listenAndServe", "readiness", "MetalLB")
+		}
+	}()
 	if !*disableCertRotation {
 		setupLog.Info("setting up cert rotation for operator webhook")
 		webhooks := []rotator.WebhookInfo{
@@ -157,17 +183,10 @@ func main() {
 			setupLog.Error(err, "unable to setup cert rotation", "operator webhook", "MetalLB")
 			os.Exit(1)
 		}
+		setupLog.Info("cert rotation setup for operator webhook is complete")
 	} else {
 		close(setupFinished)
 	}
-	go func() {
-		// Block until the setup (certificate generation) finishes.
-		<-setupFinished
-		if err = (&metallbv1beta1.MetalLB{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "operator webhook", "MetalLB")
-			os.Exit(1)
-		}
-	}()
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
