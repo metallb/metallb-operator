@@ -75,9 +75,12 @@ jobs:
       - name: Deploy Metal LB Operator
         run: |
           IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
-      - name: Sleep for 30 seconds
-        run: sleep 30s # Wait enough for webhook to get started properly in operator pod.
-        shell: bash
+      - name: Ensure MetalLB operator is ready
+        run: |
+          while [ "$(kubectl get pods -n metallb-system -l control-plane='controller-manager' -o jsonpath='{.items[*].status.containerStatuses[0].ready}')" != "true" ]; do
+            sleep 5
+            echo "Waiting for operator pod to be ready."
+          done
       - name: Enable MetalLB
         run: |
           export KUBECONFIG=${HOME}/.kube/config
