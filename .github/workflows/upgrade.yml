@@ -88,6 +88,13 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
         IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/"  make deploy
+    - name: Ensure MetalLB operator is ready
+      run: |
+        sleep 5
+        while [ "$(kubectl get pods -n metallb-system -l control-plane='controller-manager' -o jsonpath='{.items[*].status.containerStatuses[0].ready}')" != "true" ]; do
+          sleep 5
+          echo "Waiting for operator pod to be ready."
+        done
     - name: E2E Tests
       run: |
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
