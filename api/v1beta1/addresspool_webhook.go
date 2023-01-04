@@ -241,8 +241,10 @@ func validateAggregationLength(aggregationLength int32, isV6 bool, poolAddresses
 		if len(cidrs) == 0 {
 			continue
 		}
-
-		if isV6 && cidrs[0].IP.To4() != nil {
+		// skip aggregation length validation against configured CIDR if
+		// the configuration has aggregationLengthV6 and CIDR is an IPv4 address
+		// or the configuration has aggregationLength and CIDR is an IPv6 address.
+		if isV6 && cidrs[0].IP.To4() != nil || !isV6 && cidrs[0].IP.To4() == nil {
 			continue
 		}
 
