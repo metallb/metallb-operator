@@ -229,15 +229,21 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 		objKind := obj.GetKind()
 		if objKind == "DaemonSet" {
 			err = validateObject("ocp-metrics", "speaker", obj)
-			g.Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				t.Fatalf("test ocp-metrics-speaker failed. %s", err)
+			}
 		}
 		if objKind == "ServiceMonitor" {
 			err = validateObject("ocp-metrics", obj.GetName(), obj)
-			g.Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				t.Fatalf("test ocp-metrics-%s failed. %s", obj.GetName(), err)
+			}
 		}
 		if objKind == "Deployment" {
 			err = validateObject("ocp-metrics", "controller", obj)
-			g.Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				t.Fatalf("test ocp-metrics-controller failed. %s", err)
+			}
 		}
 	}
 }
@@ -267,11 +273,15 @@ func TestParseSecureMetrics(t *testing.T) {
 		objKind := obj.GetKind()
 		if objKind == "DaemonSet" {
 			err = validateObject("vanilla-metrics", "speaker", obj)
-			g.Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				t.Fatalf("test vanilla-metrics-speaker failed. %s", err)
+			}
 		}
 		if objKind == "ServiceMonitor" {
 			err = validateObject("vanilla-metrics", obj.GetName(), obj)
-			g.Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				t.Fatalf("test vanilla-metrics-%s failed. %s", obj.GetName(), err)
+			}
 		}
 	}
 }
@@ -294,7 +304,7 @@ func validateObject(testcase, name string, obj *unstructured.Unstructured) error
 	}
 
 	if !cmp.Equal(expected, j) {
-		return fmt.Errorf("failed. (-want +got):\n%s", cmp.Diff(string(expected), string(j)))
+		return fmt.Errorf("unexpected manifest (-want +got):\n%s", cmp.Diff(string(expected), string(j)))
 	}
 	return nil
 }

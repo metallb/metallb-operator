@@ -71,5 +71,6 @@ jobs:
 
     - name: Unit and Integration Tests
       run: |
+        export KUBECONFIG=${HOME}/.kube/config
         METALLB_BGP_TYPE=native make test
         METALLB_BGP_TYPE=frr DEPLOY_KUBE_RBAC_PROXIES=true make test

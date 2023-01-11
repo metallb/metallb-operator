@@ -147,6 +147,12 @@ spec:
       terminationGracePeriodSeconds: 0
       hostNetwork: true
       volumes:
+      {{- if .Values.speaker.memberlist.enabled }}
+        - name: memberlist
+          secret:
+            secretName: {{ include "metallb.secretName" . }}
+            defaultMode: 420
+      {{- end }}
       {{- if .Values.speaker.frr.enabled }}
         - name: frr-sockets
           emptyDir: {}
@@ -229,11 +235,8 @@ spec:
           value: "app={{ include "metallb.name" . }},component=speaker"
         - name: METALLB_ML_BIND_PORT
           value: "{{ .Values.speaker.memberlist.mlBindPort }}"
-        - name: METALLB_ML_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "metallb.secretName" . }}
-              key: secretkey
+        - name: METALLB_ML_SECRET_KEY_PATH
+          value: "{{ .Values.speaker.memberlist.mlSecretKeyPath }}"
         {{- end }}
         {{- if .Values.speaker.frr.enabled }}
         - name: FRR_CONFIG_FILE
@@ -288,11 +291,17 @@ spec:
             - ALL
             add:
             - NET_RAW
-        {{- if .Values.speaker.frr.enabled }}
+        {{- if or .Values.speaker.frr.enabled .Values.speaker.memberlist.enabled }}
         volumeMounts:
+          {{- if .Values.speaker.memberlist.enabled }}
+          - name: memberlist 
+            mountPath: {{ .Values.speaker.memberlist.mlSecretKeyPath }}
+          {{- end }}
+          {{- if .Values.speaker.frr.enabled }}
           - name: reloader
             mountPath: /etc/frr_reloader
-         {{- end }}
+          {{- end }}
+        {{- end }}
       {{- if .Values.speaker.frr.enabled }}
       - name: frr
         securityContext:
@@ -331,6 +340,22 @@ spec:
         {{- with .Values.speaker.frr.resources }}
         resources:
           {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- if .Values.speaker.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: {{ .Values.speaker.frr.metricsPort }}
+          periodSeconds: {{ .Values.speaker.livenessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.speaker.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.speaker.startupProbe.enabled }}
+        startupProbe:
+          httpGet:
+            path: /livez
+            port: {{ .Values.speaker.frr.metricsPort }}
+          failureThreshold: {{ .Values.speaker.startupProbe.failureThreshold }}
+          periodSeconds: {{ .Values.speaker.startupProbe.periodSeconds }}
         {{- end }}
       - name: reloader
         image: {{ .Values.speaker.frr.image.repository }}:{{ .Values.speaker.frr.image.tag | default .Chart.AppVersion }}

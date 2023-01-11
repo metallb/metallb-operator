@@ -12,6 +12,8 @@ A network load-balancer implementation for Kubernetes using standard routing pro
 
 ## Requirements
 
+Kubernetes: `>= 1.19.0-0`
+
 | Repository | Name | Version |
 |------------|------|---------|
 |  | crds | 0.0.0 |
@@ -125,6 +127,7 @@ A network load-balancer implementation for Kubernetes using standard routing pro
 | speaker.logLevel | string | `"info"` | Speaker log level. Must be one of: `all`, `debug`, `info`, `warn`, `error` or `none` |
 | speaker.memberlist.enabled | bool | `true` |  |
 | speaker.memberlist.mlBindPort | int | `7946` |  |
+| speaker.memberlist.mlSecretKeyPath | string | `"/etc/ml_secret_key"` |  |
 | speaker.nodeSelector | object | `{}` |  |
 | speaker.podAnnotations | object | `{}` |  |
 | speaker.priorityClassName | string | `""` |  |
@@ -140,6 +143,9 @@ A network load-balancer implementation for Kubernetes using standard routing pro
 | speaker.serviceAccount.annotations | object | `{}` |  |
 | speaker.serviceAccount.create | bool | `true` |  |
 | speaker.serviceAccount.name | string | `""` |  |
+| speaker.startupProbe.enabled | bool | `true` |  |
+| speaker.startupProbe.failureThreshold | int | `30` |  |
+| speaker.startupProbe.periodSeconds | int | `5` |  |
 | speaker.tolerateMaster | bool | `true` |  |
 | speaker.tolerations | list | `[]` |  |
 | speaker.updateStrategy.type | string | `"RollingUpdate"` |  |
