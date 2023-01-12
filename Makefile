@@ -57,15 +57,15 @@ test: generate fmt vet manifests ## Run unit and integration tests
 
 all: manager ## Default make target if no options specified
 
-test-validation: generate fmt vet manifests  ## Run validation tests
+test-validation: generate fmt vet manifests ginkgo  ## Run validation tests
 	rm -rf ${VALIDATION_TESTS_REPORTS_PATH}
 	mkdir -p ${VALIDATION_TESTS_REPORTS_PATH}
-	USE_LOCAL_RESOURCES=true go test --tags=validationtests -v ./test/e2e/validation -ginkgo.v -junit $(VALIDATION_TESTS_REPORTS_PATH) -report $(VALIDATION_TESTS_REPORTS_PATH)
+	USE_LOCAL_RESOURCES=true $(GINKGO) --output-dir=$(VALIDATION_TESTS_REPORTS_PATH) --junit-report=validation_junit.xml --tags=validationtests -v ./test/e2e/validation -ginkgo.v -- -report $(VALIDATION_TESTS_REPORTS_PATH)
 
-test-functional: generate fmt vet manifests  ## Run e2e tests
+test-functional: generate fmt vet manifests ginkgo  ## Run e2e tests
 	rm -rf ${TESTS_REPORTS_PATH}
 	mkdir -p ${TESTS_REPORTS_PATH}
-	USE_LOCAL_RESOURCES=true go test --tags=e2etests -v ./test/e2e/functional -ginkgo.v -junit $(TESTS_REPORTS_PATH) -report $(TESTS_REPORTS_PATH)
+	USE_LOCAL_RESOURCES=true $(GINKGO) --output-dir=$(TESTS_REPORTS_PATH) --junit-report=e2e_junit.xml --tags=e2etests -v ./test/e2e/functional -ginkgo.v -- -report $(TESTS_REPORTS_PATH)
 
 test-e2e: generate fmt vet manifests test-validation test-functional  ## Run e2e tests
 
@@ -174,6 +174,14 @@ ifeq (, $(shell which kustomize))
 KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
+endif
+
+ginkgo:
+ifeq (, $(shell which ginkgo))
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.0
+GINKGO=$(GOBIN)/ginkgo
+else
+GINKGO=$(shell which ginkgo)
 endif
 
 # Get the current operator-sdk binary. If there isn't any, we'll use the
