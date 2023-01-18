@@ -423,7 +423,7 @@ spec:
                       - name: METALLB_BGP_TYPE
                         value: native
                       - name: FRR_IMAGE
-                        value: quay.io/frrouting/frr:stable_7.5
+                        value: quay.io/frrouting/frr:7.5.1
                       - name: KUBE_RBAC_PROXY_IMAGE
                         value: quay.io/brancz/kube-rbac-proxy:v0.11.0
                       - name: DEPLOY_KUBE_RBAC_PROXIES
