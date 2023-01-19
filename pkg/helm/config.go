@@ -109,6 +109,10 @@ func withPrometheusValues(c *chartConfig, valueMap map[string]interface{}) {
 				"tlsConfig":   controllerTLSConfig,
 			},
 		},
+		"rbacProxy": map[string]interface{}{
+			"repository": c.kubeRbacProxyImage.repo,
+			"tag":        c.kubeRbacProxyImage.tag,
+		},
 		"serviceAccount":             "foo", // required by the chart, we won't render roles or rolebindings anyway
 		"namespace":                  "bar",
 		"speakerMetricsTLSSecret":    speakerTLSSecret,
