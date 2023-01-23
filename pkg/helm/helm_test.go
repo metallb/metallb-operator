@@ -255,6 +255,7 @@ func TestParseSecureMetrics(t *testing.T) {
 		envVar{"HTTPS_METRICS_PORT", "9998"},
 		envVar{"FRR_HTTPS_METRICS_PORT", "9999"},
 		envVar{"METALLB_BGP_TYPE", "frr"},
+		envVar{"KUBE_RBAC_PROXY_IMAGE", "myrepo/image:mytag"},
 	)
 	g := NewGomegaWithT(t)
 	setEnv()
