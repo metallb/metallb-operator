@@ -20,7 +20,7 @@ jobs:
       built_image: "metallb-operator:ci" # Arbitrary name
     strategy:
       matrix:
-        go: [ '1.18.3' ]
+        go: [ '1.19.5' ]
     name: Go ${{ matrix.go }}
     steps:
     - name: Cancel Previous Runs
