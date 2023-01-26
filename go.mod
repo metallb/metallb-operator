@@ -17,7 +17,7 @@ require (
 	k8s.io/client-go v1.5.2
 	k8s.io/kubernetes v1.25.4
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
-	sigs.k8s.io/controller-runtime v0.13.0
+	sigs.k8s.io/controller-runtime v0.14.1
 )
 
 require (
