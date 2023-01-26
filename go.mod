@@ -8,7 +8,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/onsi/ginkgo/v2 v2.6.0
 	github.com/onsi/gomega v1.24.1
-	github.com/open-policy-agent/cert-controller v0.5.0
+	github.com/open-policy-agent/cert-controller v0.6.0
 	github.com/pkg/errors v0.9.1
 	helm.sh/helm/v3 v3.11.0
 	k8s.io/api v0.26.0
