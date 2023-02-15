@@ -12,9 +12,3 @@ annotations:
   # Annotations for testing.
   operators.operatorframework.io.test.mediatype.v1: scorecard+v1
   operators.operatorframework.io.test.config.v1: tests/scorecard/
-  
-  # Supported Arch annotations
-  operatorframework.io/arch.amd64: supported
-  operatorframework.io/arch.ppc64le: supported
-  operatorframework.io/arch.arm64: supported
-  operatorframework.io/arch.s390x: supported

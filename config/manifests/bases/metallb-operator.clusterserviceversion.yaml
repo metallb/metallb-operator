@@ -11,6 +11,11 @@ metadata:
     description: An operator for deploying MetalLB on a kubernetes cluster.
     repository: https://github.com/metallb/metallb-operator
     support: Community
+  labels:
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/arch.arm64: supported
+    operatorframework.io/arch.ppc64le: supported
+    operatorframework.io/arch.s390x: supported
   name: metallb-operator.v0.0.0
   namespace: placeholder
 spec:
