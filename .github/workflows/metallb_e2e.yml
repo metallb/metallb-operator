@@ -49,7 +49,7 @@ jobs:
         with:
           repository: metallb/metallb
           path: metallb
-          ref: 87842bdc6e0e42754f93ecccef2bcdac596ccd06
+          ref: 293f43c1f78ab1b5fa8879a76746b094bd9dd3ca
       - name: Checkout MetalLB v0.12.1
         uses: actions/checkout@v2
         with:
@@ -61,6 +61,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install linux-modules-extra-$(uname -r) python3-pip arping ndisc6
           sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
       - name: Build image
         run: |
           IMG=${built_image} make docker-build

@@ -57,6 +57,7 @@ prometheus:
   rbacProxy:
     repository: gcr.io/kubebuilder/kube-rbac-proxy
     tag: v0.12.0
+    pullPolicy:
 
   # Prometheus Operator PodMonitors
   podMonitor:
@@ -316,8 +317,8 @@ speaker:
   frr:
     enabled: false
     image:
-      repository: frrouting/frr
-      tag: v7.5.1
+      repository: quay.io/frrouting/frr
+      tag: 7.5.1
       pullPolicy:
     metricsPort: 7473
     resources: {}

@@ -8,12 +8,12 @@ for deploying MetalLB on a kubernetes cluster, as described in the [related desi
 Need to install the following packages:
 
 - operator-sdk 1.8.0+
-- controller-gen v0.7.0+
+- controller-gen v0.11.1+
 
 To install controller-gen, run the following:
 
 ```
-go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.1
 ```
 
 ## Quick Setup

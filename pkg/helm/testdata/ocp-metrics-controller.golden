@@ -117,7 +117,7 @@
                             "--tls-cert-file=/etc/metrics/tls.crt"
                         ],
                         "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
-                        "imagePullPolicy": "IfNotPresent",
+                        "imagePullPolicy": null,
                         "name": "kube-rbac-proxy",
                         "ports": [
                             {
