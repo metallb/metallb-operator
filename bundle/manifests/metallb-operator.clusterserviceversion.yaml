@@ -395,6 +395,7 @@ spec:
                 - mutatingwebhookconfigurations
               verbs:
                 - list
+                - watch
             - apiGroups:
                 - apiextensions.k8s.io
               resourceNames:
@@ -421,6 +422,7 @@ spec:
                 - customresourcedefinitions
               verbs:
                 - list
+                - watch
           serviceAccountName: controller
         - rules:
             - apiGroups:

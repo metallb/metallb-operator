@@ -110,7 +110,7 @@ spec:
         {{- end }}
         {{- with .Values.controller.resources }}
         resources:
-          {{- toYaml . | nindent 12 }}
+          {{- toYaml . | nindent 10 }}
         {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
@@ -121,7 +121,7 @@ spec:
       {{- if .Values.prometheus.secureMetricsPort }}
       - name: kube-rbac-proxy
         image: {{ .Values.prometheus.rbacProxy.repository }}:{{ .Values.prometheus.rbacProxy.tag }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ .Values.prometheus.rbacProxy.pullPolicy }}
         args:
           - --logtostderr
           - --secure-listen-address=:{{ .Values.prometheus.secureMetricsPort }}
