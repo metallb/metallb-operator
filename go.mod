@@ -6,8 +6,8 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/glog v1.0.0
 	github.com/google/go-cmp v0.5.9
-	github.com/onsi/ginkgo/v2 v2.6.0
-	github.com/onsi/gomega v1.24.1
+	github.com/onsi/ginkgo/v2 v2.8.4
+	github.com/onsi/gomega v1.27.1
 	github.com/open-policy-agent/cert-controller v0.5.0
 	github.com/pkg/errors v0.9.1
 	helm.sh/helm/v3 v3.11.0
@@ -25,10 +25,13 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
+	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
+	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/openshift/api v0.0.0-20200829102639-8a3a835f1acf // indirect
 	github.com/openshift/client-go v0.0.0-20200827190008-3062137373b5 // indirect
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 )
 
 require (
@@ -127,12 +130,12 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	go.universe.tf/metallb v0.13.7
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
