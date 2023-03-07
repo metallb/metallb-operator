@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -294,12 +293,12 @@ func validateObject(testcase, name string, obj *unstructured.Unstructured) error
 		return err
 	}
 	if *update {
-		if err := ioutil.WriteFile(goldenFile, j, 0644); err != nil {
+		if err := os.WriteFile(goldenFile, j, 0644); err != nil {
 			return err
 		}
 	}
 
-	expected, err := ioutil.ReadFile(goldenFile)
+	expected, err := os.ReadFile(goldenFile)
 	if err != nil {
 		return err
 	}
