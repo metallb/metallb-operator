@@ -30,7 +30,7 @@ jobs:
     - name: Verify
       uses: golangci/golangci-lint-action@v2
       with:
-        version: v1.45.2
+        version: v1.51.2
         args: --timeout=15m0s --verbose
 
   unit:
