@@ -16,6 +16,9 @@ CRD_OPTIONS ?= "crd:crdVersions=v1"
 # Which dir to use in deploy kustomize build
 KUSTOMIZE_DEPLOY_DIR ?= config/default
 
+# Route to operator-sdk binary
+OPERATOR_SDK=_cache/operator-sdk
+
 # Default bundle image tag
 BUNDLE_IMG ?= $(REPO)/metallb-operator-bundle:$(VERSION)
 # Default bundle index image tag
@@ -40,7 +43,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION=v1.8.1
+OPERATOR_SDK_VERSION=v1.26.1
 OLM_VERSION=v0.18.3
 OPM_VERSION=v1.23.2
 
@@ -145,8 +148,8 @@ build-bundle: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 deploy-olm: operator-sdk ## deploys OLM on the cluster
-	operator-sdk olm install --version $(OLM_VERSION)
-	operator-sdk olm status
+	$(OPERATOR_SDK) olm install --version $(OLM_VERSION)
+	$(OPERATOR_SDK) olm status
 
 deploy-with-olm: ## deploys the operator with OLM instead of manifests
 	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:$(VERSION)#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
@@ -185,18 +188,15 @@ else
 KUSTOMIZE=$(shell which kustomize)
 endif
 
-# Get the current operator-sdk binary. If there isn't any, we'll use the
-# GOBIN path
+# Get the current operator-sdk binary into the _cache dir.
 operator-sdk:
-ifeq (, $(shell which operator-sdk))
+	mkdir -p _cache
+ifeq (,$(findstring $(OPERATOR_SDK_VERSION),$(shell _cache/operator-sdk version)))
 	@{ \
 	set -e ;\
-	curl -Lk  https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_linux_amd64 > $(GOBIN)/operator-sdk ;\
-	chmod u+x $(GOBIN)/operator-sdk ;\
+	curl -Lk  https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_linux_amd64 > _cache/operator-sdk ;\
+	chmod u+x _cache/operator-sdk ;\
 	}
-OPERATOR_SDK=$(GOBIN)/operator-sdk
-else
-OPERATOR_SDK=$(shell which operator-sdk)
 endif
 
 # Get the current opm binary. If there isn't any, we'll use the
