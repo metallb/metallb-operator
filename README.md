@@ -30,6 +30,16 @@ To install the MetalLB Operator using a prebuilt image, run the following:
 make deploy
 ```
 
+## Installation on OpenShift
+
+To install the MetalLB Operator using a prebuilt image on OpenShift, run the following:
+```shell
+make deploy-openshift
+```
+> **Note:** This requires kustomize 4.5.6 or above.
+
+> **Note:** To undeploy on OpenShift, use the `undeploy-openshift` target.
+
 ## Usage
 
 Once the MetalLB Operator is installed, you have to create a `MetalLB` custom resource to deploy a MetalLB instance. The operator will consume this resource and create all required MetalLB resources based on it. The `MetalLB` custom resource needs to be created inside the `metallb-system` namespace and be named `metallb`. Only one `MetalLB` resource can exist in a cluster.
