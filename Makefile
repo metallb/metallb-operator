@@ -88,9 +88,18 @@ deploy: manifests kustomize ## Deploy controller in the configured cluster
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
+set-namespace-openshift:
+	sed -i 's/  namespace:.*/  namespace: $(NAMESPACE)/' $(KUSTOMIZE_DEPLOY_DIR)/custom-namespace-transformer.yaml
+
+deploy-openshift: KUSTOMIZE_DEPLOY_DIR=config/openshift
+deploy-openshift: set-namespace-openshift deploy ## Deploy controller in the configured OpenShift cluster
+
 undeploy: ## Undeploy the controller from the configured cluster
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl delete --ignore-not-found=true -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl delete --ignore-not-found=true -f -
+
+undeploy-openshift: KUSTOMIZE_DEPLOY_DIR=config/openshift
+undeploy-openshift: undeploy ## Undeploy the controller from the configured OpenShift cluster
 
 BIN_FILE ?= "metallb-operator.yaml"
 bin: manifests kustomize ## Create manifests
