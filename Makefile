@@ -170,7 +170,7 @@ endif
 
 kustomize:
 ifeq (, $(shell which kustomize))
-	go install sigs.k8s.io/kustomize/kustomize/v4@v4.4.0
+	go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.7
 KUSTOMIZE=$(GOBIN)/kustomize
 else
 KUSTOMIZE=$(shell which kustomize)
