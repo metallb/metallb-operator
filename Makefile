@@ -13,7 +13,7 @@ REPO ?= quay.io/metallb
 IMG ?= $(REPO)/metallb-operator:$(VERSION)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1"
-# Which dir to use in deploy kustomize build
+#Which dir to use in deploy kustomize build
 KUSTOMIZE_DEPLOY_DIR ?= config/default
 
 # Route to operator-sdk binary
@@ -46,6 +46,8 @@ endif
 OPERATOR_SDK_VERSION=v1.26.1
 OLM_VERSION=v0.18.3
 OPM_VERSION=v1.23.2
+KUSTOMIZE_VERSION=v5.0.1
+KUSTOMIZE=$(shell pwd)/_cache/kustomize
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
@@ -142,7 +144,7 @@ bundle: operator-sdk manifests  ## Generate bundle manifests and metadata, then 
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
 	$(OPERATOR_SDK) bundle validate ./bundle
 
-bundle-release: bundle bump_versions ## Generate the bundle manifests for a PR
+bundle-release: kustomize bundle bump_versions  ## Generate the bundle manifests for a PR
 
 build-bundle: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
@@ -180,12 +182,15 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
+# Get the current operator-sdk binary into the _cache dir.
 kustomize:
-ifeq (, $(shell which kustomize))
-	go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.7
-KUSTOMIZE=$(GOBIN)/kustomize
-else
-KUSTOMIZE=$(shell which kustomize)
+	mkdir -p _cache
+ifeq (,$(findstring $(KUSTOMIZE_VERSION),$(shell _cache/kustomize version)))
+	@{ \
+	set -e ;\
+	curl -s -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_linux_amd64.tar.gz | tar fxvz - -C _cache ;\
+	chmod u+x _cache/kustomize ;\
+	}
 endif
 
 # Get the current operator-sdk binary into the _cache dir.
