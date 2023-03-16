@@ -6,5 +6,5 @@ patchesStrategicMerge:
   - env.yaml
 images:
   - name: controller
-    newName: quay.io/metallb/metallb-operator
+    newName: metallboperator
     newTag: main
