@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: metallb-manager-role
 rules:
 - apiGroups:
   - ""
@@ -107,7 +107,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: metallb-manager-role
   namespace: metallb-system
 rules:
 - apiGroups:
