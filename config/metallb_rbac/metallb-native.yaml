@@ -129,6 +129,14 @@ rules:
       - list
       - watch
   - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - metallb.io
     resources:
       - addresspools
@@ -201,6 +209,12 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - list
   - apiGroups:
       - ""
     resources:
