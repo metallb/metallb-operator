@@ -146,6 +146,10 @@
                             {
                                 "mountPath": "/etc/frr_reloader",
                                 "name": "reloader"
+                            },
+                            {
+                                "mountPath": "/etc/metallb",
+                                "name": "metallb-excludel2"
                             }
                         ]
                     },
@@ -401,6 +405,13 @@
                             "defaultMode": 420,
                             "secretName": "metallb-memberlist"
                         }
+                    },
+                    {
+                        "configMap": {
+                            "defaultMode": 256,
+                            "name": "metallb-excludel2"
+                        },
+                        "name": "metallb-excludel2"
                     },
                     {
                         "emptyDir": {},
