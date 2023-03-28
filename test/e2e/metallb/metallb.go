@@ -36,6 +36,10 @@ func Delete(metallb *metallbv1beta1.MetalLB) {
 		return
 	}
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func DeleteAndCheck(metallb *metallbv1beta1.MetalLB) {
+	Delete(metallb)
 
 	Eventually(func() bool {
 		err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
