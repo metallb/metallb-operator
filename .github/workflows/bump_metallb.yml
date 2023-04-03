@@ -1,0 +1,72 @@
+name: Periodic MetalLB Bump
+on:
+  schedule:
+    # every day at 7am & 7pm (GMT+2)
+    - cron: "0 5,17 * * *"
+jobs:
+  bump-metallb-and-create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Latest Metal LB Operator
+        uses: actions/checkout@v3
+        with:
+          path: metallboperator
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          repository: metallb/metallb
+          path: metallb
+          fetch-depth: 0
+      - name: Get current metallb commit hash
+        id: old-metallb
+        run: |
+          source metallboperator/hack/common.sh
+          echo "commit_sha=$METALLB_COMMIT_ID" >> $GITHUB_OUTPUT
+      - name: Get old commit info
+        id: old-commit-info
+        run: |
+          cd metallb
+          echo "commit_title=$(git log -1 --pretty=%s ${{ steps.old-metallb.outputs.commit_sha }})" >> $GITHUB_OUTPUT
+          echo "commit_date=$(git log -n1 --pretty='format:%cd' --date=format:'%Y-%m-%d' ${{ steps.old-metallb.outputs.commit_sha }})" >> $GITHUB_OUTPUT
+      - name: Get new commit info
+        id: new-commit-info
+        run: |
+          cd metallb
+          echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "commit_title=$(git log -1 --pretty=%s HEAD)" >> $GITHUB_OUTPUT
+          echo "commit_date=$(git log -n1 --pretty='format:%cd' --date=format:'%Y-%m-%d' HEAD)" >> $GITHUB_OUTPUT
+      - name: Check if there are changes
+        id: check-for-changes
+        run: |
+          if [[ ${{ steps.old-metallb.outputs.commit_sha }} == ${{ steps.new-commit-info.outputs.commit_sha }} ]]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Bump metallb
+        if: ${{ steps.check-for-changes.outputs.has_changes == 'true' }}
+        run: make bump_metallb
+      - name: Create pull request
+        if: ${{ steps.check-for-changes.outputs.has_changes == 'true'}}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            Bump MetalLB
+
+            This commit bumps MetalLB:
+            from: ${{ steps.old-metallb.outputs.commit_sha }}
+            ${{ steps.old-commit-info.outputs.commit_title }} (${{ steps.old-commit-info.outputs.commit_date }})
+            
+            to:  ${{ steps.new-commit-info.outputs.commit_sha }}
+            ${{ steps.new-commit-info.outputs.commit_title }} (${{ steps.new-commit-info.outputs.commit_date }})
+          author: github-actions[bot] <noreply@github.com>
+          committer: github-actions[bot] <noreply@github.com>
+          title: "Bump MetalLB"
+          branch: "bumpmetallb"
+          delete-branch: true
+          base: "main"
+          

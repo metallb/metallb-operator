@@ -44,12 +44,15 @@ jobs:
         run: |
           make manifests
           git diff --exit-code
+      - name: Read metallb ref
+        id: metallb_ref
+        run: echo "content=$(cat ./hack/metallb_ref.txt)" >> $GITHUB_OUTPUT
       - name: Checkout MetalLB
         uses: actions/checkout@v2
         with:
           repository: metallb/metallb
           path: metallb
-          ref: 1424dbaef1313b8bb20df136e8eacd2dbacdae02
+          ref: "${{ steps.metallb_ref.outputs.content }}"
       - name: Checkout MetalLB v0.12
         uses: actions/checkout@v2
         with:
