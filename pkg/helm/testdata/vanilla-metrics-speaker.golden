@@ -273,7 +273,7 @@
                             }
                         ],
                         "image": "myrepo/image:mytag",
-                        "imagePullPolicy": "IfNotPresent",
+                        "imagePullPolicy": null,
                         "name": "kube-rbac-proxy",
                         "ports": [
                             {
@@ -307,7 +307,7 @@
                             }
                         ],
                         "image": "myrepo/image:mytag",
-                        "imagePullPolicy": "IfNotPresent",
+                        "imagePullPolicy": null,
                         "name": "kube-rbac-proxy-frr",
                         "ports": [
                             {

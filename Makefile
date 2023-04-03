@@ -249,6 +249,15 @@ bump_versions: ## Updates the versions of the metallb-operator / metallb image w
 	@echo "Updating the operator version"
 	hack/bump_versions.sh
 
+
+
+bump_metallb: ## Bumps metallb commit ID and creates manifests. It also validates the changes.
+	@echo "Updating the metallb version"
+	hack/bump_metallb.sh
+	$(MAKE) bin
+	$(MAKE) bundle-release
+	$(MAKE) test
+
 check_generated: ## Checks if there are any different with the current checkout
 	@echo "Checking generated files"
 	hack/verify_generated.sh
