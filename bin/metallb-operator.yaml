@@ -3335,7 +3335,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: metallb-manager-role
   namespace: metallb-system
 rules:
 - apiGroups:
@@ -3397,7 +3397,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: metallb-manager-role
 rules:
 - apiGroups:
   - ""
@@ -3500,12 +3500,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: manager-rolebinding
+  name: metallb-manager-rolebinding
   namespace: metallb-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: manager-role
+  name: metallb-manager-role
 subjects:
 - kind: ServiceAccount
   name: manager-account
@@ -3514,11 +3514,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: manager-rolebinding
+  name: metallb-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: metallb-manager-role
 subjects:
 - kind: ServiceAccount
   name: manager-account
@@ -4016,6 +4016,14 @@ rules:
   - list
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - metallb.io
   resources:
   - addresspools
@@ -4124,6 +4132,12 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - list
 - apiGroups:
   - ""
   resources:
