@@ -24,9 +24,6 @@ curl ${FRR_MANIFESTS_URL} -o _cache/${FRR_MANIFESTS_FILE}
 # Generate metallb-frr rbac manifests
 yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBinding" or .kind == "ClusterRoleBinding" or .kind == "ServiceAccount")' _cache/${FRR_MANIFESTS_FILE} > config/metallb_rbac/${FRR_MANIFESTS_FILE}
 
-# Update MetalLB's E2E lane to clone the same commit as the manifests.
-yq e --inplace ".jobs.main.steps[] |= select(.name==\"Checkout MetalLB\").with.ref=\"${METALLB_COMMIT_ID}\"" .github/workflows/metallb_e2e.yml
-
 fetch_metallb
 
 # we want to preserve the metallb crd
