@@ -273,12 +273,17 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2021-06-28 00:00:00"
+    createdAt: "2023-03-22T10:26:14Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
-    operators.operatorframework.io/builder: operator-sdk-v1.8.0+git
+    operators.operatorframework.io/builder: operator-sdk-v1.26.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
     repository: https://github.com/metallb/metallb-operator
     support: Community
+  labels:
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/arch.arm64: supported
+    operatorframework.io/arch.ppc64le: supported
+    operatorframework.io/arch.s390x: supported
   name: metallb-operator.v0.0.0
   namespace: placeholder
 spec:
@@ -350,6 +355,12 @@ spec:
             - apiGroups:
                 - ""
               resources:
+                - nodes
+              verbs:
+                - list
+            - apiGroups:
+                - ""
+              resources:
                 - services/status
               verbs:
                 - update
@@ -390,6 +401,7 @@ spec:
                 - mutatingwebhookconfigurations
               verbs:
                 - list
+                - watch
             - apiGroups:
                 - apiextensions.k8s.io
               resourceNames:
@@ -416,6 +428,7 @@ spec:
                 - customresourcedefinitions
               verbs:
                 - list
+                - watch
           serviceAccountName: controller
         - rules:
             - apiGroups:
@@ -515,7 +528,7 @@ spec:
                 - patch
                 - update
                 - watch
-          serviceAccountName: default
+          serviceAccountName: manager-account
         - rules:
             - apiGroups:
                 - authentication.k8s.io
@@ -565,7 +578,9 @@ spec:
                 - use
           serviceAccountName: speaker
       deployments:
-        - name: metallb-operator-controller-manager
+        - label:
+            control-plane: controller-manager
+          name: metallb-operator-controller-manager
           spec:
             replicas: 1
             selector:
@@ -591,7 +606,7 @@ spec:
                       - name: METALLB_BGP_TYPE
                         value: native
                       - name: FRR_IMAGE
-                        value: frrouting/frr:v7.5.1
+                        value: quay.io/frrouting/frr:8.4.2
                       - name: KUBE_RBAC_PROXY_IMAGE
                         value: quay.io/brancz/kube-rbac-proxy:v0.11.0
                       - name: DEPLOY_KUBE_RBAC_PROXIES
@@ -623,13 +638,17 @@ spec:
                       - mountPath: /tmp/k8s-webhook-server/serving-certs
                         name: cert
                         readOnly: true
+                serviceAccountName: manager-account
                 terminationGracePeriodSeconds: 10
                 volumes:
                   - name: cert
                     secret:
                       defaultMode: 420
                       secretName: metallb-operator-webhook-server-cert
-        - name: metallb-operator-webhook-server
+        - label:
+            app: metallb
+            component: webhook-server
+          name: metallb-operator-webhook-server
           spec:
             revisionHistoryLimit: 3
             selector:
@@ -797,25 +816,13 @@ spec:
               resources:
                 - configmaps
               verbs:
+                - create
+                - delete
                 - get
                 - list
-                - watch
-                - create
-                - update
                 - patch
-                - delete
-            - apiGroups:
-                - coordination.k8s.io
-              resources:
-                - leases
-              verbs:
-                - get
-                - list
-                - watch
-                - create
                 - update
-                - patch
-                - delete
+                - watch
             - apiGroups:
                 - ""
               resources:
@@ -846,7 +853,19 @@ spec:
                 - patch
                 - update
                 - watch
-          serviceAccountName: default
+            - apiGroups:
+                - coordination.k8s.io
+              resources:
+                - leases
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+          serviceAccountName: manager-account
         - rules:
             - apiGroups:
                 - ""
@@ -858,6 +877,14 @@ spec:
                 - ""
               resources:
                 - secrets
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
               verbs:
                 - get
                 - list
@@ -953,46 +980,6 @@ spec:
     - admissionReviewVersions:
         - v1
       containerPort: 443
-      deploymentName: metallb-operator-controller-manager
-      failurePolicy: Fail
-      generateName: metallbvalidationwebhook.metallb.io
-      rules:
-        - apiGroups:
-            - metallb.io
-          apiVersions:
-            - v1beta1
-          operations:
-            - CREATE
-            - UPDATE
-          resources:
-            - metallbs
-      sideEffects: None
-      targetPort: 9443
-      type: ValidatingAdmissionWebhook
-      webhookPath: /validate-metallb-io-v1beta1-metallb
-    - admissionReviewVersions:
-        - v1
-      containerPort: 443
-      deploymentName: metallb-operator-webhook-server
-      failurePolicy: Fail
-      generateName: bgppeersvalidationwebhook.metallb.io
-      rules:
-        - apiGroups:
-            - metallb.io
-          apiVersions:
-            - v1beta2
-          operations:
-            - CREATE
-            - UPDATE
-          resources:
-            - bgppeers
-      sideEffects: None
-      targetPort: 9443
-      type: ValidatingAdmissionWebhook
-      webhookPath: /validate-metallb-io-v1beta2-bgppeer
-    - admissionReviewVersions:
-        - v1
-      containerPort: 443
       deploymentName: metallb-operator-webhook-server
       failurePolicy: Fail
       generateName: addresspoolvalidationwebhook.metallb.io
@@ -1055,6 +1042,39 @@ spec:
       containerPort: 443
       deploymentName: metallb-operator-webhook-server
       failurePolicy: Fail
+      generateName: bgppeersvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta2
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - bgppeers
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta2-bgppeer
+    - admissionReviewVersions:
+        - v1alpha1
+        - v1beta1
+      containerPort: 443
+      conversionCRDs:
+        - addresspools.metallb.io
+        - bgppeers.metallb.io
+      deploymentName: metallb-operator-webhook-server
+      generateName: caddresspoolsbgppeers.kb.io
+      sideEffects: None
+      targetPort: 9443
+      type: ConversionWebhook
+      webhookPath: /convert
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-webhook-server
+      failurePolicy: Fail
       generateName: communityvalidationwebhook.metallb.io
       rules:
         - apiGroups:
@@ -1111,15 +1131,22 @@ spec:
       type: ValidatingAdmissionWebhook
       webhookPath: /validate-metallb-io-v1beta1-l2advertisement
     - admissionReviewVersions:
-        - v1alpha1
-        - v1beta1
+        - v1
       containerPort: 443
-      conversionCRDs:
-        - addresspools.metallb.io
-        - bgppeers.metallb.io
-      deploymentName: metallb-operator-webhook-server
-      generateName: caddresspoolsbgppeers.kb.io
+      deploymentName: metallb-operator-controller-manager
+      failurePolicy: Fail
+      generateName: metallbvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - metallbs
       sideEffects: None
       targetPort: 9443
-      type: ConversionWebhook
-      webhookPath: /convert
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-metallb-io-v1beta1-metallb

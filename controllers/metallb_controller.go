@@ -61,6 +61,9 @@ var MetalLBChartPath = MetalLBChartPathController
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",namespace=metallb-system,resources=services,verbs=create;delete;get;update;patch
+// +kubebuilder:rbac:groups="coordination.k8s.io",namespace=metallb-system,resources=leases,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",namespace=metallb-system,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="",namespace=metallb-system,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
 // Cluster Scoped
 // +kubebuilder:rbac:groups=metallb.io,resources=metallbs,verbs=get;list;watch;create;update;patch;delete
@@ -107,7 +110,7 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 		}
 		if err := status.Update(context.TODO(), r.Client, instance, condition, errorMsg, wrappedErrMsg); err != nil {
-			logger.Info("Failed to update metallb status", "Desired status", status.ConditionAvailable)
+			logger.Error(err, "Failed to update metallb status", "Desired status", status.ConditionAvailable)
 		}
 	}
 	return result, err

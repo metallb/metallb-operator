@@ -9,7 +9,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
   name: addresspools.metallb.io
 spec:
   conversion:
@@ -210,18 +211,12 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: bfdprofiles.metallb.io
 spec:
@@ -323,18 +318,12 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: bgpadvertisements.metallb.io
 spec:
@@ -454,6 +443,7 @@ spec:
                         are ANDed.
                       type: object
                   type: object
+                  x-kubernetes-map-type: atomic
                 type: array
               ipAddressPools:
                 description: The list of IPAddressPools to advertise via this advertisement,
@@ -518,6 +508,7 @@ spec:
                         are ANDed.
                       type: object
                   type: object
+                  x-kubernetes-map-type: atomic
                 type: array
               peers:
                 description: Peers limits the bgppeer to advertise the ips of the
@@ -535,18 +526,13 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
   name: bgppeers.metallb.io
 spec:
   conversion:
@@ -789,6 +775,7 @@ spec:
                         are ANDed.
                       type: object
                   type: object
+                  x-kubernetes-map-type: atomic
                 type: array
               password:
                 description: Authentication password for routers enforcing TCP MD5
@@ -809,6 +796,7 @@ spec:
                       name must be unique.
                     type: string
                 type: object
+                x-kubernetes-map-type: atomic
               peerASN:
                 description: AS number to expect from the remote end of the session.
                 format: int32
@@ -847,18 +835,12 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: communities.metallb.io
 spec:
@@ -912,18 +894,12 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: ipaddresspools.metallb.io
 spec:
@@ -1045,6 +1021,7 @@ spec:
                             only "value". The requirements are ANDed.
                           type: object
                       type: object
+                      x-kubernetes-map-type: atomic
                     type: array
                   namespaces:
                     description: Namespaces list of namespace(s) on which ip pool
@@ -1106,6 +1083,7 @@ spec:
                             only "value". The requirements are ANDed.
                           type: object
                       type: object
+                      x-kubernetes-map-type: atomic
                     type: array
                 type: object
             required:
@@ -1121,18 +1099,12 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: l2advertisements.metallb.io
 spec:
@@ -1237,6 +1209,7 @@ spec:
                         are ANDed.
                       type: object
                   type: object
+                  x-kubernetes-map-type: atomic
                 type: array
               ipAddressPools:
                 description: The list of IPAddressPools to advertise via this advertisement,
@@ -1295,6 +1268,7 @@ spec:
                         are ANDed.
                       type: object
                   type: object
+                  x-kubernetes-map-type: atomic
                 type: array
             type: object
           status:
@@ -1305,12 +1279,6 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3357,10 +3325,17 @@ spec:
     subresources:
       status: {}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: manager-account
+  namespace: metallb-system
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: leader-election-role
+  creationTimestamp: null
+  name: metallb-manager-role
   namespace: metallb-system
 rules:
 - apiGroups:
@@ -3368,25 +3343,13 @@ rules:
   resources:
   - configmaps
   verbs:
+  - create
+  - delete
   - get
   - list
-  - watch
-  - create
-  - update
   - patch
-  - delete
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - list
-  - watch
-  - create
   - update
-  - patch
-  - delete
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -3394,14 +3357,6 @@ rules:
   verbs:
   - create
   - patch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  creationTimestamp: null
-  name: manager-role
-  namespace: metallb-system
-rules:
 - apiGroups:
   - ""
   resources:
@@ -3425,12 +3380,24 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: metallb-manager-role
 rules:
 - apiGroups:
   - ""
@@ -3533,42 +3500,28 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: leader-election-rolebinding
+  name: metallb-manager-rolebinding
   namespace: metallb-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: leader-election-role
+  name: metallb-manager-role
 subjects:
 - kind: ServiceAccount
-  name: default
-  namespace: metallb-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: manager-rolebinding
-  namespace: metallb-system
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: manager-role
-subjects:
-- kind: ServiceAccount
-  name: default
+  name: manager-account
   namespace: metallb-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: manager-rolebinding
+  name: metallb-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: metallb-manager-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: manager-account
   namespace: metallb-system
 ---
 apiVersion: v1
@@ -3637,7 +3590,7 @@ spec:
         - name: METALLB_BGP_TYPE
           value: native
         - name: FRR_IMAGE
-          value: frrouting/frr:v7.5.1
+          value: quay.io/frrouting/frr:8.4.2
         - name: KUBE_RBAC_PROXY_IMAGE
           value: quay.io/brancz/kube-rbac-proxy:v0.11.0
         - name: DEPLOY_KUBE_RBAC_PROXIES
@@ -3669,6 +3622,7 @@ spec:
         - mountPath: /tmp/k8s-webhook-server/serving-certs
           name: cert
           readOnly: true
+      serviceAccountName: manager-account
       terminationGracePeriodSeconds: 10
       volumes:
       - name: cert
@@ -4062,6 +4016,14 @@ rules:
   - list
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - metallb.io
   resources:
   - addresspools
@@ -4173,6 +4135,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - nodes
+  verbs:
+  - list
+- apiGroups:
+  - ""
+  resources:
   - services/status
   verbs:
   - update
@@ -4213,6 +4181,7 @@ rules:
   - mutatingwebhookconfigurations
   verbs:
   - list
+  - watch
 - apiGroups:
   - apiextensions.k8s.io
   resourceNames:
@@ -4239,6 +4208,7 @@ rules:
   - customresourcedefinitions
   verbs:
   - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

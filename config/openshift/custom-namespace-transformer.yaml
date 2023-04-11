@@ -1,0 +1,6 @@
+apiVersion: builtin
+kind: NamespaceTransformer
+metadata:
+  name: custom-namespace-transformer
+  namespace: metallb-system
+setRoleBindingSubjects: allServiceAccounts

@@ -49,18 +49,19 @@ jobs:
         with:
           repository: metallb/metallb
           path: metallb
-          ref: 87842bdc6e0e42754f93ecccef2bcdac596ccd06
-      - name: Checkout MetalLB v0.12.1
+          ref: 1424dbaef1313b8bb20df136e8eacd2dbacdae02
+      - name: Checkout MetalLB v0.12
         uses: actions/checkout@v2
         with:
           repository: metallb/metallb
-          path: metallb-0.12.1
-          ref: v0.12.1
+          path: metallb-0.12
+          ref: v0.12
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install linux-modules-extra-$(uname -r) python3-pip arping ndisc6
           sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
       - name: Build image
         run: |
           IMG=${built_image} make docker-build
@@ -91,7 +92,7 @@ jobs:
           sudo -E env "PATH=$PATH" inv e2etest --skip "IPV6|DUALSTACK" -e /tmp/kind_logs
       - name: MetalLB E2E Tests - backward compatible
         run: |
-          patch ${GITHUB_WORKSPACE}/metallb-0.12.1/e2etest/pkg/config/update.go < ${GITHUB_WORKSPACE}/metallb/e2etest/backwardcompatible/patchfile
+          patch ${GITHUB_WORKSPACE}/metallb-0.12/e2etest/pkg/config/update.go < ${GITHUB_WORKSPACE}/metallb/e2etest/backwardcompatible/patchfile
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
           kind: ConfigMap
@@ -99,8 +100,8 @@ jobs:
             namespace: metallb-system
             name: config
           EOF
-          cd ${GITHUB_WORKSPACE}/metallb-0.12.1
-          FOCUS="L2.*should work for ExternalTrafficPolicy=Cluster|BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$|validate FRR running configuration"
+          cd ${GITHUB_WORKSPACE}/metallb-0.12
+          FOCUS="L2.*should work for ExternalTrafficPolicy=Cluster|BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$|BGP.*should work with the given bfd profile.*IPV4 - default"
           sudo -E env "PATH=$PATH" inv e2etest --use-operator --focus "$FOCUS" -e /tmp/kind_logs
       - name: Change permissions for kind logs
         if: ${{ failure() }}

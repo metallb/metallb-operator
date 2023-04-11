@@ -8,12 +8,12 @@ for deploying MetalLB on a kubernetes cluster, as described in the [related desi
 Need to install the following packages:
 
 - operator-sdk 1.8.0+
-- controller-gen v0.7.0+
+- controller-gen v0.11.1+
 
 To install controller-gen, run the following:
 
 ```
-go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.1
 ```
 
 ## Quick Setup
@@ -29,6 +29,16 @@ To install the MetalLB Operator using a prebuilt image, run the following:
 ```shell
 make deploy
 ```
+
+## Installation on OpenShift
+
+To install the MetalLB Operator using a prebuilt image on OpenShift, run the following:
+```shell
+make deploy-openshift
+```
+> **Note:** This requires kustomize 4.5.6 or above.
+
+> **Note:** To undeploy on OpenShift, use the `undeploy-openshift` target.
 
 ## Usage
 

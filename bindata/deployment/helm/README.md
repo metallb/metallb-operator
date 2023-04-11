@@ -27,6 +27,7 @@ Kubernetes: `>= 1.19.0-0`
 | controller.image.pullPolicy | string | `nil` |  |
 | controller.image.repository | string | `"quay.io/metallb/controller"` |  |
 | controller.image.tag | string | `nil` |  |
+| controller.labels | object | `{}` |  |
 | controller.livenessProbe.enabled | bool | `true` |  |
 | controller.livenessProbe.failureThreshold | int | `3` |  |
 | controller.livenessProbe.initialDelaySeconds | int | `10` |  |
@@ -89,6 +90,7 @@ Kubernetes: `>= 1.19.0-0`
 | prometheus.prometheusRule.staleConfig.enabled | bool | `true` |  |
 | prometheus.prometheusRule.staleConfig.labels.severity | string | `"warning"` |  |
 | prometheus.rbacPrometheus | bool | `true` |  |
+| prometheus.rbacProxy.pullPolicy | string | `nil` |  |
 | prometheus.rbacProxy.repository | string | `"gcr.io/kubebuilder/kube-rbac-proxy"` |  |
 | prometheus.rbacProxy.tag | string | `"v0.12.0"` |  |
 | prometheus.scrapeAnnotations | bool | `false` |  |
@@ -108,16 +110,18 @@ Kubernetes: `>= 1.19.0-0`
 | rbac.create | bool | `true` |  |
 | speaker.affinity | object | `{}` |  |
 | speaker.enabled | bool | `true` |  |
+| speaker.excludeInterfaces.enabled | bool | `true` |  |
 | speaker.frr.enabled | bool | `false` |  |
 | speaker.frr.image.pullPolicy | string | `nil` |  |
-| speaker.frr.image.repository | string | `"frrouting/frr"` |  |
-| speaker.frr.image.tag | string | `"v7.5.1"` |  |
+| speaker.frr.image.repository | string | `"quay.io/frrouting/frr"` |  |
+| speaker.frr.image.tag | string | `"8.4.2"` |  |
 | speaker.frr.metricsPort | int | `7473` |  |
 | speaker.frr.resources | object | `{}` |  |
 | speaker.frrMetrics.resources | object | `{}` |  |
 | speaker.image.pullPolicy | string | `nil` |  |
 | speaker.image.repository | string | `"quay.io/metallb/speaker"` |  |
 | speaker.image.tag | string | `nil` |  |
+| speaker.labels | object | `{}` |  |
 | speaker.livenessProbe.enabled | bool | `true` |  |
 | speaker.livenessProbe.failureThreshold | int | `3` |  |
 | speaker.livenessProbe.initialDelaySeconds | int | `10` |  |

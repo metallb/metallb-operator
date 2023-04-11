@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: bgppeers.metallb.io
 spec:
@@ -246,6 +246,7 @@ spec:
                         are ANDed.
                       type: object
                   type: object
+                  x-kubernetes-map-type: atomic
                 type: array
               password:
                 description: Authentication password for routers enforcing TCP MD5
@@ -266,6 +267,7 @@ spec:
                       name must be unique.
                     type: string
                 type: object
+                x-kubernetes-map-type: atomic
               peerASN:
                 description: AS number to expect from the remote end of the session.
                 format: int32
@@ -308,5 +310,5 @@ status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: []
-  storedVersions: []
+  conditions: null
+  storedVersions: null

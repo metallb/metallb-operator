@@ -13,8 +13,11 @@ REPO ?= quay.io/metallb
 IMG ?= $(REPO)/metallb-operator:$(VERSION)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1"
-# Which dir to use in deploy kustomize build
+#Which dir to use in deploy kustomize build
 KUSTOMIZE_DEPLOY_DIR ?= config/default
+
+# Route to operator-sdk binary
+OPERATOR_SDK=_cache/operator-sdk
 
 # Default bundle image tag
 BUNDLE_IMG ?= $(REPO)/metallb-operator-bundle:$(VERSION)
@@ -40,9 +43,11 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION=v1.8.1
+OPERATOR_SDK_VERSION=v1.26.1
 OLM_VERSION=v0.18.3
 OPM_VERSION=v1.23.2
+KUSTOMIZE_VERSION=v5.0.1
+KUSTOMIZE=$(shell pwd)/_cache/kustomize
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
@@ -88,9 +93,18 @@ deploy: manifests kustomize ## Deploy controller in the configured cluster
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl apply -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl apply -f -
 
+set-namespace-openshift:
+	sed -i 's/  namespace:.*/  namespace: $(NAMESPACE)/' $(KUSTOMIZE_DEPLOY_DIR)/custom-namespace-transformer.yaml
+
+deploy-openshift: KUSTOMIZE_DEPLOY_DIR=config/openshift
+deploy-openshift: set-namespace-openshift deploy ## Deploy controller in the configured OpenShift cluster
+
 undeploy: ## Undeploy the controller from the configured cluster
 	$(KUSTOMIZE) build $(KUSTOMIZE_DEPLOY_DIR) | kubectl delete --ignore-not-found=true -f -
 	$(KUSTOMIZE) build config/metallb_rbac | kubectl delete --ignore-not-found=true -f -
+
+undeploy-openshift: KUSTOMIZE_DEPLOY_DIR=config/openshift
+undeploy-openshift: undeploy ## Undeploy the controller from the configured OpenShift cluster
 
 BIN_FILE ?= "metallb-operator.yaml"
 bin: manifests kustomize ## Create manifests
@@ -102,7 +116,7 @@ bin: manifests kustomize ## Create manifests
 	$(KUSTOMIZE) build config/metallb_rbac >> bin/$(BIN_FILE)
 
 manifests: controller-gen generate-metallb-manifests  ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=metallb-manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	sed -i -e 's/validating-webhook-configuration/metallb-operator-webhook-configuration/g' config/webhook/manifests.yaml
 	sed -i -e 's/webhook-service/metallb-operator-webhook-service/g' config/webhook/manifests.yaml
 
@@ -130,14 +144,14 @@ bundle: operator-sdk manifests  ## Generate bundle manifests and metadata, then 
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker"
 	$(OPERATOR_SDK) bundle validate ./bundle
 
-bundle-release: bundle bump_versions ## Generate the bundle manifests for a PR
+bundle-release: kustomize bundle bump_versions  ## Generate the bundle manifests for a PR
 
 build-bundle: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 deploy-olm: operator-sdk ## deploys OLM on the cluster
-	operator-sdk olm install --version $(OLM_VERSION)
-	operator-sdk olm status
+	$(OPERATOR_SDK) olm install --version $(OLM_VERSION)
+	$(OPERATOR_SDK) olm status
 
 deploy-with-olm: ## deploys the operator with OLM instead of manifests
 	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:$(VERSION)#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
@@ -168,26 +182,26 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
+# Get the current operator-sdk binary into the _cache dir.
 kustomize:
-ifeq (, $(shell which kustomize))
-	go install sigs.k8s.io/kustomize/kustomize/v4@v4.4.0
-KUSTOMIZE=$(GOBIN)/kustomize
-else
-KUSTOMIZE=$(shell which kustomize)
-endif
-
-# Get the current operator-sdk binary. If there isn't any, we'll use the
-# GOBIN path
-operator-sdk:
-ifeq (, $(shell which operator-sdk))
+	mkdir -p _cache
+ifeq (,$(findstring $(KUSTOMIZE_VERSION),$(shell _cache/kustomize version)))
 	@{ \
 	set -e ;\
-	curl -Lk  https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_linux_amd64 > $(GOBIN)/operator-sdk ;\
-	chmod u+x $(GOBIN)/operator-sdk ;\
+	curl -s -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_linux_amd64.tar.gz | tar fxvz - -C _cache ;\
+	chmod u+x _cache/kustomize ;\
 	}
-OPERATOR_SDK=$(GOBIN)/operator-sdk
-else
-OPERATOR_SDK=$(shell which operator-sdk)
+endif
+
+# Get the current operator-sdk binary into the _cache dir.
+operator-sdk:
+	mkdir -p _cache
+ifeq (,$(findstring $(OPERATOR_SDK_VERSION),$(shell _cache/operator-sdk version)))
+	@{ \
+	set -e ;\
+	curl -Lk  https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_linux_amd64 > _cache/operator-sdk ;\
+	chmod u+x _cache/operator-sdk ;\
+	}
 endif
 
 # Get the current opm binary. If there isn't any, we'll use the
@@ -234,6 +248,15 @@ fetch_metallb_version: ## Updates the versions of metallb under hack/metallb_ver
 bump_versions: ## Updates the versions of the metallb-operator / metallb image with the content of hack/operator_version / metallb_version
 	@echo "Updating the operator version"
 	hack/bump_versions.sh
+
+
+
+bump_metallb: ## Bumps metallb commit ID and creates manifests. It also validates the changes.
+	@echo "Updating the metallb version"
+	hack/bump_metallb.sh
+	$(MAKE) bin
+	$(MAKE) bundle-release
+	$(MAKE) test
 
 check_generated: ## Checks if there are any different with the current checkout
 	@echo "Checking generated files"
