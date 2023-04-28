@@ -1,8 +1,8 @@
 apiVersion: node.k8s.io/v1
 kind: RuntimeClass
 metadata:
-  name: myclass 
-handler: myconfiguration 
+  name: myclass
+handler: myconfiguration
 ---
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
@@ -19,6 +19,7 @@ spec:
   logLevel: debug
   nodeSelector:
     feature.node.kubernetes.io/metalLB.capable: 'true'
+  loadBalancerClass: 'metallb.universe.tf/metallb'
   speakerTolerations:
   - key: "Example"
     operator: "Exists"
