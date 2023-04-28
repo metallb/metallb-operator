@@ -85,6 +85,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 			Effect:   v1.TaintEffectNoExecute,
 		},
 	}
+	loadBalancerClass := "metallb.universe.tf/metallb"
 	controllerNodeSelector := map[string]string{"kubernetes.io/os": "linux", "node-role.kubernetes.io/worker": "true"}
 	controllerConfig := &metallbv1beta1.Config{
 		PriorityClassName: "high-priority",
@@ -118,6 +119,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 			ControllerTolerations:  controllerTolerations,
 			ControllerConfig:       controllerConfig,
 			SpeakerConfig:          speakerConfig,
+			LoadBalancerClass:      loadBalancerClass,
 		},
 	}
 
@@ -163,6 +165,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 				if container.Name == "speaker" {
 					g.Expect(container.Resources).NotTo(BeNil())
 					g.Expect(container.Resources.Limits.Cpu().MilliValue()).To(Equal(int64(200)))
+					g.Expect(container.Args).To(ContainElement("--lb-class=metallb.universe.tf/metallb"))
 					speakerContainerFound = true
 				}
 			}

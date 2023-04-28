@@ -6,6 +6,7 @@ metadata:
 spec:
   nodeSelector:
     feature.node.kubernetes.io/metalLB.capable: 'true'
+  loadBalancerClass: 'metallb.universe.tf/metallb'
   speakerTolerations:
   - key: "Example"
     operator: "Exists"

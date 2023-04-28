@@ -59,6 +59,11 @@ type MetalLBSpec struct {
 	// +kubebuilder:validation:Enum=all;debug;info;warn;error;none
 	LogLevel MetalLBLogLevel `json:"logLevel,omitempty"`
 
+	// The loadBalancerClass spec attribute that the MetalLB controller should
+	// be watching for
+	// +optional
+	LoadBalancerClass string `json:"loadBalancerClass,omitempty"`
+
 	// node selector applied to MetalLB controller deployment.
 	// +optional
 	ControllerNodeSelector map[string]string `json:"controllerNodeSelector,omitempty"`

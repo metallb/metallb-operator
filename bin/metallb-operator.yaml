@@ -2277,6 +2277,10 @@ spec:
                 description: Foo is an example field of MetalLB. Edit MetalLB_types.go
                   to remove/update
                 type: string
+              loadBalancerClass:
+                description: The loadBalancerClass spec attribute that the MetalLB
+                  controller should be watching for
+                type: string
               logLevel:
                 description: 'Define the verbosity of the controller and the speaker
                   logging. Allowed values are: all, debug, info, warn, error, none.

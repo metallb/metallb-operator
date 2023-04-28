@@ -49,9 +49,16 @@ type imageInfo struct {
 }
 
 func patchToChartValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, withPrometheus bool, valueMap map[string]interface{}) {
+	withGeneralValues(c, crdConfig, valueMap)
 	withPrometheusValues(c, valueMap)
 	withControllerValues(c, crdConfig, valueMap)
 	withSpeakerValues(c, crdConfig, valueMap)
+}
+
+func withGeneralValues(c *chartConfig, crdConfig *metallbv1beta1.MetalLB, valueMap map[string]interface{}) {
+	if crdConfig.Spec.LoadBalancerClass != "" {
+		valueMap["loadBalancerClass"] = crdConfig.Spec.LoadBalancerClass
+	}
 }
 
 func withPrometheusValues(c *chartConfig, valueMap map[string]interface{}) {
