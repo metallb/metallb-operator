@@ -2279,7 +2279,10 @@ spec:
                 type: string
               loadBalancerClass:
                 description: The loadBalancerClass spec attribute that the MetalLB
-                  controller should be watching for
+                  controller should be watching for. must be a label-style identifier,
+                  with an optional prefix such as "internal-vip" or "example.com/internal-vip".
+                  Unprefixed names are reserved for end-users.
+                pattern: ^([a-z0-9A-Z]([\w.\-]*[a-z0-9A-Z])?/)?[a-z0-9A-Z]([\w.\-]*[a-z0-9A-Z])?$
                 type: string
               logLevel:
                 description: 'Define the verbosity of the controller and the speaker

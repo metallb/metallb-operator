@@ -60,8 +60,11 @@ type MetalLBSpec struct {
 	LogLevel MetalLBLogLevel `json:"logLevel,omitempty"`
 
 	// The loadBalancerClass spec attribute that the MetalLB controller should
-	// be watching for
+	// be watching for. must be a label-style identifier, with an optional
+	// prefix such as "internal-vip" or "example.com/internal-vip". Unprefixed
+	// names are reserved for end-users.
 	// +optional
+	// +kubebuilder:validation:Pattern=`^([a-z0-9A-Z]([\w.\-]*[a-z0-9A-Z])?/)?[a-z0-9A-Z]([\w.\-]*[a-z0-9A-Z])?$`
 	LoadBalancerClass string `json:"loadBalancerClass,omitempty"`
 
 	// node selector applied to MetalLB controller deployment.
