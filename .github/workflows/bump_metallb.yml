@@ -20,8 +20,7 @@ jobs:
       - name: Get current metallb commit hash
         id: old-metallb
         run: |
-          source metallboperator/hack/common.sh
-          echo "commit_sha=$METALLB_COMMIT_ID" >> $GITHUB_OUTPUT
+          echo "commit_sha=$(cat metallboperator/hack/metallb_ref.txt)" >> $GITHUB_OUTPUT
       - name: Get old commit info
         id: old-commit-info
         run: |
