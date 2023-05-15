@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/reporters"
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 
@@ -19,11 +20,12 @@ import (
 	kniK8sReporter "github.com/openshift-kni/k8sreporter"
 )
 
-var OperatorNameSpace = consts.DefaultOperatorNameSpace
-
-var junitPath *string
-var reportPath *string
-var r *kniK8sReporter.KubernetesReporter
+var (
+	OperatorNameSpace = consts.DefaultOperatorNameSpace
+	junitPath         *string
+	reportPath        *string
+	r                 *kniK8sReporter.KubernetesReporter
+)
 
 func init() {
 	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
@@ -39,11 +41,6 @@ func TestValidation(t *testing.T) {
 
 	_, reporterConfig := GinkgoConfiguration()
 
-	if *junitPath != "" {
-		junitFile := path.Join(*junitPath, "validation_junit.xml")
-		reporterConfig.JUnitReport = junitFile
-	}
-
 	if *reportPath != "" {
 		kubeconfig := os.Getenv("KUBECONFIG")
 		r = k8sreporter.New(kubeconfig, *reportPath, OperatorNameSpace)
@@ -51,6 +48,17 @@ func TestValidation(t *testing.T) {
 
 	RunSpecs(t, "Metallb Operator Validation Suite", reporterConfig)
 }
+
+var _ = ReportAfterSuite("validationsuite", func(report types.Report) {
+	if *junitPath != "" {
+		junitFile := path.Join(*junitPath, "metallb_operator_validation_junit.xml")
+		reporters.GenerateJUnitReportWithConfig(report, junitFile, reporters.JunitReportConfig{
+			OmitTimelinesForSpecState: types.SpecStatePassed | types.SpecStateSkipped,
+			OmitLeafNodeType:          true,
+			OmitSuiteSetupNodes:       true,
+		})
+	}
+})
 
 var _ = ReportAfterEach(func(specReport types.SpecReport) {
 	if specReport.Failed() == false {
