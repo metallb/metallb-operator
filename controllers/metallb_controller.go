@@ -110,7 +110,7 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 		}
 		if err := status.Update(context.TODO(), r.Client, instance, condition, errorMsg, wrappedErrMsg); err != nil {
-			logger.Error(err, "Failed to update metallb status", "Desired status", status.ConditionAvailable)
+			logger.Error(err, "Failed to update metallb status", "Desired status", condition)
 		}
 	}
 	return result, err
