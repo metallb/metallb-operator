@@ -106,7 +106,7 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if condition != "" {
 		errorMsg, wrappedErrMsg := condition, ""
 		if err != nil {
-			errorMsg = err.Error()
+			errorMsg = "internal error"
 			if errors.Unwrap(err) != nil {
 				wrappedErrMsg = errors.Unwrap(err).Error()
 			}
