@@ -101,7 +101,7 @@ func IsMetalLBAvailable(ctx context.Context, client k8sclient.Client, namespace 
 	if err != nil {
 		return err
 	}
-	if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled {
+	if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled || ds.Status.DesiredNumberScheduled != ds.Status.NumberReady {
 		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset not ready"}
 	}
 	deployment := &appsv1.Deployment{}
