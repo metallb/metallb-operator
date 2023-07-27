@@ -62,6 +62,8 @@ jobs:
             
             to:  ${{ steps.new-commit-info.outputs.commit_sha }}
             ${{ steps.new-commit-info.outputs.commit_title }} (${{ steps.new-commit-info.outputs.commit_date }})
+
+            Signed-off-by: github-actions[bot] <noreply@github.com>
           author: github-actions[bot] <noreply@github.com>
           committer: github-actions[bot] <noreply@github.com>
           title: "Bump MetalLB"
