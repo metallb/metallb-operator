@@ -38,7 +38,7 @@ jobs:
       - name: Verify release bundle manifests
         run: |
           make bundle-release
-          git diff --exit-code --quiet -I'^    createdAt: ' bundle
+          git diff --exit-code -I'^    createdAt: ' bundle
 
       - name: Create and set up K8s Kind Cluster
         run: |
