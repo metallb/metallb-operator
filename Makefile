@@ -8,6 +8,7 @@ CSV_VERSION := 0.0.0
 endif
 # Default image repo
 REPO ?= quay.io/metallb
+BUNDLE_DOCKERFILE ?= bundle.Dockerfile
 
 # Image URL to use all building/pushing image targets
 IMG ?= $(REPO)/metallb-operator:$(VERSION)
@@ -147,14 +148,14 @@ bundle: operator-sdk manifests  ## Generate bundle manifests and metadata, then 
 bundle-release: kustomize bundle bump_versions  ## Generate the bundle manifests for a PR
 
 build-bundle: ## Build the bundle image.
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	docker build -f $(BUNDLE_DOCKERFILE) -t $(BUNDLE_IMG) .
 
 deploy-olm: operator-sdk ## deploys OLM on the cluster
 	$(OPERATOR_SDK) olm install --version $(OLM_VERSION)
 	$(OPERATOR_SDK) olm status
 
 deploy-with-olm: ## deploys the operator with OLM instead of manifests
-	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:$(VERSION)#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
+	sed -i 's#image:.*metallb-operator-bundle-index.*$ #image: $(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
 	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
 	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
 	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
@@ -162,8 +163,9 @@ deploy-with-olm: ## deploys the operator with OLM instead of manifests
 bundle-index-build: opm  ## Build the bundle index image.
 	$(OPM) index add --bundles $(BUNDLE_IMG) --tag $(BUNDLE_INDEX_IMG) -c docker -i quay.io/operator-framework/opm:$(OPM_VERSION)
 
-build-and-push-bundle-images: docker-build docker-push  ## Generate and push bundle image and bundle index image
-	$(MAKE) bundle
+build-and-push-operator: docker-build docker-push
+
+build-and-push-bundle-images: ## Generate and push bundle image and bundle index image
 	$(MAKE) build-bundle
 	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
 	$(MAKE) bundle-index-build
