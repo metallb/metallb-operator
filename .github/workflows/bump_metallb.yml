@@ -1,3 +1,6 @@
+# Note: If this is failing to create pull requests, it can be triaged
+# by inspecting the workflow run under the actions tab in github.
+
 name: Periodic MetalLB Bump
 on:
   schedule:
@@ -62,10 +65,9 @@ jobs:
             
             to:  ${{ steps.new-commit-info.outputs.commit_sha }}
             ${{ steps.new-commit-info.outputs.commit_title }} (${{ steps.new-commit-info.outputs.commit_date }})
-
-            Signed-off-by: github-actions[bot] <noreply@github.com>
           author: github-actions[bot] <noreply@github.com>
           committer: github-actions[bot] <noreply@github.com>
+          signoff: true
           title: "Bump MetalLB"
           branch: "bumpmetallb"
           delete-branch: true
