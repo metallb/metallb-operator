@@ -3,6 +3,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: speaker-monitor
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "metallb.labels" . | nindent 4 }}
     component: speaker
@@ -70,10 +71,11 @@ metadata:
   labels:
     name: speaker-monitor-service
   name: speaker-monitor-service
+  namespace: {{ .Release.Namespace | quote }}
 spec:
   selector:
-      {{- include "metallb.selectorLabels" . | nindent 6 }}
-      component: speaker
+    {{- include "metallb.selectorLabels" . | nindent 4 }}
+    component: speaker
   clusterIP: None
   ports:
     - name: {{ template "metrics.exposedportname" . }}
@@ -91,6 +93,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: controller-monitor
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "metallb.labels" . | nindent 4 }}
     component: speaker
@@ -116,7 +119,7 @@ spec:
       interval: {{ .Values.prometheus.serviceMonitor.interval }}
       {{- end }}
       honorLabels: true
-{{ if .Values.prometheus.secureMetricsPort }}
+{{- if .Values.prometheus.secureMetricsPort }}
       bearerTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token"
       scheme: "https"
 {{- if .Values.prometheus.serviceMonitor.controller.tlsConfig }}
@@ -145,8 +148,8 @@ metadata:
   name: controller-monitor-service
 spec:
   selector:
-      {{- include "metallb.selectorLabels" . | nindent 6 }}
-      component: controller
+    {{- include "metallb.selectorLabels" . | nindent 4 }}
+    component: controller
   clusterIP: None
   ports:
     - name: {{ template "metrics.exposedportname" . }}
@@ -160,6 +163,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: prometheus
+  namespace: {{ .Release.Namespace | quote }}
 rules:
   - apiGroups:
       - ""
@@ -176,6 +180,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: prometheus
+  namespace: {{ .Release.Namespace | quote }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
