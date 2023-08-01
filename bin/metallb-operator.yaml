@@ -2275,10 +2275,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              image:
-                description: Foo is an example field of MetalLB. Edit MetalLB_types.go
-                  to remove/update
-                type: string
               loadBalancerClass:
                 description: The loadBalancerClass spec attribute that the MetalLB
                   controller should be watching for. must be a label-style identifier,

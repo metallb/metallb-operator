@@ -41,9 +41,6 @@ type MetalLBSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of MetalLB. Edit MetalLB_types.go to remove/update
-	MetalLBImage string `json:"image,omitempty"`
-
 	// node selector applied to MetalLB speaker daemonset.
 	// +optional
 	SpeakerNodeSelector map[string]string `json:"nodeSelector,omitempty"`
