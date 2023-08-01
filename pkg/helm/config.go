@@ -330,9 +330,15 @@ func valueWithDefault(name string, def int) (int, error) {
 }
 
 func getImageNameTag(envValue string) (string, string) {
-	img := strings.Split(envValue, ":")
+	pos := strings.LastIndex(envValue, "/")
+	// We assume the last ":" shows up right before the image's tag, and the last "/" just before the image's name.
+	// Multiple ":" can be present when the port of the registry is specified and we should include
+	// it as part of the repo's url.
+	img := strings.Split(envValue[pos+1:], ":")
+	repoPath := envValue[:pos+1]
+
 	if len(img) == 1 {
-		return img[0], ""
+		return repoPath + img[0], ""
 	}
-	return img[0], img[1]
+	return repoPath + img[0], img[1]
 }
