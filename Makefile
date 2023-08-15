@@ -213,7 +213,7 @@ ifeq (, $(shell which opm))
 	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$(OPM_VERSION)/linux-amd64-opm > $(GOBIN)/opm ;\
 	chmod u+x $(GOBIN)/opm ;\
 	}
-OPM=$(GOBIN)/opm
+OPM=$(GOBIN)/opm	
 else
 OPM=$(shell which opm)
 endif
@@ -224,7 +224,7 @@ kubectl:
 ifeq (, $(shell which kubectl))
 	@{ \
 	set -e ;\
-	curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl > $(GOBIN)/kubectl ;\
+	curl -LO https://dl.k8s.io/release/v1.27.4/bin/linux/amd64/kubectl -o $(GOBIN) ;\
 	chmod u+x $(GOBIN)/kubectl ;\
 	}
 endif
