@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (metallb *MetalLB) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -36,18 +37,26 @@ func (metallb *MetalLB) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &MetalLB{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for MetalLB.
-func (metallb *MetalLB) ValidateCreate() error {
-	return metallb.validate()
+func (metallb *MetalLB) ValidateCreate() (admission.Warnings, error) {
+	if err := metallb.validate(); err != nil {
+		return admission.Warnings{}, err
+	}
+
+	return admission.Warnings{}, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for MetalLB.
-func (metallb *MetalLB) ValidateUpdate(old runtime.Object) error {
-	return metallb.validate()
+func (metallb *MetalLB) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+	if err := metallb.validate(); err != nil {
+		return admission.Warnings{}, err
+	}
+
+	return admission.Warnings{}, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for MetalLB.
-func (metallb *MetalLB) ValidateDelete() error {
-	return nil
+func (metallb *MetalLB) ValidateDelete() (admission.Warnings, error) {
+	return admission.Warnings{}, nil
 }
 
 func (metallb *MetalLB) validate() error {

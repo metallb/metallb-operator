@@ -95,7 +95,7 @@ func main() {
 	checkEnvVar("SPEAKER_IMAGE")
 	checkEnvVar("CONTROLLER_IMAGE")
 
-	namespaceSelector := cache.ObjectSelector{
+	namespaceSelector := cache.ByObject{
 		Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.namespace=%s", operatorNamespace)),
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -105,11 +105,11 @@ func main() {
 		LeaderElection:     *enableLeaderElection,
 		LeaderElectionID:   "metallb.io.metallboperator",
 		Namespace:          operatorNamespace,
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: map[client.Object]cache.ObjectSelector{
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
 				&metallbv1beta1.MetalLB{}: namespaceSelector,
 			},
-		}),
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
