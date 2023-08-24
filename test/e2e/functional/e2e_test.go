@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
@@ -57,7 +58,7 @@ var _ = ReportAfterEach(func(specReport types.SpecReport) {
 		return
 	}
 
-	if *reportPath != "" {
-		k8sreporter.DumpInfo(r, specReport.FullText())
+	if r != nil {
+		r.Dump(10*time.Minute, specReport.FullText())
 	}
 })
