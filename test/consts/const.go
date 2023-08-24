@@ -1,6 +1,10 @@
 package consts
 
-import "github.com/metallb/metallb-operator/pkg/apply"
+import (
+	"time"
+
+	"github.com/metallb/metallb-operator/pkg/apply"
+)
 
 const (
 	// MetalLBOperatorDeploymentName contains the name of the MetalLB Operator deployment
@@ -19,4 +23,6 @@ const (
 	MetalLBConfigMapName = apply.MetalLBConfigMap
 	// DefaultOperatorNameSpace is the default operator namespace
 	DefaultOperatorNameSpace = "metallb-system"
+	// LogsExtractDuration represents how much in the past to fetch the logs from
+	LogsExtractDuration = 10 * time.Minute
 )
