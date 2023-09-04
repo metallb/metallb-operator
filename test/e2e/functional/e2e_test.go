@@ -57,7 +57,8 @@ func TestE2E(t *testing.T) {
 
 	if *reportPath != "" {
 		kubeconfig := os.Getenv("KUBECONFIG")
-		r = k8sreporter.New(kubeconfig, *reportPath, OperatorNameSpace)
+		reportPath := path.Join(*reportPath, "metallb_failure_report.log")
+		r = k8sreporter.New(kubeconfig, reportPath, OperatorNameSpace)
 	}
 
 	RunSpecs(t, "Metallb Operator E2E Suite", reporterConfig)
