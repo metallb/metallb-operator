@@ -3,7 +3,9 @@
 package k8sreporter
 
 import (
+	"errors"
 	"log"
+	"os"
 
 	"github.com/openshift-kni/k8sreporter"
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +41,11 @@ func New(kubeconfig, path, namespace string) *k8sreporter.KubernetesReporter {
 	crds := []k8sreporter.CRData{
 		{Cr: &v1beta1.MetalLBList{}},
 		{Cr: &corev1.ServiceList{}},
+	}
+
+	err := os.Mkdir(path, 0755)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		log.Fatalf("Failed to create the reporter dir: %s", err)
 	}
 
 	reporter, err := k8sreporter.New(kubeconfig, addToScheme, dumpNamespace, path, crds...)
