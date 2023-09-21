@@ -172,7 +172,10 @@
                                 "path": "/livez",
                                 "port": 7473
                             },
-                            "periodSeconds": 10
+                            "initialDelaySeconds": 10,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
                         },
                         "name": "frr",
                         "securityContext": {
