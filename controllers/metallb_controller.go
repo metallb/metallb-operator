@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -89,6 +90,28 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		// Error reading the object - requeue the request.
 		return ctrl.Result{}, err
+	}
+
+	instanceList := &metallbv1beta1.MetalLBList{}
+	err = r.Client.List(context.TODO(), instanceList, &client.ListOptions{})
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "failed listing all MetalLB instances")
+	}
+
+	if len(instanceList.Items) > 0 {
+		if len(instanceList.Items) > 1 {
+			sort.Slice(instanceList.Items, func(i, j int) bool {
+				return instanceList.Items[j].CreationTimestamp.After(instanceList.Items[i].CreationTimestamp.Time)
+			})
+		}
+		if instanceList.Items[0].Name != req.Name {
+			logger.Info("Ignoring MetalLB.metallb.io because one already exists and does not match default name")
+			err = r.Client.Delete(context.TODO(), instance, &client.DeleteOptions{})
+			if err != nil {
+				logger.Error(err, "failed to remove MetalLB.metallb.io instance")
+			}
+			return ctrl.Result{}, nil
+		}
 	}
 
 	if req.Name != defaultMetalLBCrName {
