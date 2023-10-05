@@ -77,7 +77,7 @@ export KUBECONFIG=$(pwd)/kubeconfig
 To build and deploy the operator, run the following:
 
 ```shell
-export IMAGE_NAME=metallb-operator
+export IMAGE_NAME=localhost/metallb-operator
 
 make docker-build IMG=$IMAGE_NAME
 kind load docker-image $IMAGE_NAME
