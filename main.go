@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net"
@@ -39,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
@@ -84,6 +86,7 @@ func main() {
 		certDir             = flag.String("cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The directory where certs are stored")
 		certServiceName     = flag.String("cert-service-name", "metallb-operator-webhook-service", "The service name used to generate the TLS cert's hostname")
 		port                = flag.Int("port", 8080, "HTTP listening port to check operator readiness")
+		withWebhookHTTP2    = flag.Bool("webhook-http2", false, "enables http2 for the webhook endpoint")
 	)
 	flag.Parse()
 
@@ -98,10 +101,10 @@ func main() {
 	namespaceSelector := cache.ByObject{
 		Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.namespace=%s", operatorNamespace)),
 	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: *metricsAddr,
-		Port:               9443,
 		LeaderElection:     *enableLeaderElection,
 		LeaderElectionID:   "metallb.io.metallboperator",
 		Namespace:          operatorNamespace,
@@ -110,6 +113,7 @@ func main() {
 				&metallbv1beta1.MetalLB{}: namespaceSelector,
 			},
 		},
+		WebhookServer: webhookServer(9443, *withWebhookHTTP2),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -203,4 +207,21 @@ func checkEnvVar(name string) string {
 		os.Exit(1)
 	}
 	return value
+}
+
+func webhookServer(port int, withHTTP2 bool) webhook.Server {
+	disableHTTP2 := func(c *tls.Config) {
+		if withHTTP2 {
+			return
+		}
+		c.NextProtos = []string{"http/1.1"}
+	}
+
+	webhookServerOptions := webhook.Options{
+		TLSOpts: []func(config *tls.Config){disableHTTP2},
+		Port:    port,
+	}
+
+	res := webhook.NewServer(webhookServerOptions)
+	return res
 }
