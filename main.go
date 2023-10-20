@@ -151,14 +151,25 @@ func main() {
 		}
 		setupLog.Info("operator webhook for MetalLB CR is created")
 
-		http.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(200)
 			_, err = w.Write([]byte("ok"))
 			if err != nil {
 				setupLog.Error(err, "error writing ok response", "readiness", "MetalLB")
 			}
 		})
-		err = http.ListenAndServe(net.JoinHostPort("", fmt.Sprint(*port)), nil)
+
+		srv := &http.Server{
+			Handler:      mux,
+			Addr:         net.JoinHostPort("", fmt.Sprint(*port)),
+			TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
+		}
+		if *withWebhookHTTP2 {
+			srv.TLSNextProto = nil
+		}
+
+		err = srv.ListenAndServe()
 		if err != nil {
 			setupLog.Error(err, "listenAndServe", "readiness", "MetalLB")
 		}
