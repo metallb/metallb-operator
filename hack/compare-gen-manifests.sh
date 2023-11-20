@@ -2,7 +2,7 @@
 
 . $(dirname "$0")/common.sh
 
-METALLB_MANIFESTS_FILE="metallb-native.yaml"
+METALLB_MANIFESTS_FILE="metallb-frr-k8s.yaml"
 
 mv config/metallb_rbac/${METALLB_MANIFESTS_FILE} _cache/${METALLB_MANIFESTS_FILE}.rbac
 

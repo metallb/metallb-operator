@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	MetalLBHelmChartPathControllerTest = "../bindata/deployment/helm"
+	MetalLBHelmChartPathControllerTest = "../bindata/deployment/helm/metallb"
 	MetalLBTestNameSpace               = "metallb-test-namespace"
 )
 

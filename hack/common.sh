@@ -29,3 +29,12 @@ function fetch_metallb() {
         mv _cache/metallb-metallb-* "$METALLB_PATH"
     fi
 }
+
+export FRRK8S_PATH=_cache/frr-k8s
+function fetch_frrk8s() { # first arg is frr-k8s version, corresponding to metallb's chart dependency
+    if [[ ! -d "$FRRK8S_PATH" ]]; then
+        curl -L https://github.com/metallb/frr-k8s/tarball/"$1" | tar zx -C _cache
+        rm -rf "$FRRK8S_PATH"
+        mv _cache/metallb-frr-k8s-* "$FRRK8S_PATH"
+    fi
+}

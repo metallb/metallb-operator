@@ -1,4 +1,10 @@
 {{- if .Values.speaker.frr.enabled }}
+{{- if .Values.frrk8s.enabled }}
+{{- fail "speaker.frr.enabled and frrk8s.enabled are mutually exclusive!" }}
+{{- end }}
+{{- end }}
+{{- if .Values.speaker.frr.enabled }}
+
 # FRR expects to have these files owned by frr:frr on startup.
 # Having them in a ConfigMap allows us to modify behaviors: for example enabling more daemons on startup.
 apiVersion: v1
@@ -154,6 +160,10 @@ spec:
       serviceAccountName: {{ template "metallb.speaker.serviceAccountName" . }}
       terminationGracePeriodSeconds: 0
       hostNetwork: true
+      {{- if .Values.speaker.securityContext }}
+      securityContext:
+        {{- toYaml .Values.speaker.securityContext | nindent 8 }}
+      {{- end }}
       volumes:
       {{- if .Values.speaker.memberlist.enabled }}
         - name: memberlist
@@ -231,6 +241,9 @@ spec:
         {{- if .Values.loadBalancerClass }}
         - --lb-class={{ .Values.loadBalancerClass }}
         {{- end }}
+        {{- if .Values.speaker.wanConfig }}
+        - --ml-wan-config
+        {{- end }}
         env:
         - name: METALLB_NODE_NAME
           valueFrom:
@@ -241,10 +254,15 @@ spec:
             fieldRef:
               fieldPath: status.hostIP
         {{- if .Values.speaker.memberlist.enabled }}
+        {{- if .Values.speaker.memberlist.mlBindAddrOverride }}
+        - name: METALLB_ML_BIND_ADDR
+          value: "{{ .Values.speaker.memberlist.mlBindAddrOverride }}"
+        {{ else }}
         - name: METALLB_ML_BIND_ADDR
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        {{ end }}
         - name: METALLB_ML_LABELS
           value: "app={{ include "metallb.name" . }},component=speaker"
         - name: METALLB_ML_BIND_PORT
@@ -259,6 +277,10 @@ spec:
           value: /etc/frr_reloader/reloader.pid
         - name: METALLB_BGP_TYPE
           value: frr
+        {{- end }}
+        {{- if .Values.frrk8s.enabled }}
+        - name: METALLB_BGP_TYPE
+          value: frr-k8s
         {{- end }}
         ports:
         - name: monitoring
@@ -448,6 +470,7 @@ spec:
             readOnly: true
         {{- end }}
       {{ end }}
+      {{- if .Values.speaker.frr.enabled }}
       {{- if .Values.speaker.frr.secureMetricsPort }}
       - name: kube-rbac-proxy-frr
         image: {{ .Values.prometheus.rbacProxy.repository }}:{{ .Values.prometheus.rbacProxy.tag | default .Chart.AppVersion }}
@@ -463,7 +486,7 @@ spec:
         {{- end }}
         ports:
           - containerPort: {{ .Values.speaker.frr.secureMetricsPort }}
-            name: metricshttps
+            name: frrmetricshttps
         env:
           - name: METALLB_HOST
             valueFrom:
@@ -481,6 +504,10 @@ spec:
             readOnly: true
         {{- end }}
       {{ end }}
+      {{- end }}
+      {{- if .Values.speaker.extraContainers }}
+      {{- toYaml .Values.speaker.extraContainers | nindent 6 }}
+      {{- end }}
       nodeSelector:
         "kubernetes.io/os": linux
         {{- with .Values.speaker.nodeSelector }}
