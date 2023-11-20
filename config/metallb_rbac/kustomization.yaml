@@ -1,5 +1,5 @@
 resources:
-- metallb-native.yaml
+- metallb.yaml
 - speaker_role_binding.yaml
 - kube_rbac_proxy.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1

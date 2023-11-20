@@ -17,6 +17,7 @@ Kubernetes: `>= 1.19.0-0`
 | Repository | Name | Version |
 |------------|------|---------|
 |  | crds | 0.0.0 |
+| https://metallb.github.io/frr-k8s | frr-k8s | 0.0.3 |
 
 ## Values
 
@@ -24,6 +25,7 @@ Kubernetes: `>= 1.19.0-0`
 |-----|------|---------|-------------|
 | controller.affinity | object | `{}` |  |
 | controller.enabled | bool | `true` |  |
+| controller.extraContainers | list | `[]` |  |
 | controller.image.pullPolicy | string | `nil` |  |
 | controller.image.repository | string | `"quay.io/metallb/controller"` |  |
 | controller.image.tag | string | `nil` |  |
@@ -53,9 +55,12 @@ Kubernetes: `>= 1.19.0-0`
 | controller.serviceAccount.create | bool | `true` |  |
 | controller.serviceAccount.name | string | `""` |  |
 | controller.strategy.type | string | `"RollingUpdate"` |  |
+| controller.tlsCipherSuites | string | `""` |  |
+| controller.tlsMinVersion | string | `"VersionTLS12"` |  |
 | controller.tolerations | list | `[]` |  |
 | crds.enabled | bool | `true` |  |
 | crds.validationFailurePolicy | string | `"Fail"` |  |
+| frrk8s.enabled | bool | `false` |  |
 | fullnameOverride | string | `""` |  |
 | imagePullSecrets | list | `[]` |  |
 | loadBalancerClass | string | `""` |  |
@@ -111,6 +116,7 @@ Kubernetes: `>= 1.19.0-0`
 | speaker.affinity | object | `{}` |  |
 | speaker.enabled | bool | `true` |  |
 | speaker.excludeInterfaces.enabled | bool | `true` |  |
+| speaker.extraContainers | list | `[]` |  |
 | speaker.frr.enabled | bool | `true` |  |
 | speaker.frr.image.pullPolicy | string | `nil` |  |
 | speaker.frr.image.repository | string | `"quay.io/frrouting/frr"` |  |
@@ -130,6 +136,7 @@ Kubernetes: `>= 1.19.0-0`
 | speaker.livenessProbe.timeoutSeconds | int | `1` |  |
 | speaker.logLevel | string | `"info"` | Speaker log level. Must be one of: `all`, `debug`, `info`, `warn`, `error` or `none` |
 | speaker.memberlist.enabled | bool | `true` |  |
+| speaker.memberlist.mlBindAddrOverride | string | `""` |  |
 | speaker.memberlist.mlBindPort | int | `7946` |  |
 | speaker.memberlist.mlSecretKeyPath | string | `"/etc/ml_secret_key"` |  |
 | speaker.nodeSelector | object | `{}` |  |
@@ -144,6 +151,7 @@ Kubernetes: `>= 1.19.0-0`
 | speaker.reloader.resources | object | `{}` |  |
 | speaker.resources | object | `{}` |  |
 | speaker.runtimeClassName | string | `""` |  |
+| speaker.securityContext | object | `{}` |  |
 | speaker.serviceAccount.annotations | object | `{}` |  |
 | speaker.serviceAccount.create | bool | `true` |  |
 | speaker.serviceAccount.name | string | `""` |  |

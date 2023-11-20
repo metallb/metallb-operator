@@ -39,7 +39,7 @@ import (
 
 const (
 	defaultMetalLBCrName              = "metallb"
-	MetalLBChartPathController        = "./bindata/deployment/helm"
+	MetalLBChartPathController        = "./bindata/deployment/helm/metallb"
 	bgpNative                  string = "native"
 	bgpFrr                     string = "frr"
 )
