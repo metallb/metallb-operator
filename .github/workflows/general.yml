@@ -74,3 +74,4 @@ jobs:
         export KUBECONFIG=${HOME}/.kube/config
         METALLB_BGP_TYPE=native make test
         METALLB_BGP_TYPE=frr DEPLOY_KUBE_RBAC_PROXIES=true make test
+        METALLB_BGP_TYPE=frr-k8s DEPLOY_KUBE_RBAC_PROXIES=true make test
