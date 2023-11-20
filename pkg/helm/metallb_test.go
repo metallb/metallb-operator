@@ -123,7 +123,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.GetObjects(metallb, false)
+	objs, err := chart.Objects(metallb, false)
 	g.Expect(err).To(BeNil())
 	var isSpeakerFound, isControllerFound bool
 	for _, obj := range objs {
@@ -225,7 +225,7 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.GetObjects(metallb, true)
+	objs, err := chart.Objects(metallb, true)
 	g.Expect(err).To(BeNil())
 	for _, obj := range objs {
 		objKind := obj.GetKind()
@@ -270,7 +270,7 @@ func TestParseSecureMetrics(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.GetObjects(metallb, true)
+	objs, err := chart.Objects(metallb, true)
 	g.Expect(err).To(BeNil())
 	for _, obj := range objs {
 		objKind := obj.GetKind()
@@ -322,6 +322,8 @@ func resetEnv() {
 
 	os.Setenv("HTTPS_METRICS_PORT", "0")
 	os.Setenv("FRR_HTTPS_METRICS_PORT", "0")
+
+	os.Setenv("FRRK8S_IMAGE", "")
 }
 
 func setEnv(envs ...envVar) {

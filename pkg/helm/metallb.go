@@ -35,7 +35,8 @@ import (
 )
 
 const (
-	bgpFRR = "frr"
+	bgpFRR    = "frr"
+	bgpFRRK8S = "frr-k8s"
 )
 
 // MetalLBChart metallb chart struct containing references which helps to
@@ -52,6 +53,7 @@ type mlbChartConfig struct {
 	namespace            string
 	isOpenShift          bool
 	isFrrEnabled         bool
+	isFRRK8SEnabled      bool
 	controllerImage      *imageInfo
 	speakerImage         *imageInfo
 	frrImage             *imageInfo
@@ -65,9 +67,9 @@ type mlbChartConfig struct {
 	enableServiceMonitor bool
 }
 
-// GetObjects retrieve manifests from chart after patching custom values passed in crdConfig
+// Objects retrieves manifests from chart after patching custom values passed in crdConfig
 // and environment variables.
-func (h *MetalLBChart) GetObjects(crdConfig *metallbv1beta1.MetalLB, withPrometheus bool) ([]*unstructured.Unstructured, error) {
+func (h *MetalLBChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus bool) ([]*unstructured.Unstructured, error) {
 	chartValueOpts := &values.Options{}
 	chartValues, err := chartValueOpts.MergeValues(getter.All(h.envSettings))
 	if err != nil {
@@ -216,6 +218,7 @@ func (c *mlbChartConfig) patchChartValues(crdConfig *metallbv1beta1.MetalLB, wit
 	valuesMap["prometheus"] = c.prometheusValues()
 	valuesMap["controller"] = c.controllerValues(crdConfig)
 	valuesMap["speaker"] = c.speakerValues(crdConfig)
+	valuesMap["frrk8s"] = c.frrk8sValues()
 }
 
 func loadBalancerClassValue(crdConfig *metallbv1beta1.MetalLB) string {
@@ -357,6 +360,13 @@ func (c *mlbChartConfig) speakerValues(crdConfig *metallbv1beta1.MetalLB) map[st
 	return speakerValueMap
 }
 
+func (c *mlbChartConfig) frrk8sValues() map[string]interface{} {
+	frrk8sValuesMap := map[string]interface{}{
+		"enabled": c.isFRRK8SEnabled,
+	}
+	return frrk8sValuesMap
+}
+
 func loadMetalLBConfig(namespace string, isOCP bool) (*mlbChartConfig, error) {
 	config := &mlbChartConfig{
 		isOpenShift:        isOCP,
@@ -384,6 +394,9 @@ func loadMetalLBConfig(namespace string, isOCP bool) (*mlbChartConfig, error) {
 			return nil, errors.Errorf("FRR_IMAGE env variable must be set")
 		}
 		config.frrImage.repo, config.frrImage.tag = getImageNameTag(frrImage)
+	}
+	if os.Getenv("METALLB_BGP_TYPE") == bgpFRRK8S {
+		config.isFRRK8SEnabled = true
 	}
 	config.mlBindPort, err = valueWithDefault("MEMBER_LIST_BIND_PORT", 7946)
 	if err != nil {
