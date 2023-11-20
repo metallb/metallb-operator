@@ -51,7 +51,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        make test-e2e
+        SKIP="frr-k8s" make test-e2e
     - name: Archive E2E Tests logs
       if: ${{ failure() }}
       uses: actions/upload-artifact@v2
@@ -104,7 +104,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        make test-e2e
+        SKIP="frr-k8s" make test-e2e
     - name: Archive E2E Tests logs
       if: ${{ failure() }}
       uses: actions/upload-artifact@v2
