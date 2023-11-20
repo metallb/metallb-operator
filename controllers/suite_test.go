@@ -40,6 +40,7 @@ import (
 
 const (
 	MetalLBHelmChartPathControllerTest = "../bindata/deployment/helm/metallb"
+	FRRK8SHelmChartPathControllerTest  = "../bindata/deployment/helm/frr-k8s"
 	MetalLBTestNameSpace               = "metallb-test-namespace"
 )
 
@@ -65,6 +66,7 @@ var _ = BeforeSuite(func() {
 	Expect(os.Setenv("CONTROLLER_IMAGE", "test-controller:latest")).To(Succeed())
 	Expect(os.Setenv("FRR_IMAGE", "test-frr:latest")).To(Succeed())
 	Expect(os.Setenv("KUBE_RBAC_PROXY_IMAGE", "test-kube-rbac-proxy:latest")).To(Succeed())
+	Expect(os.Setenv("FRRK8S_IMAGE", "test-frr-k8s:latest")).To(Succeed())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -101,6 +103,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	MetalLBChartPath = MetalLBHelmChartPathControllerTest // This is needed as the tests need to reference a directory backward
+	FRRK8SChartPath = FRRK8SHelmChartPathControllerTest
 
 	bgpType := os.Getenv("METALLB_BGP_TYPE")
 	err = (&MetalLBReconciler{
@@ -121,6 +124,7 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// restore Manifestpaths for both controller to their original value
 	MetalLBChartPath = MetalLBChartPathController
+	FRRK8SChartPath = FRRK8SChartPathController
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
