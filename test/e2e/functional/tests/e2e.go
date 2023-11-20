@@ -159,6 +159,62 @@ var _ = Describe("metallb", func() {
 				}, 5*time.Minute, 5*time.Second).Should(BeTrue())
 			})
 		})
+
+		It("should have frr-k8s pods in running state", func() {
+			By("checking frr-k8s daemonset is in running state", func() {
+				Eventually(func() error {
+					daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.FRRK8SDaemonsetName, metav1.GetOptions{})
+					if err != nil {
+						return err
+					}
+
+					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+						LabelSelector: "component=frr-k8s"})
+					if err != nil {
+						return err
+					}
+
+					if len(pods.Items) != int(daemonset.Status.DesiredNumberScheduled) {
+						return fmt.Errorf("daemonset %s pods are not ready, expected %d generations got %d pods", consts.MetalLBDaemonsetName, int(daemonset.Status.DesiredNumberScheduled), len(pods.Items))
+					}
+
+					for _, pod := range pods.Items {
+						if pod.Status.Phase != corev1.PodRunning {
+							return fmt.Errorf("daemonset %s pod %s is not running, expected status %s got %s", consts.MetalLBDaemonsetName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+						}
+					}
+
+					return nil
+				}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
+			})
+
+			By("checking frr-k8s webhook deployment is in running state", func() {
+				Eventually(func() error {
+					deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.FRRK8SWebhookDeploymentName, metav1.GetOptions{})
+					if err != nil {
+						return err
+					}
+
+					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+						LabelSelector: "component=frr-k8s-webhook-server"})
+					if err != nil {
+						return err
+					}
+
+					if len(pods.Items) != int(deploy.Status.Replicas) {
+						return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.MetalLBOperatorDeploymentName, deploy.Status.Replicas, len(pods.Items))
+					}
+
+					for _, pod := range pods.Items {
+						if pod.Status.Phase != corev1.PodRunning {
+							return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.MetalLBOperatorDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+						}
+					}
+
+					return nil
+				}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
+			})
+		})
 	})
 
 	Context("MetalLB contains incorrect data", func() {
