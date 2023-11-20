@@ -38,12 +38,12 @@ import (
 var update = flag.Bool("update", false, "update .golden files")
 
 const (
-	invalidHelmChartPath = "../../bindata/deployment/no-helm"
-	helmChartPath        = "../../bindata/deployment/helm"
-	helmChartName        = "metallb"
-	MetalLBTestNameSpace = "metallb-test-namespace"
-	speakerDaemonSet     = "speaker"
-	controllerDeployment = "controller"
+	invalidMetalLBChartPath = "../../bindata/deployment/no-helm"
+	metalLBChartPath        = "../../bindata/deployment/helm/metallb"
+	metalLBChartName        = "metallb"
+	MetalLBTestNameSpace    = "metallb-test-namespace"
+	speakerDaemonSet        = "speaker"
+	controllerDeployment    = "controller"
 )
 
 type envVar struct {
@@ -55,12 +55,12 @@ func TestLoadMetalLBChart(t *testing.T) {
 	resetEnv()
 	g := NewGomegaWithT(t)
 	setEnv()
-	_, err := InitMetalLBChart(invalidHelmChartPath, helmChartName, MetalLBTestNameSpace, nil, false)
+	_, err := NewMetalLBChart(invalidMetalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
 	g.Expect(err).NotTo(BeNil())
-	chart, err := InitMetalLBChart(helmChartPath, helmChartName, MetalLBTestNameSpace, nil, false)
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
 	g.Expect(err).To(BeNil())
 	g.Expect(chart.chart).NotTo(BeNil())
-	g.Expect(chart.chart.Name()).To(Equal(helmChartName))
+	g.Expect(chart.chart.Name()).To(Equal(metalLBChartName))
 }
 
 func TestParseMetalLBChartWithCustomValues(t *testing.T) {
@@ -68,7 +68,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 
 	g := NewGomegaWithT(t)
 	setEnv()
-	chart, err := InitMetalLBChart(helmChartPath, helmChartName, MetalLBTestNameSpace, nil, false)
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
 	g.Expect(err).To(BeNil())
 	speakerTolerations := []v1.Toleration{
 		{
@@ -216,7 +216,7 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 	)
 	g := NewGomegaWithT(t)
 	setEnv()
-	chart, err := InitMetalLBChart(helmChartPath, helmChartName, MetalLBTestNameSpace, nil, true)
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, true)
 	g.Expect(err).To(BeNil())
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -261,7 +261,7 @@ func TestParseSecureMetrics(t *testing.T) {
 	)
 	g := NewGomegaWithT(t)
 	setEnv()
-	chart, err := InitMetalLBChart(helmChartPath, helmChartName, MetalLBTestNameSpace, nil, false)
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
 	g.Expect(err).To(BeNil())
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
