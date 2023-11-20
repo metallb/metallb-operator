@@ -143,7 +143,7 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) e
 		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
 	}
 	var err error
-	r.helm, err = helm.InitMetalLBChart(MetalLBChartPath, defaultMetalLBCrName, r.Namespace, r.Client, r.PlatformInfo.IsOpenShift())
+	r.helm, err = helm.NewMetalLBChart(MetalLBChartPath, defaultMetalLBCrName, r.Namespace, r.Client, r.PlatformInfo.IsOpenShift())
 	if err != nil {
 		return err
 	}
