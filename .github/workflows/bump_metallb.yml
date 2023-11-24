@@ -51,18 +51,23 @@ jobs:
       - name: Bump metallb
         if: ${{ steps.check-for-changes.outputs.has_changes == 'true' }}
         run: make bump_metallb
+      - uses: tibdex/github-app-token@v1
+        id: generate-token
+        with:
+          app_id: ${{ secrets.AUTO_BUMP_APP_ID }}
+          private_key: ${{ secrets.AUTO_BUMP_APP_PRIVATE_KEY }}
       - name: Create pull request
         if: ${{ steps.check-for-changes.outputs.has_changes == 'true'}}
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.generate-token.outputs.token }}
           commit-message: |
             Bump MetalLB
 
             This commit bumps MetalLB:
             from: ${{ steps.old-metallb.outputs.commit_sha }}
             ${{ steps.old-commit-info.outputs.commit_title }} (${{ steps.old-commit-info.outputs.commit_date }})
-            
+
             to:  ${{ steps.new-commit-info.outputs.commit_sha }}
             ${{ steps.new-commit-info.outputs.commit_title }} (${{ steps.new-commit-info.outputs.commit_date }})
           author: github-actions[bot] <noreply@github.com>
@@ -72,4 +77,3 @@ jobs:
           branch: "bumpmetallb"
           delete-branch: true
           base: "main"
-          
