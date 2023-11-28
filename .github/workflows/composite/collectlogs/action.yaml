@@ -1,0 +1,27 @@
+name: "collectlogs"
+description: "Collect and upload the logs"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Archive E2E Tests logs
+      uses: actions/upload-artifact@v2
+      with:
+        name: test_e2e_logs
+        path: /tmp/test_e2e_logs/
+
+    - name: Export kind logs
+      shell: bash
+      run: |
+        kind export logs /tmp/kind_logs
+
+    - name: Change permissions for kind logs
+      shell: bash
+      run: |
+          sudo chmod -R o+r /tmp/kind_logs
+
+    - name: Archive kind logs
+      uses: actions/upload-artifact@v2
+      with:
+        name:  kind_logs
+        path: /tmp/kind_logs

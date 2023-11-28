@@ -1,0 +1,27 @@
+name: "install-deps"
+description: "Install deps required for metallb-operator CI"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout Metal LB Operator
+      uses: actions/checkout@v4
+      with:
+        path: metallboperator
+        fetch-depth: 0 # Fetch all history for all tags and branches 
+
+    - uses: actions/setup-go@v4
+      with:
+        go-version-file: "go.mod"
+        cache: true
+
+    - name: Verify modules
+      shell: bash
+      run: |
+        go mod verify
+    
+    - name: Verify format
+      shell: bash
+      run: |
+        make fmt
+        git diff --exit-code
