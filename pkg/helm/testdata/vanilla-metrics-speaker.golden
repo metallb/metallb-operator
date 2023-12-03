@@ -315,7 +315,7 @@
                         "ports": [
                             {
                                 "containerPort": 9999,
-                                "name": "metricshttps"
+                                "name": "frrmetricshttps"
                             }
                         ],
                         "resources": {
