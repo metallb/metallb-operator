@@ -36,7 +36,8 @@
                             "--port=7472",
                             "--log-level=info",
                             "--cert-service-name=webhook-service",
-                            "--webhook-mode=disabled"
+                            "--webhook-mode=disabled",
+                            "--tls-min-version=VersionTLS12"
                         ],
                         "command": [
                             "/controller"
