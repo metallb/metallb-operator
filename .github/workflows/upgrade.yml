@@ -41,7 +41,7 @@ jobs:
         IMG=${built_image_prev_release} make docker-build
     - name: Create K8s Kind Cluster
       run: |
-        ./hack/kind-cluster-without-registry.sh
+        ./hack/kind-cluster.sh --kind-version v1.27.3 --cluster-config ./hack/kind-single-node-config.yaml
         kind load docker-image ${built_image_prev_release}
     - name: Deploy Previous Release Metal LB Operator
       run: |

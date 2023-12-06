@@ -42,7 +42,7 @@ jobs:
 
       - name: Create and set up K8s Kind Cluster
         run: |
-          ./hack/kind-cluster-with-registry.sh
+          ./hack/kind-cluster.sh --kind-version v1.27.3 --cluster-config ./hack/kind-single-node-config.yaml --registry true
           make deploy-olm
 
       - name: Build bundle image

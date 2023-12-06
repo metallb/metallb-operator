@@ -57,7 +57,7 @@ jobs:
 
     - name: Create K8s Kind Cluster
       run: |
-        ./hack/kind-cluster-without-registry.sh
+        ./hack/kind-cluster.sh --kind-version v1.27.3 --cluster-config ./hack/kind-single-node-config.yaml
         kind load docker-image ${built_image}
 
     - name: Deploy Metal LB Operator
