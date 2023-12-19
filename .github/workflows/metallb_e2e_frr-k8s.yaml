@@ -53,12 +53,26 @@ jobs:
         id: metallb_ref
         run: echo "content=$(cat ./hack/metallb_ref.txt)" >> $GITHUB_OUTPUT
 
+      - name: Read frr-k8s version
+        id: frrk8s_ref
+        run: |
+          wget https://raw.githubusercontent.com/metallb/metallb/${{ steps.metallb_ref.outputs.content }}/charts/metallb/Chart.yaml
+          echo "content=v$(yq e '.dependencies[] | select(.name == "frr-k8s") | .version' Chart.yaml)" >> $GITHUB_OUTPUT
+          rm -f Chart.yaml
+
       - name: Checkout MetalLB
         uses: actions/checkout@v2
         with:
           repository: metallb/metallb
           path: metallb
           ref: "${{ steps.metallb_ref.outputs.content }}"
+
+      - name: Checkout frr-k8s
+        uses: actions/checkout@v2
+        with:
+          repository: metallb/frr-k8s
+          path: frr-k8s
+          ref: "${{ steps.frrk8s_ref.outputs.content }}"
 
       - name: Install Dependencies
         run: |
@@ -97,9 +111,18 @@ jobs:
           export KUBECONFIG=${HOME}/.kube/config
           make test-validation
           make test-e2e
-          kubectl wait -n metallb-system --for=delete pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
+          kubectl wait -n metallb-system --for=delete pod -l "component in (speaker,controller,frr-k8s)" --timeout=180s
 
-      - name: Deploy MetalLB
+      - name: frr-k8s E2E Webhooks tests
+        run: |
+          export KUBECONFIG=${HOME}/.kube/config
+          kubectl create ns frr-k8s-system
+          cd ${GITHUB_WORKSPACE}/frr-k8s
+          mkdir -p /tmp/kind_logs
+          KUBECONFIG_PATH=${HOME}/.kube/config GINKGO_ARGS="--focus Webhooks --skip conflict" TEST_ARGS="--report-path=/tmp/kind_logs" make e2etests
+          kubectl delete ns frr-k8s-system
+
+      - name: Deploy MetalLB resource
         run: |
           export KUBECONFIG=${HOME}/.kube/config
           kubectl apply -f config/samples/metallb.yaml

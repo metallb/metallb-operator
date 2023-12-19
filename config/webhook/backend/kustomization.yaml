@@ -1,8 +1,11 @@
 resources:
-- backend.yaml
+  - backend.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: controller
-  newName: quay.io/metallb/controller
-  newTag: main
+  - name: controller
+    newName: quay.io/metallb/controller
+    newTag: main
+  - name: frr-k8s
+    newName: quay.io/metallb/frr-k8s
+    newTag: v0.0.3

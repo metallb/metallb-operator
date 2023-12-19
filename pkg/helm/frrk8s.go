@@ -152,17 +152,6 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 		if objKind != "PodSecurityPolicy" {
 			obj.SetNamespace(h.namespace)
 		}
-		// we need to override the security context as helm values are added on top
-		// of hardcoded ones in values.yaml, so it's not possible to reset runAsUser
-		if isFRRK8SWebhookDeployment(obj) && h.config.isOpenShift {
-			securityContext := map[string]interface{}{
-				"runAsNonRoot": true,
-			}
-			err := unstructured.SetNestedMap(obj.Object, securityContext, "spec", "template", "spec", "securityContext")
-			if err != nil {
-				return nil, err
-			}
-		}
 		if isServiceMonitor(obj) && h.config.isOpenShift {
 			err := setOcpMonitorFields(obj)
 			if err != nil {
@@ -231,8 +220,4 @@ func (c *frrK8SChartConfig) prometheusValues() map[string]interface{} {
 		"namespace":        "bar",
 		"metricsTLSSecret": tlsSecret,
 	}
-}
-
-func isFRRK8SWebhookDeployment(obj *unstructured.Unstructured) bool {
-	return obj.GetKind() == "Deployment" && obj.GetName() == "webhook-server"
 }

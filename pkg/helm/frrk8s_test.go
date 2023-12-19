@@ -11,12 +11,11 @@ import (
 )
 
 const (
-	invalidFRRK8SHelmChartPath  = "../../bindata/deployment/no-helm"
-	frrk8sHelmChartPath         = "../../bindata/deployment/helm/frr-k8s"
-	frrk8sHelmChartName         = "frr-k8s"
-	FRRK8STestNameSpace         = "frr-k8s-test-namespace"
-	frrk8sDaemonSetName         = "frr-k8s"
-	frrk8sWebhookDeploymentName = "frr-k8s-webhook-server"
+	invalidFRRK8SHelmChartPath = "../../bindata/deployment/no-helm"
+	frrk8sHelmChartPath        = "../../bindata/deployment/helm/frr-k8s"
+	frrk8sHelmChartName        = "frr-k8s"
+	FRRK8STestNameSpace        = "frr-k8s-test-namespace"
+	frrk8sDaemonSetName        = "frr-k8s"
 )
 
 func TestLoadFRRK8SChart(t *testing.T) {
@@ -50,7 +49,7 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 
 	objs, err := chart.Objects(metallb, false)
 	g.Expect(err).To(BeNil())
-	var isFRRK8SFound, isFRRK8SWebhookFound bool
+	var isFRRK8SFound bool
 	for _, obj := range objs {
 		objKind := obj.GetKind()
 		objName := obj.GetName()
@@ -77,24 +76,8 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 			g.Expect(frrk8sControllerFound).To(BeTrue())
 			isFRRK8SFound = true
 		}
-		if objKind == "Deployment" && objName == frrk8sWebhookDeploymentName {
-			frrk8sWebhook := appsv1.Deployment{}
-			err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &frrk8sWebhook)
-			g.Expect(err).To(BeNil())
-			g.Expect(frrk8sWebhook.GetName()).To(Equal(frrk8sWebhookDeploymentName))
-			var webhookContainerFound bool
-			for _, container := range frrk8sWebhook.Spec.Template.Spec.Containers {
-				if container.Name == "frr-k8s-webhook-server" {
-					g.Expect(container.Image == "frr-k8s:test")
-					webhookContainerFound = true
-				}
-			}
-			g.Expect(webhookContainerFound).To(BeTrue())
-			isFRRK8SWebhookFound = true
-		}
 	}
 	g.Expect(isFRRK8SFound).To(BeTrue())
-	g.Expect(isFRRK8SWebhookFound).To(BeTrue())
 }
 
 func TestParseFRRK8SOCPSecureMetrics(t *testing.T) {
@@ -130,12 +113,6 @@ func TestParseFRRK8SOCPSecureMetrics(t *testing.T) {
 			err = validateObject("ocp-metrics", obj.GetName(), obj)
 			if err != nil {
 				t.Fatalf("test ocp-metrics-%s failed. %s", obj.GetName(), err)
-			}
-		}
-		if objKind == "Deployment" {
-			err = validateObject("ocp-metrics", "frr-k8s-webhook", obj)
-			if err != nil {
-				t.Fatalf("test ocp-metrics-frr-k8s-webhook failed. %s", err)
 			}
 		}
 	}

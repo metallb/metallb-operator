@@ -24,7 +24,7 @@ const (
 	// FRRK8SDaemonsetName contains the name of the frr-k8s daemonset
 	FRRK8SDaemonsetName = "frr-k8s"
 	// FRRK8SWebhookDeploymentName contains the name of the frr-k8s webhook-server deployment
-	FRRK8SWebhookDeploymentName = "frr-k8s-webhook-server"
+	FRRK8SWebhookDeploymentName = "metallb-operator-frr-k8s-webhook-server"
 	// DefaultOperatorNameSpace is the default operator namespace
 	DefaultOperatorNameSpace = "metallb-system"
 	// LogsExtractDuration represents how much in the past to fetch the logs from

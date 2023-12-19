@@ -273,7 +273,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2023-12-14T08:06:49Z"
+    createdAt: "2023-12-19T14:18:03Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.26.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -735,6 +735,83 @@ spec:
                     secret:
                       defaultMode: 420
                       secretName: metallb-operator-webhook-server-cert
+        - label:
+            app: frr-k8s
+            control-plane: webhook-server
+          name: metallb-operator-frr-k8s-webhook-server
+          spec:
+            selector:
+              matchLabels:
+                control-plane: webhook-server
+            strategy: {}
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/default-container: frr-k8s-webhook-server
+                labels:
+                  app: frr-k8s-webhook-server
+                  component: frr-k8s-webhook-server
+                  control-plane: webhook-server
+              spec:
+                containers:
+                  - args:
+                      - --disable-cert-rotation=true
+                      - --log-level=info
+                      - --webhook-mode=onlywebhook
+                      - --namespace=$(NAMESPACE)
+                      - --health-probe-bind-address=:8081
+                    command:
+                      - /frr-k8s
+                    env:
+                      - name: NAMESPACE
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.namespace
+                    image: quay.io/metallb/frr-k8s:v0.0.3
+                    livenessProbe:
+                      httpGet:
+                        path: /healthz
+                        port: 8081
+                      initialDelaySeconds: 15
+                      periodSeconds: 20
+                    name: frr-k8s-webhook-server
+                    readinessProbe:
+                      httpGet:
+                        path: /readyz
+                        port: 8081
+                      initialDelaySeconds: 5
+                      periodSeconds: 10
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 128Mi
+                      requests:
+                        cpu: 10m
+                        memory: 64Mi
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                    volumeMounts:
+                      - mountPath: /tmp/k8s-webhook-server/serving-certs
+                        name: cert
+                        readOnly: true
+                serviceAccountName: frr-k8s-daemon
+                terminationGracePeriodSeconds: 10
+                tolerations:
+                  - effect: NoSchedule
+                    key: node-role.kubernetes.io/master
+                    operator: Exists
+                  - effect: NoSchedule
+                    key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+                volumes:
+                  - name: cert
+                    secret:
+                      defaultMode: 420
+                      secretName: frr-k8s-webhook-server-cert
         - label:
             app: metallb
             component: webhook-server
@@ -1201,6 +1278,26 @@ spec:
       targetPort: 9443
       type: ValidatingAdmissionWebhook
       webhookPath: /validate-metallb-io-v1beta1-community
+    - admissionReviewVersions:
+        - v1
+      containerPort: 443
+      deploymentName: metallb-operator-frr-k8s-webhook-server
+      failurePolicy: Fail
+      generateName: frr-k8s-frrconfigurationsvalidationwebhook.metallb.io
+      rules:
+        - apiGroups:
+            - frrk8s.metallb.io
+          apiVersions:
+            - v1beta1
+          operations:
+            - CREATE
+            - UPDATE
+          resources:
+            - frrconfigurations
+      sideEffects: None
+      targetPort: 9443
+      type: ValidatingAdmissionWebhook
+      webhookPath: /validate-frrk8s-metallb-io-v1beta1-frrconfiguration
     - admissionReviewVersions:
         - v1
       containerPort: 443

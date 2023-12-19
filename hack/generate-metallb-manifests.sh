@@ -21,7 +21,7 @@ yq e '. | select(.kind == "Role" or .kind == "ClusterRole" or .kind == "RoleBind
 
 fetch_metallb
 
-FRRK8S_VERSION=v$(yq e '.dependencies[] | select(.name == "frr-k8s") | .version'  ${METALLB_PATH}/charts/metallb/Chart.yaml)
+export FRRK8S_VERSION=v$(yq e '.dependencies[] | select(.name == "frr-k8s") | .version'  ${METALLB_PATH}/charts/metallb/Chart.yaml)
 
 fetch_frrk8s $FRRK8S_VERSION
 find "$FRRK8S_PATH"/charts/frr-k8s -type f -exec sed -i -e 's/{{ template "frrk8s.fullname" . }}-//g' {} \;
@@ -37,6 +37,11 @@ cp -r "$METALLB_PATH"/config/crd/patches/crd-conversion-patch-addresspools.yaml 
 cp -r "$METALLB_PATH"/config/crd/patches/crd-conversion-patch-bgppeers.yaml config/crd/patches
 cp -r "$METALLB_PATH"/config/webhook config/webhook
 cp -r "$FRRK8S_PATH"/config/crd/bases config/crd
+
+# copy the frr-k8s webhook config with name prefix frr-k8s-
+find "$FRRK8S_PATH"/config/webhook -type f -exec sed -i -e 's/name: /name: frr-k8s-/g' {} \;
+cp -rf "$FRRK8S_PATH"/config/webhook/ config/webhook/frr-k8s-webhook
+yq -i e '(.images[] | select(.name == "frr-k8s") | .newTag) = strenv(FRRK8S_VERSION)'  config/webhook/backend/kustomization.yaml
 
 # generate metallb chart
 rm -rf "$METALLB_PATH"/charts/metallb/charts
@@ -63,12 +68,11 @@ rm -rf "$METALLB_PATH"
 rm -rf "$FRRK8S_PATH"/charts/frr-k8s/charts
 rm -f "$FRRK8S_PATH"/charts/frr-k8s/templates/rbac.yaml
 rm -f "$FRRK8S_PATH"/charts/frr-k8s/templates/service-accounts.yaml
+rm -f "$FRRK8S_PATH"/charts/frr-k8s/templates/webhooks.yaml
 
 yq e --inplace 'del(."dependencies")' "$FRRK8S_PATH"/charts/frr-k8s/Chart.yaml
 
 sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/controller.yaml
-sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/webhooks.yaml
-sed -i -e 's/name: webhook-server/name: frr-k8s-webhook-server/g' "$FRRK8S_PATH"/charts/frr-k8s/templates/webhooks.yaml
 sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/service-monitor.yaml
 
 sed -i '/app.kubernetes.io\/instance: {{ .Release.Name }}/d' "$FRRK8S_PATH"/charts/frr-k8s/templates/_helpers.tpl

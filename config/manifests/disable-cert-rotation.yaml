@@ -27,3 +27,20 @@ spec:
         args:
         - --enable-leader-election
         - --disable-cert-rotation=true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frr-k8s-webhook-server
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+      - name: frr-k8s-webhook-server
+        args:
+        - --disable-cert-rotation=true
+        - --log-level=info
+        - --webhook-mode=onlywebhook
+        - --namespace=$(NAMESPACE)
+        - --health-probe-bind-address=:8081
