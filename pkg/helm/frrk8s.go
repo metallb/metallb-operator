@@ -215,14 +215,34 @@ func (c *frrK8SChartConfig) prometheusValues() map[string]interface{} {
 		tlsConfig, annotations, tlsSecret = ocpPromConfigFor("frr-k8s", c.namespace)
 	}
 
+	serviceMonitor := map[string]interface{}{
+		"enabled":     false,
+		"annotations": annotations,
+		"tlsConfig":   tlsConfig,
+	}
+
+	if c.enableServiceMonitor {
+		serviceMonitor["enabled"] = true
+		serviceMonitor["metricRelabelings"] = []map[string]interface{}{
+			{
+				"regex":        "frrk8s_bgp_(.*)",
+				"replacement":  "metallb_bgp_$1",
+				"sourceLabels": []string{"__name__"},
+				"targetLabel":  "__name__",
+			},
+			{
+				"regex":        "frrk8s_bfd_(.*)",
+				"replacement":  "metallb_bfd_$1",
+				"sourceLabels": []string{"__name__"},
+				"targetLabel":  "__name__",
+			},
+		}
+	}
+
 	return map[string]interface{}{
 		"metricsPort":       c.metricsPort,
 		"secureMetricsPort": c.secureMetricsPort,
-		"serviceMonitor": map[string]interface{}{
-			"enabled":     c.enableServiceMonitor,
-			"annotations": annotations,
-			"tlsConfig":   tlsConfig,
-		},
+		"serviceMonitor":    serviceMonitor,
 		"rbacProxy": map[string]interface{}{
 			"repository": c.kubeRbacProxyImage.repo,
 			"tag":        c.kubeRbacProxyImage.tag,
