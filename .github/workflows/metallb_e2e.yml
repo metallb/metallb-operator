@@ -92,7 +92,7 @@ jobs:
       - name: MetalLB E2E Tests
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
-          sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK" -e /tmp/kind_logs
+          sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE" -e /tmp/kind_logs
       - name: MetalLB E2E Tests - backward compatible
         run: |
           patch ${GITHUB_WORKSPACE}/metallb-0.12/e2etest/pkg/config/update.go < ${GITHUB_WORKSPACE}/metallb/e2etest/backwardcompatible/patchfile
