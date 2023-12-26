@@ -11,12 +11,11 @@ import (
 )
 
 const (
-	invalidFRRK8SHelmChartPath  = "../../bindata/deployment/no-helm"
-	frrk8sHelmChartPath         = "../../bindata/deployment/helm/frr-k8s"
-	frrk8sHelmChartName         = "frr-k8s"
-	FRRK8STestNameSpace         = "frr-k8s-test-namespace"
-	frrk8sDaemonSetName         = "frr-k8s"
-	frrk8sWebhookDeploymentName = "frr-k8s-webhook-server"
+	invalidFRRK8SHelmChartPath = "../../bindata/deployment/no-helm"
+	frrk8sHelmChartPath        = "../../bindata/deployment/helm/frr-k8s"
+	frrk8sHelmChartName        = "frr-k8s"
+	FRRK8STestNameSpace        = "frr-k8s-test-namespace"
+	frrk8sDaemonSetName        = "frr-k8s"
 )
 
 func TestLoadFRRK8SChart(t *testing.T) {

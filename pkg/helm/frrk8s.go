@@ -15,6 +15,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+const (
+	frrk8sWebhookDeploymentName = "frr-k8s-webhook-server"
+	frrk8sWebhookServiceName    = "frr-k8s-webhook-service"
+	frrk8sWebhookSecretName     = "frr-k8s-webhook-server-cert"
+	frrk8sValidatingWebhookName = "frr-k8s-validating-webhook-configuration"
+)
+
 // FRRK8SChart contains references which helps to retrieve manifest
 // from chart after patching given custom values.
 type FRRK8SChart struct {
@@ -145,6 +152,7 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 	if err != nil {
 		return nil, err
 	}
+	res := []*unstructured.Unstructured{}
 	for _, obj := range objs {
 		// Set namespace explicitly into non cluster-scoped resource because helm doesn't
 		// patch namespace into manifests at client.Run.
@@ -152,6 +160,27 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 		if objKind != "PodSecurityPolicy" {
 			obj.SetNamespace(h.namespace)
 		}
+
+		if isFRRK8SWebhookSecret(obj) && h.config.isOpenShift {
+			// We want to skip creating the secret on OpenShift since it is created and managed
+			// via the serving-cert-secret-name annotation on the service.
+			continue
+		}
+
+		if isFRRK8SValidatingWebhook(obj) && h.config.isOpenShift {
+			err := updateAnnotations(obj, map[string]string{"service.beta.openshift.io/inject-cabundle": "true"})
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if isFRRK8SWebhookService(obj) && h.config.isOpenShift {
+			err := updateAnnotations(obj, map[string]string{"service.beta.openshift.io/serving-cert-secret-name": frrk8sWebhookSecretName})
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// we need to override the security context as helm values are added on top
 		// of hardcoded ones in values.yaml, so it's not possible to reset runAsUser
 		if isFRRK8SWebhookDeployment(obj) && h.config.isOpenShift {
@@ -169,8 +198,10 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 				return nil, err
 			}
 		}
+
+		res = append(res, obj)
 	}
-	return objs, nil
+	return res, nil
 }
 
 func (c *frrK8SChartConfig) patchChartValues(crdConfig *metallbv1beta1.MetalLB, withPrometheus bool, valuesMap map[string]interface{}) {
@@ -200,6 +231,11 @@ func (c *frrK8SChartConfig) frrk8sValues(crdConfig *metallbv1beta1.MetalLB) map[
 		}
 	}
 	frrk8sValueMap["logLevel"] = logLevelValue(crdConfig)
+
+	if c.isOpenShift {
+		// OpenShift is responsible of managing the cert secret
+		frrk8sValueMap["disableCertRotation"] = true
+	}
 
 	return frrk8sValueMap
 }
@@ -254,5 +290,17 @@ func (c *frrK8SChartConfig) prometheusValues() map[string]interface{} {
 }
 
 func isFRRK8SWebhookDeployment(obj *unstructured.Unstructured) bool {
-	return obj.GetKind() == "Deployment" && obj.GetName() == "webhook-server"
+	return obj.GetKind() == "Deployment" && obj.GetName() == frrk8sWebhookDeploymentName
+}
+
+func isFRRK8SWebhookService(obj *unstructured.Unstructured) bool {
+	return obj.GetKind() == "Service" && obj.GetName() == frrk8sWebhookServiceName
+}
+
+func isFRRK8SWebhookSecret(obj *unstructured.Unstructured) bool {
+	return obj.GetKind() == "Secret" && obj.GetName() == frrk8sWebhookSecretName
+}
+
+func isFRRK8SValidatingWebhook(obj *unstructured.Unstructured) bool {
+	return obj.GetKind() == "ValidatingWebhookConfiguration" && obj.GetName() == frrk8sValidatingWebhookName
 }
