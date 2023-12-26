@@ -137,3 +137,19 @@ func ocpPromConfigFor(component, namespace string) (map[string]interface{}, map[
 
 	return tlsConfig, annotations, secretName
 }
+
+func updateAnnotations(obj *unstructured.Unstructured, annotations map[string]string) error {
+	curr, _, err := unstructured.NestedStringMap(obj.Object, "metadata", "annotations")
+	if err != nil {
+		return err
+	}
+	if curr == nil {
+		curr = map[string]string{}
+	}
+
+	for k, v := range annotations {
+		curr[k] = v
+	}
+
+	return unstructured.SetNestedStringMap(obj.Object, curr, "metadata", "annotations")
+}

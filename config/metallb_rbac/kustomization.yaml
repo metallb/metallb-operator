@@ -2,6 +2,7 @@ resources:
 - metallb.yaml
 - speaker_role_binding.yaml
 - kube_rbac_proxy.yaml
+- frrk8s_role_binding.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: metallb-system
