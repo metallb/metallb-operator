@@ -1,13 +1,18 @@
 name: "collectlogs"
 description: "Collect and upload the logs"
 
+inputs:
+  artifact-name:
+    description: "the name of artifacts to store"
+    required: true
+
 runs:
   using: "composite"
   steps:
     - name: Archive E2E Tests logs
       uses: actions/upload-artifact@v2
       with:
-        name: test_e2e_logs
+        name: ${{ inputs.artifact-name }}-e2e-logs
         path: /tmp/test_e2e_logs/
 
     - name: Export kind logs
@@ -23,5 +28,5 @@ runs:
     - name: Archive kind logs
       uses: actions/upload-artifact@v2
       with:
-        name:  kind_logs
+        name:  ${{ inputs.artifact-name }}-kind-logs
         path: /tmp/kind_logs

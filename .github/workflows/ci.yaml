@@ -96,6 +96,8 @@ jobs:
     - name: Collect Logs
       if: ${{ failure() }}
       uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: e2e
 
   olm:
     runs-on: ubuntu-20.04
@@ -140,6 +142,8 @@ jobs:
     - name: Collect Logs
       if: ${{ failure() }}
       uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: olm
       
   upgrade_version:
     runs-on: ubuntu-20.04
@@ -188,6 +192,8 @@ jobs:
     - name: Collect Logs
       if: ${{ failure() }}
       uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: upgrade_version
 
     - name: Checkout Latest Metal LB Operator
       uses: actions/checkout@v4
@@ -235,6 +241,8 @@ jobs:
     - name: Collect Logs
       if: ${{ failure() }}
       uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: upgrade_version
   
   metallb_e2e:
     runs-on: ubuntu-20.04
@@ -332,6 +340,8 @@ jobs:
       - name: Collect Logs
         if: ${{ failure() }}
         uses: ./.github/workflows/composite/collectlogs
+        with:
+          artifact-name: metallb_e2e
 
   metallb_e2e_frr-k8s:
     runs-on: ubuntu-20.04
@@ -438,3 +448,5 @@ jobs:
       - name: Collect Logs
         if: ${{ failure() }}
         uses: ./.github/workflows/composite/collectlogs
+        with:
+          artifact-name: metallb_e2e_frr-k8s
