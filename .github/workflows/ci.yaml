@@ -1,0 +1,452 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  merge_group:
+  pull_request:
+    branches:
+      - "main"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-20.04 
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Verify
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: v1.54.2
+        args: --timeout=15m0s --verbose
+  
+  unit:
+    runs-on: ubuntu-20.04
+    name: Unit and Integration tests
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup
+      uses: ./.github/workflows/composite/setup
+
+    - name: Verify manifests
+      run: |
+        make manifests
+        git diff --exit-code
+
+    - name: Verify bin dir
+      run: |
+        BIN_FILE="metallb-operator.yaml" make bin
+        git diff --exit-code bin/
+
+    - name: Unit and Integration Tests
+      run: |
+        export KUBECONFIG=${HOME}/.kube/config
+        METALLB_BGP_TYPE=native make test
+        METALLB_BGP_TYPE=frr DEPLOY_KUBE_RBAC_PROXIES=true make test
+        METALLB_BGP_TYPE=frr-k8s DEPLOY_KUBE_RBAC_PROXIES=true make test
+
+  e2e:
+    runs-on: ubuntu-20.04
+    env:
+      built_image: "metallb-operator:ci" # Arbitrary name
+    needs:
+      - lint
+      - unit
+    defaults:
+      run:
+        shell: bash
+        working-directory: metallboperator
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup
+      uses: ./.github/workflows/composite/setup
+  
+    - name: Build image
+      run: |
+        IMG=${built_image} make docker-build
+
+    - name: Create K8s Kind Cluster
+      run: |
+        ./hack/kind-cluster-without-registry.sh
+        kind load docker-image ${built_image}
+
+    - name: Deploy Metal LB Operator
+      run: |
+        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
+
+    - name: E2E Tests
+      run: |
+        export KUBECONFIG=${HOME}/.kube/config
+        make test-validation
+        SKIP="frr-k8s" make test-e2e
+
+    - name: Collect Logs
+      if: ${{ failure() }}
+      uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: e2e
+
+  olm:
+    runs-on: ubuntu-20.04
+    needs:
+      - lint
+      - unit
+    defaults:
+      run:
+        shell: bash
+        working-directory: metallboperator
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup
+      uses: ./.github/workflows/composite/setup
+  
+    - name: Verify release bundle manifests
+      run: |
+        make bundle-release
+        git diff --exit-code -I'^    createdAt: ' bundle
+
+    - name: Create and set up K8s Kind Cluster
+      run: |
+        ./hack/kind-cluster-with-registry.sh
+        make deploy-olm
+
+    - name: Build bundle image
+      run: |
+        make build-and-push-bundle-images REPO=localhost:5000
+
+    - name: Deploy Metal LB Operator with OLM
+      run: |
+        make deploy-with-olm REPO=localhost:5000
+
+    - name: E2E Tests
+      run: |
+        export KUBECONFIG=${HOME}/.kube/config
+        make test-validation
+        SKIP="frr-k8s" make test-e2e
+        
+    - name: Collect Logs
+      if: ${{ failure() }}
+      uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: olm
+      
+  upgrade_version:
+    runs-on: ubuntu-20.04
+    env:
+      built_image_prev_release: "metallb-operator-prev-rel:ci" # Arbitrary name
+      built_image: "metallb-operator:ci" # Arbitrary name
+    name: Go 1.17 -> Go 1.20
+    defaults:
+      run:
+        working-directory: metallboperator
+    needs:
+      - lint
+      - unit
+    steps:
+    - name: Checkout Previous Release Metal LB Operator
+      uses: actions/checkout@v4
+      with:
+        path: metallboperator
+        ref: v0.12 # previous release version
+        fetch-depth: 0 # Fetch all history for all tags and branches
+
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.17' # this needs to stay to 1.17 as long as the previous release is v0.12
+
+    - name: Build image
+      run: |
+        IMG=${built_image_prev_release} make docker-build
+
+    - name: Create K8s Kind Cluster
+      run: |
+        ./hack/kind-cluster-without-registry.sh
+        kind load docker-image ${built_image_prev_release}
+
+    - name: Deploy Previous Release Metal LB Operator
+      run: |
+        make deploy-cert-manager
+        IMG=${built_image_prev_release} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" ENABLE_OPERATOR_WEBHOOK="true" make deploy
+
+    - name: E2E Tests
+      run: | 
+        export KUBECONFIG=${HOME}/.kube/config
+        make  test-validation
+        SKIP="frr-k8s" make test-e2e
+
+    - name: Collect Logs
+      if: ${{ failure() }}
+      uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: upgrade_version
+
+    - name: Checkout Latest Metal LB Operator
+      uses: actions/checkout@v4
+      with:
+        path: metallboperator-latest
+        fetch-depth: 0 # Fetch all history for all tags and branches
+
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.20'
+        
+    - name: Delete old controller-gen
+      run: |
+        rm $(which controller-gen)
+
+    - name: Build image
+      run: |
+        cd ${GITHUB_WORKSPACE}/metallboperator-latest
+        IMG=${built_image} make docker-build
+        kind load docker-image ${built_image}
+
+    - name: Deploy Metal LB Operator
+      run: |
+        cd ${GITHUB_WORKSPACE}/metallboperator-latest
+        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/"  make deploy
+
+    - name: Ensure MetalLB operator is ready
+      run: |
+        sleep 5
+        while [ "$(kubectl get pods -n metallb-system -l control-plane='controller-manager' -o jsonpath='{.items[*].status.containerStatuses[0].ready}')" != "true" ]; do
+          sleep 5
+          echo "Waiting for operator pod to be ready."
+        done
+
+    - name: E2E Tests
+      run: |
+        cd ${GITHUB_WORKSPACE}/metallboperator-latest
+        export KUBECONFIG=${HOME}/.kube/config
+        make test-validation
+        SKIP="frr-k8s" make test-e2e
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Collect Logs
+      if: ${{ failure() }}
+      uses: ./.github/workflows/composite/collectlogs
+      with:
+        artifact-name: upgrade_version
+  
+  metallb_e2e:
+    runs-on: ubuntu-20.04
+    env:
+      built_image: "metallb-operator:ci" # Arbitrary name
+    needs:
+      - lint
+      - unit
+    defaults:
+      run:
+        shell: bash
+        working-directory: metallboperator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/workflows/composite/setup
+
+      - name: Read metallb ref
+        id: metallb_ref
+        run: |
+          echo "content=$(cat ./hack/metallb_ref.txt)" >> $GITHUB_OUTPUT
+
+      - name: Checkout MetalLB
+        uses: actions/checkout@v4
+        with:
+          repository: metallb/metallb
+          path: metallb
+          ref: "${{ steps.metallb_ref.outputs.content }}"
+
+      - name: Checkout MetalLB v0.12
+        uses: actions/checkout@v4
+        with:
+          repository: metallb/metallb
+          path: metallb-0.12
+          ref: v0.12
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install linux-modules-extra-$(uname -r) python3-pip arping ndisc6
+          sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
+
+      - name: Build image
+        run: |
+          IMG=${built_image} make docker-build
+
+      - name: Create multi-node K8s Kind Cluster
+        run: |
+          ./hack/kind-multi-node-cluster-without-registry.sh
+          kind load docker-image ${built_image}
+          ./hack/create_second_interface.sh
+
+      - name: Deploy Prometheus
+        run: |
+          make deploy-prometheus
+
+      - name: Deploy Metal LB Operator
+        run: |
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
+
+      - name: Ensure MetalLB operator is ready
+        run: |
+          while [ "$(kubectl get pods -n metallb-system -l control-plane='controller-manager' -o jsonpath='{.items[*].status.containerStatuses[0].ready}')" != "true" ]; do
+            sleep 5
+            echo "Waiting for operator pod to be ready."
+          done
+
+      - name: Enable MetalLB
+        run: |
+          export KUBECONFIG=${HOME}/.kube/config
+          kubectl apply -f config/samples/metallb.yaml
+
+      - name: MetalLB E2E Tests
+        run: |
+          cd ${GITHUB_WORKSPACE}/metallb
+          sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE" -e /tmp/kind_logs
+
+      - name: MetalLB E2E Tests - backward compatible
+        run: |
+          patch ${GITHUB_WORKSPACE}/metallb-0.12/e2etest/pkg/config/update.go < ${GITHUB_WORKSPACE}/metallb/e2etest/backwardcompatible/patchfile
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            namespace: metallb-system
+            name: config
+          EOF
+          cd ${GITHUB_WORKSPACE}/metallb-0.12
+          FOCUS="L2.*should work for ExternalTrafficPolicy=Cluster|BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$|BGP.*should work with the given bfd profile.*IPV4 - default"
+          sudo -E env "PATH=$PATH" inv e2etest --use-operator --focus "$FOCUS" -e /tmp/kind_logs
+
+      - name: Collect Logs
+        if: ${{ failure() }}
+        uses: ./.github/workflows/composite/collectlogs
+        with:
+          artifact-name: metallb_e2e
+
+  metallb_e2e_frr-k8s:
+    runs-on: ubuntu-20.04
+    env:
+      built_image: "metallb-operator:ci" # Arbitrary name
+    needs:
+      - lint
+      - unit
+    defaults:
+      run:
+        shell: bash
+        working-directory: metallboperator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/workflows/composite/setup
+
+      - name: Read metallb ref
+        id: metallb_ref
+        run: echo "content=$(cat ./hack/metallb_ref.txt)" >> $GITHUB_OUTPUT
+
+      - name: Read frr-k8s version
+        id: frrk8s_ref
+        run: |
+          wget https://raw.githubusercontent.com/metallb/metallb/${{ steps.metallb_ref.outputs.content }}/charts/metallb/Chart.yaml
+          echo "content=v$(yq e '.dependencies[] | select(.name == "frr-k8s") | .version' Chart.yaml)" >> $GITHUB_OUTPUT
+          rm -f Chart.yaml
+
+      - name: Checkout MetalLB
+        uses: actions/checkout@v2
+        with:
+          repository: metallb/metallb
+          path: metallb
+          ref: "${{ steps.metallb_ref.outputs.content }}"
+
+      - name: Checkout frr-k8s
+        uses: actions/checkout@v2
+        with:
+          repository: metallb/frr-k8s
+          path: frr-k8s
+          ref: "${{ steps.frrk8s_ref.outputs.content }}"
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install linux-modules-extra-$(uname -r) python3-pip arping ndisc6
+          sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
+
+      - name: Build image
+        run: |
+          IMG=${built_image} make docker-build
+
+      - name: Create multi-node K8s Kind Cluster
+        run: |
+          ./hack/kind-multi-node-cluster-without-registry.sh
+          kind load docker-image ${built_image}
+          ./hack/create_second_interface.sh
+
+      - name: Deploy Prometheus
+        run: |
+          make deploy-prometheus
+
+      - name: Deploy MetalLB Operator using frr-k8s mode
+        run: |
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-k8s-on-ci/" make deploy
+
+      - name: Ensure MetalLB operator is ready
+        run: |
+          while [ "$(kubectl get pods -n metallb-system -l control-plane='controller-manager' -o jsonpath='{.items[*].status.containerStatuses[0].ready}')" != "true" ]; do
+            sleep 5
+            echo "Waiting for operator pod to be ready."
+          done
+
+      - name: Operator E2E Tests
+        run: |
+          export KUBECONFIG=${HOME}/.kube/config
+          make test-validation
+          make test-e2e
+          kubectl wait -n metallb-system --for=delete pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
+
+      - name: Deploy MetalLB resource
+        run: |
+          export KUBECONFIG=${HOME}/.kube/config
+          kubectl apply -f config/samples/metallb.yaml
+
+      - name: frr-k8s E2E Webhooks tests
+        run: |
+          export KUBECONFIG=${HOME}/.kube/config
+          kubectl create ns frr-k8s-system
+          cd ${GITHUB_WORKSPACE}/frr-k8s
+          mkdir -p /tmp/kind_logs
+          # TODO: remove skipping the conflict test, curerntly broken for multiple namespaces
+          KUBECONFIG_PATH=${HOME}/.kube/config GINKGO_ARGS="--focus Webhooks --skip conflict" TEST_ARGS="--report-path=/tmp/kind_logs" make e2etests
+          kubectl delete ns frr-k8s-system
+
+      - name: MetalLB E2E Tests
+        run: |
+          cd ${GITHUB_WORKSPACE}/metallb
+          sudo -E env "PATH=$PATH" inv e2etest -b frr-k8s --skip "IPV6|DUALSTACK|FRR-MODE" -e /tmp/kind_logs
+
+      - name: Collect Logs
+        if: ${{ failure() }}
+        uses: ./.github/workflows/composite/collectlogs
+        with:
+          artifact-name: metallb_e2e_frr-k8s
