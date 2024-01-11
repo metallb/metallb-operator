@@ -231,10 +231,12 @@ func (c *frrK8SChartConfig) frrk8sValues(crdConfig *metallbv1beta1.MetalLB) map[
 		}
 	}
 	frrk8sValueMap["logLevel"] = logLevelValue(crdConfig)
+	frrk8sValueMap["restartOnRotatorSecretRefresh"] = true
 
 	if c.isOpenShift {
 		// OpenShift is responsible of managing the cert secret
 		frrk8sValueMap["disableCertRotation"] = true
+		frrk8sValueMap["restartOnRotatorSecretRefresh"] = nil // the cert rotator isn't started anyways
 	}
 
 	return frrk8sValueMap
