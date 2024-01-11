@@ -423,6 +423,8 @@ jobs:
         run: |
           export KUBECONFIG=${HOME}/.kube/config
           kubectl apply -f config/samples/metallb.yaml
+          sleep 20
+          kubectl wait -n metallb-system --for=condition=Ready pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
 
       - name: frr-k8s E2E Webhooks tests
         run: |
