@@ -273,7 +273,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2023-12-26T09:29:12Z"
+    createdAt: "2024-01-29T17:07:41Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.26.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -290,12 +290,6 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - kind: AddressPool
-        name: addresspools.metallb.io
-        version: v1alpha1
-      - kind: AddressPool
-        name: addresspools.metallb.io
-        version: v1beta1
       - kind: BFDProfile
         name: bfdprofiles.metallb.io
         version: v1beta1
@@ -1101,26 +1095,6 @@ spec:
       containerPort: 443
       deploymentName: metallb-operator-webhook-server
       failurePolicy: Fail
-      generateName: addresspoolvalidationwebhook.metallb.io
-      rules:
-        - apiGroups:
-            - metallb.io
-          apiVersions:
-            - v1beta1
-          operations:
-            - CREATE
-            - UPDATE
-          resources:
-            - addresspools
-      sideEffects: None
-      targetPort: 9443
-      type: ValidatingAdmissionWebhook
-      webhookPath: /validate-metallb-io-v1beta1-addresspool
-    - admissionReviewVersions:
-        - v1
-      containerPort: 443
-      deploymentName: metallb-operator-webhook-server
-      failurePolicy: Fail
       generateName: bfdprofilevalidationwebhook.metallb.io
       rules:
         - apiGroups:
@@ -1177,14 +1151,13 @@ spec:
       type: ValidatingAdmissionWebhook
       webhookPath: /validate-metallb-io-v1beta2-bgppeer
     - admissionReviewVersions:
-        - v1alpha1
         - v1beta1
+        - v1beta2
       containerPort: 443
       conversionCRDs:
-        - addresspools.metallb.io
         - bgppeers.metallb.io
       deploymentName: metallb-operator-webhook-server
-      generateName: caddresspoolsbgppeers.kb.io
+      generateName: cbgppeers.kb.io
       sideEffects: None
       targetPort: 9443
       type: ConversionWebhook

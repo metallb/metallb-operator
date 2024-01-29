@@ -5,9 +5,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.4",
+            "app.kubernetes.io/version": "v0.0.8",
             "component": "frr-k8s",
-            "helm.sh/chart": "frr-k8s-0.0.4"
+            "helm.sh/chart": "frr-k8s-0.0.8"
         },
         "name": "frr-k8s",
         "namespace": "metallb-test-namespace"
@@ -65,7 +65,7 @@
                                 }
                             }
                         ],
-                        "image": "quay.io/metallb/frr-k8s:v0.0.4",
+                        "image": "quay.io/metallb/frr-k8s:v0.0.8",
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
@@ -319,7 +319,7 @@
                             "-c",
                             "cp -f /frr-reloader.sh /etc/frr_reloader/"
                         ],
-                        "image": "quay.io/metallb/frr-k8s:v0.0.4",
+                        "image": "quay.io/metallb/frr-k8s:v0.0.8",
                         "name": "cp-reloader",
                         "volumeMounts": [
                             {
@@ -334,7 +334,7 @@
                             "-c",
                             "cp -f /frr-metrics /etc/frr_metrics/"
                         ],
-                        "image": "quay.io/metallb/frr-k8s:v0.0.4",
+                        "image": "quay.io/metallb/frr-k8s:v0.0.8",
                         "name": "cp-metrics",
                         "volumeMounts": [
                             {

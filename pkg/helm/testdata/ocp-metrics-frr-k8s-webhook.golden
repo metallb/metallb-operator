@@ -5,9 +5,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.4",
+            "app.kubernetes.io/version": "v0.0.8",
             "component": "frr-k8s-webhook-server",
-            "helm.sh/chart": "frr-k8s-0.0.4"
+            "helm.sh/chart": "frr-k8s-0.0.8"
         },
         "name": "frr-k8s-webhook-server",
         "namespace": "metallb-test-namespace"
@@ -33,8 +33,9 @@
                         "args": [
                             "--log-level=info",
                             "--webhook-mode=onlywebhook",
+                            "--disable-cert-rotation=true",
                             "--namespace=$(NAMESPACE)",
-                            "--health-probe-bind-address=127.0.0.1:8081"
+                            "--health-probe-bind-address=:8081"
                         ],
                         "command": [
                             "/frr-k8s"
@@ -49,17 +50,26 @@
                                 }
                             }
                         ],
-                        "image": "quay.io/metallb/frr-k8s:v0.0.4",
+                        "image": "quay.io/metallb/frr-k8s:v0.0.8",
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "host": "127.0.0.1",
-                                "path": "/livez",
-                                "port": 7573
+                                "path": "/healthz",
+                                "port": 8081
                             },
+                            "initialDelaySeconds": 10,
                             "periodSeconds": 10
                         },
                         "name": "frr-k8s-webhook-server",
+                        "readinessProbe": {
+                            "failureThreshold": 3,
+                            "httpGet": {
+                                "path": "/readyz",
+                                "port": 8081
+                            },
+                            "initialDelaySeconds": 10,
+                            "periodSeconds": 10
+                        },
                         "securityContext": {
                             "allowPrivilegeEscalation": false,
                             "capabilities": {
@@ -68,15 +78,6 @@
                                 ]
                             },
                             "readOnlyRootFilesystem": true
-                        },
-                        "startupProbe": {
-                            "failureThreshold": 30,
-                            "httpGet": {
-                                "host": "127.0.0.1",
-                                "path": "/livez",
-                                "port": 7573
-                            },
-                            "periodSeconds": 5
                         },
                         "volumeMounts": [
                             {
