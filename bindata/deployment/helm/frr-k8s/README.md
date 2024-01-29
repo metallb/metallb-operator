@@ -1,6 +1,6 @@
 # frr-k8s
 
-![Version: 0.0.4](https://img.shields.io/badge/Version-0.0.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.0.4](https://img.shields.io/badge/AppVersion-v0.0.4-informational?style=flat-square)
+![Version: 0.0.8](https://img.shields.io/badge/Version-0.0.8-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.0.8](https://img.shields.io/badge/AppVersion-v0.0.8-informational?style=flat-square)
 
 A cloud native wrapper of FRR
 
@@ -16,7 +16,7 @@ Kubernetes: `>= 1.19.0-0`
 
 | Repository | Name | Version |
 |------------|------|---------|
-|  | crds | 0.0.4 |
+|  | crds | 0.0.8 |
 
 ## Values
 
@@ -25,6 +25,8 @@ Kubernetes: `>= 1.19.0-0`
 | crds.enabled | bool | `true` |  |
 | crds.validationFailurePolicy | string | `"Fail"` |  |
 | frrk8s.affinity | object | `{}` |  |
+| frrk8s.alwaysBlock | string | `""` |  |
+| frrk8s.disableCertRotation | bool | `false` |  |
 | frrk8s.frr.image.pullPolicy | string | `nil` |  |
 | frrk8s.frr.image.repository | string | `"quay.io/frrouting/frr"` |  |
 | frrk8s.frr.image.tag | string | `"8.4.2"` |  |
@@ -56,6 +58,7 @@ Kubernetes: `>= 1.19.0-0`
 | frrk8s.readinessProbe.timeoutSeconds | int | `1` |  |
 | frrk8s.reloader.resources | object | `{}` |  |
 | frrk8s.resources | object | `{}` |  |
+| frrk8s.restartOnRotatorSecretRefresh | bool | `false` |  |
 | frrk8s.runtimeClassName | string | `""` |  |
 | frrk8s.serviceAccount.annotations | object | `{}` |  |
 | frrk8s.serviceAccount.create | bool | `true` |  |
