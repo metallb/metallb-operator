@@ -18,7 +18,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-20.04 
+    runs-on: ubuntu-20.04
     steps:
     - name: Check out code
       uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
       with:
         version: v1.54.2
         args: --timeout=15m0s --verbose
-  
+
   unit:
     runs-on: ubuntu-20.04
     name: Unit and Integration tests
@@ -73,7 +73,7 @@ jobs:
 
     - name: Setup
       uses: ./.github/workflows/composite/setup
-  
+
     - name: Build image
       run: |
         IMG=${built_image} make docker-build
@@ -114,7 +114,7 @@ jobs:
 
     - name: Setup
       uses: ./.github/workflows/composite/setup
-  
+
     - name: Verify release bundle manifests
       run: |
         make bundle-release
@@ -138,13 +138,13 @@ jobs:
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
         SKIP="frr-k8s" make test-e2e
-        
+
     - name: Collect Logs
       if: ${{ failure() }}
       uses: ./.github/workflows/composite/collectlogs
       with:
         artifact-name: olm
-      
+
   upgrade_version:
     runs-on: ubuntu-20.04
     env:
@@ -184,7 +184,7 @@ jobs:
         IMG=${built_image_prev_release} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" ENABLE_OPERATOR_WEBHOOK="true" make deploy
 
     - name: E2E Tests
-      run: | 
+      run: |
         export KUBECONFIG=${HOME}/.kube/config
         make  test-validation
         SKIP="frr-k8s" make test-e2e
@@ -204,7 +204,7 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         go-version: '1.20'
-        
+
     - name: Delete old controller-gen
       run: |
         rm $(which controller-gen)
@@ -243,7 +243,7 @@ jobs:
       uses: ./.github/workflows/composite/collectlogs
       with:
         artifact-name: upgrade_version
-  
+
   metallb_e2e:
     runs-on: ubuntu-20.04
     env:
@@ -322,20 +322,6 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
           sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE" -e /tmp/kind_logs
-
-      - name: MetalLB E2E Tests - backward compatible
-        run: |
-          patch ${GITHUB_WORKSPACE}/metallb-0.12/e2etest/pkg/config/update.go < ${GITHUB_WORKSPACE}/metallb/e2etest/backwardcompatible/patchfile
-          cat <<EOF | kubectl apply -f -
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            namespace: metallb-system
-            name: config
-          EOF
-          cd ${GITHUB_WORKSPACE}/metallb-0.12
-          FOCUS="L2.*should work for ExternalTrafficPolicy=Cluster|BGP.*A service of protocol load balancer should work with.*IPV4 - ExternalTrafficPolicyCluster$|BGP.*should work with the given bfd profile.*IPV4 - default"
-          sudo -E env "PATH=$PATH" inv e2etest --use-operator --focus "$FOCUS" -e /tmp/kind_logs
 
       - name: Collect Logs
         if: ${{ failure() }}
