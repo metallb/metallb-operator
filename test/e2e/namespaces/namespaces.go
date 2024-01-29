@@ -10,7 +10,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 )
@@ -64,7 +64,7 @@ func CleanPods(namespace string, cs *testclient.ClientSet) error {
 		return nil
 	}
 	err := cs.Pods(namespace).DeleteCollection(context.Background(), metav1.DeleteOptions{
-		GracePeriodSeconds: pointer.Int64(0),
+		GracePeriodSeconds: ptr.To(int64(0)),
 	}, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("Failed to delete pods %v", err)
