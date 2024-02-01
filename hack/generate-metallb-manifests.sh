@@ -31,9 +31,8 @@ ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^---$/d'
 ls -d "$METALLB_PATH"/config/crd/bases/* | xargs sed -i '/^$/d'
 ls -d "$FRRK8S_PATH"/config/crd/bases/* | xargs sed -i '/^---$/d'
 ls -d "$FRRK8S_PATH"/config/crd/bases/* | xargs sed -i '/^$/d'
-ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs rm 
+ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs rm
 cp -r "$METALLB_PATH"/config/crd/bases config/crd
-cp -r "$METALLB_PATH"/config/crd/patches/crd-conversion-patch-addresspools.yaml config/crd/patches
 cp -r "$METALLB_PATH"/config/crd/patches/crd-conversion-patch-bgppeers.yaml config/crd/patches
 cp -r "$METALLB_PATH"/config/webhook config/webhook
 cp -r "$FRRK8S_PATH"/config/crd/bases config/crd
