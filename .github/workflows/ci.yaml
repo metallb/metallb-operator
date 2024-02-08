@@ -18,7 +18,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Check out code
       uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
         args: --timeout=15m0s --verbose
 
   unit:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: Unit and Integration tests
     steps:
     - name: Checkout
@@ -57,7 +57,7 @@ jobs:
         METALLB_BGP_TYPE=frr-k8s DEPLOY_KUBE_RBAC_PROXIES=true make test
 
   e2e:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image: "metallb-operator:ci" # Arbitrary name
     needs:
@@ -108,7 +108,7 @@ jobs:
         artifact-name: e2e
 
   olm:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - lint
       - unit
@@ -154,7 +154,7 @@ jobs:
         artifact-name: olm
 
   upgrade_version:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image_prev_release: "metallb-operator-prev-rel:ci" # Arbitrary name
       built_image: "metallb-operator:ci" # Arbitrary name
@@ -245,7 +245,7 @@ jobs:
         artifact-name: upgrade_version
 
   metallb_e2e:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image: "metallb-operator:ci" # Arbitrary name
     needs:
@@ -330,7 +330,7 @@ jobs:
           artifact-name: metallb_e2e
 
   metallb_e2e_frr-k8s:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image: "metallb-operator:ci" # Arbitrary name
     needs:
