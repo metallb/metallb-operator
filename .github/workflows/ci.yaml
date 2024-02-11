@@ -321,6 +321,7 @@ jobs:
       - name: MetalLB E2E Tests
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
+          inv remove-lb-exclusion-from-nodes
           sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE" -e /tmp/kind_logs
 
       - name: Collect Logs
@@ -429,6 +430,7 @@ jobs:
       - name: MetalLB E2E Tests
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
+          inv remove-lb-exclusion-from-nodes
           sudo -E env "PATH=$PATH" inv e2etest -b frr-k8s --skip "IPV6|DUALSTACK|FRR-MODE" -e /tmp/kind_logs
 
       - name: Collect Logs
