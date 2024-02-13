@@ -158,7 +158,7 @@ jobs:
     env:
       built_image_prev_release: "metallb-operator-prev-rel:ci" # Arbitrary name
       built_image: "metallb-operator:ci" # Arbitrary name
-    name: Go 1.17 -> Go 1.20
+    name: Upgrade version
     defaults:
       run:
         working-directory: metallboperator
@@ -188,8 +188,15 @@ jobs:
 
     - name: Deploy Previous Release Metal LB Operator
       run: |
-        make deploy-cert-manager
-        IMG=${built_image_prev_release} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" ENABLE_OPERATOR_WEBHOOK="true" make deploy
+        IMG=${built_image_prev_release} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
+
+    - name: Ensure MetalLB operator is ready
+      run: |
+        sleep 5
+        while [ "$(kubectl get pods -n metallb-system -l control-plane='controller-manager' -o jsonpath='{.items[*].status.containerStatuses[0].ready}')" != "true" ]; do
+          sleep 5
+          echo "Waiting for operator pod to be ready."
+        done
 
     - name: E2E Tests
       run: |
