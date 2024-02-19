@@ -281,13 +281,6 @@ jobs:
           path: metallb
           ref: "${{ steps.metallb_ref.outputs.content }}"
 
-      - name: Checkout MetalLB v0.12
-        uses: actions/checkout@v4
-        with:
-          repository: metallb/metallb
-          path: metallb-0.12
-          ref: v0.12
-
       - name: Install Dependencies
         run: |
           sudo apt-get update
