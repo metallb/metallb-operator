@@ -72,18 +72,9 @@ jobs:
     - name: Setup
       uses: ./.github/workflows/composite/setup
 
-    - name: Build image
-      run: |
-        IMG=${built_image} make docker-build
-
-    - name: Create K8s Kind Cluster
-      run: |
-        ./hack/kind-cluster-without-registry.sh
-        kind load docker-image ${built_image}
-
     - name: Deploy Metal LB Operator
       run: |
-        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
+        KUSTOMIZE_DEPLOY_DIR="config/default/" make deploy
 
     - name: Ensure MetalLB operator is ready
       run: |
@@ -125,15 +116,6 @@ jobs:
       run: |
         make bundle-release
         git diff --exit-code -I'^    createdAt: ' bundle
-
-    - name: Create and set up K8s Kind Cluster
-      run: |
-        ./hack/kind-cluster-with-registry.sh
-        make deploy-olm
-
-    - name: Build bundle image
-      run: |
-        make build-and-push-bundle-images REPO=localhost:5000
 
     - name: Deploy Metal LB Operator with OLM
       run: |
@@ -214,16 +196,10 @@ jobs:
         path: metallboperator-latest
         fetch-depth: 0 # Fetch all history for all tags and branches
 
-    - name: Build image
-      run: |
-        cd ${GITHUB_WORKSPACE}/metallboperator-latest
-        IMG=${built_image} make docker-build
-        kind load docker-image ${built_image}
-
     - name: Deploy Metal LB Operator
       run: |
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
-        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/"  make deploy
+        KUSTOMIZE_DEPLOY_DIR="config/default/" make deploy
 
     - name: Ensure MetalLB operator is ready
       run: |
@@ -286,23 +262,13 @@ jobs:
           sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
           go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
 
-      - name: Build image
+      - name: Deploy Metal LB Operator
         run: |
-          IMG=${built_image} make docker-build
-
-      - name: Create multi-node K8s Kind Cluster
-        run: |
-          ./hack/kind-multi-node-cluster-without-registry.sh
-          kind load docker-image ${built_image}
-          ./hack/create_second_interface.sh
+          KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Deploy Prometheus
         run: |
           make deploy-prometheus
-
-      - name: Deploy Metal LB Operator
-        run: |
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Ensure MetalLB operator is ready
         run: |
@@ -378,23 +344,13 @@ jobs:
           sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
           go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
 
-      - name: Build image
+      - name: Deploy MetalLB Operator
         run: |
-          IMG=${built_image} make docker-build
-
-      - name: Create multi-node K8s Kind Cluster
-        run: |
-          ./hack/kind-multi-node-cluster-without-registry.sh
-          kind load docker-image ${built_image}
-          ./hack/create_second_interface.sh
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Deploy Prometheus
         run: |
           make deploy-prometheus
-
-      - name: Deploy MetalLB Operator using frr-k8s mode
-        run: |
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Ensure MetalLB operator is ready
         run: |
