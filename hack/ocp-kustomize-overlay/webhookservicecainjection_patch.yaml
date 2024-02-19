@@ -5,4 +5,4 @@ metadata:
   name: metallb-webhook-service
   namespace: system
   annotations:
-    service.alpha.openshift.io/serving-cert-secret-name: webhook-server-cert
+    service.alpha.openshift.io/serving-cert-secret-name: metallb-webhook-cert
