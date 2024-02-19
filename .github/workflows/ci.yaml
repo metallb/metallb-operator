@@ -46,7 +46,7 @@ jobs:
 
     - name: Verify bin dir
       run: |
-        BIN_FILE="metallb-operator.yaml" make bin
+        make bin
         git diff --exit-code bin/
 
     - name: Unit and Integration Tests
