@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -35,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/pkg/params"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -50,6 +50,7 @@ const (
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
+var reconciler *MetalLBReconciler
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -58,15 +59,40 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Controller Suite", reporterConfig)
 }
 
+var defaultEnvConfig = params.EnvConfig{
+	SpeakerImage: params.ImageInfo{
+		Repo: "test-speaker",
+		Tag:  "latest",
+	},
+	ControllerImage: params.ImageInfo{
+		Repo: "test-controller",
+		Tag:  "latest",
+	},
+	FRRImage: params.ImageInfo{
+		Repo: "test-frr",
+		Tag:  "latest",
+	},
+	KubeRBacImage: params.ImageInfo{
+		Repo: "test-kube-rbac-proxy",
+		Tag:  "latest",
+	},
+	FRRK8sImage: params.ImageInfo{
+		Repo: "frr-k8s",
+		Tag:  "test",
+	},
+	Namespace:                  MetalLBTestNameSpace,
+	MetricsPort:                7472,
+	FRRMetricsPort:             7473,
+	MLBindPort:                 7946,
+	FRRK8sMetricsPort:          7572,
+	SecureFRRK8sMetricsPort:    9140,
+	FRRK8sFRRMetricsPort:       7573,
+	SecureFRRK8sFRRMetricsPort: 9141,
+}
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	By("Setting MetalLBReconcilier environment variables")
-	Expect(os.Setenv("SPEAKER_IMAGE", "test-speaker:latest")).To(Succeed())
-	Expect(os.Setenv("CONTROLLER_IMAGE", "test-controller:latest")).To(Succeed())
-	Expect(os.Setenv("FRR_IMAGE", "test-frr:latest")).To(Succeed())
-	Expect(os.Setenv("KUBE_RBAC_PROXY_IMAGE", "test-kube-rbac-proxy:latest")).To(Succeed())
-	Expect(os.Setenv("FRRK8S_IMAGE", "test-frr-k8s:latest")).To(Succeed())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -105,13 +131,14 @@ var _ = BeforeSuite(func() {
 	MetalLBChartPath = MetalLBHelmChartPathControllerTest // This is needed as the tests need to reference a directory backward
 	FRRK8SChartPath = FRRK8SHelmChartPathControllerTest
 
-	bgpType := os.Getenv("METALLB_BGP_TYPE")
-	err = (&MetalLBReconciler{
+	reconciler = &MetalLBReconciler{
 		Client:    k8sClient,
 		Scheme:    scheme.Scheme,
 		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
 		Namespace: MetalLBTestNameSpace,
-	}).SetupWithManager(k8sManager, bgpType)
+		EnvConfig: defaultEnvConfig,
+	}
+	err = reconciler.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
