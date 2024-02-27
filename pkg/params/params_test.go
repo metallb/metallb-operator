@@ -22,7 +22,6 @@ func TestFromEnvironment(t *testing.T) {
 			},
 			expected: EnvConfig{
 				Namespace: "test-namespace",
-				BGPType:   FRRK8sMode,
 				ControllerImage: ImageInfo{
 					Repo: "test-controller-image",
 					Tag:  "1",
@@ -70,7 +69,6 @@ func TestFromEnvironment(t *testing.T) {
 			},
 			expected: EnvConfig{
 				Namespace: "test-namespace",
-				BGPType:   FRRK8sMode,
 				ControllerImage: ImageInfo{
 					Repo: "test-controller-image",
 					Tag:  "1",
@@ -130,7 +128,6 @@ func unset() {
 	os.Unsetenv("OPERATOR_NAMESPACE")
 	os.Unsetenv("CONTROLLER_IMAGE")
 	os.Unsetenv("SPEAKER_IMAGE")
-	os.Unsetenv("METALLB_BGP_TYPE")
 	os.Unsetenv("FRR_IMAGE")
 	os.Unsetenv("KUBE_RBAC_PROXY_IMAGE")
 	os.Unsetenv("MEMBER_LIST_BIND_PORT")
@@ -150,7 +147,6 @@ func setBasics() {
 	os.Setenv("OPERATOR_NAMESPACE", "test-namespace")
 	os.Setenv("CONTROLLER_IMAGE", "test-controller-image:1")
 	os.Setenv("SPEAKER_IMAGE", "test-speaker-image:2")
-	os.Setenv("METALLB_BGP_TYPE", "frr-k8s")
 	os.Setenv("FRR_IMAGE", "test-frr-image:3")
 	os.Setenv("KUBE_RBAC_PROXY_IMAGE", "test-kube-rbac-proxy-image:4")
 	os.Setenv("FRRK8S_IMAGE", "test-frrk8s-image:5")

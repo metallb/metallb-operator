@@ -104,7 +104,8 @@ func (metallb *MetalLB) validate() error {
 		}
 	}
 
-	if metallb.Spec.BGPBackend != params.NativeMode &&
+	if metallb.Spec.BGPBackend != "" &&
+		metallb.Spec.BGPBackend != params.NativeMode &&
 		metallb.Spec.BGPBackend != params.FRRK8sMode &&
 		metallb.Spec.BGPBackend != params.FRRMode {
 		return errors.New("Invalid BGP Backend, must be one of native, frr, frr-k8s")
