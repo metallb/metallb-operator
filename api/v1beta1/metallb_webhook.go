@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"errors"
 
+	"github.com/metallb/metallb-operator/pkg/params"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -101,6 +102,12 @@ func (metallb *MetalLB) validate() error {
 				return errors.New("ControllerConfig PodAffinity set with invalid weight for preferred scheduling term")
 			}
 		}
+	}
+
+	if metallb.Spec.BGPBackend != params.NativeMode &&
+		metallb.Spec.BGPBackend != params.FRRK8sMode &&
+		metallb.Spec.BGPBackend != params.FRRMode {
+		return errors.New("Invalid BGP Backend, must be one of native, frr, frr-k8s")
 	}
 	return nil
 }

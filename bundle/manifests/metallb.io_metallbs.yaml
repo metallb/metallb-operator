@@ -34,6 +34,9 @@ spec:
           spec:
             description: MetalLBSpec defines the desired state of MetalLB
             properties:
+              bgpBackend:
+                description: The type of BGP implementation deployed with MetalLB
+                type: string
               controllerConfig:
                 description: additional configs to be applied on MetalLB Controller
                   deployment.
