@@ -31,11 +31,13 @@ var _ = Describe("MetalLB Controller", func() {
 
 		DescribeTable("Should create manifests with images and namespace overriden", func(bgpType params.BGPType) {
 
-			reconciler.EnvConfig.BGPType = bgpType
 			metallb := &metallbv1beta1.MetalLB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "metallb",
 					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					BGPBackend: bgpType,
 				},
 			}
 
@@ -213,7 +215,8 @@ var _ = Describe("MetalLB Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: metallbv1beta1.MetalLBSpec{
-					LogLevel: metallbv1beta1.LogLevelWarn,
+					LogLevel:   metallbv1beta1.LogLevelWarn,
+					BGPBackend: bgpType,
 				},
 			}
 
@@ -263,12 +266,13 @@ var _ = Describe("MetalLB Controller", func() {
 	})
 
 	It("Should create manifests for frr-k8s", func() {
-		reconciler.EnvConfig.BGPType = params.FRRK8sMode
-
 		metallb := &metallbv1beta1.MetalLB{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "metallb",
 				Namespace: MetalLBTestNameSpace,
+			},
+			Spec: metallbv1beta1.MetalLBSpec{
+				BGPBackend: params.FRRK8sMode,
 			},
 		}
 

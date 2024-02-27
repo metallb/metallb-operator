@@ -185,7 +185,7 @@ func patchMetalLBChartValues(envConfig params.EnvConfig, crdConfig *metallbv1bet
 	valuesMap["prometheus"] = metalLBprometheusValues(envConfig)
 	valuesMap["controller"] = controllerValues(envConfig, crdConfig)
 	valuesMap["speaker"] = speakerValues(envConfig, crdConfig)
-	valuesMap["frrk8s"] = metalLBFrrk8sValues(envConfig)
+	valuesMap["frrk8s"] = metalLBFrrk8sValues(envConfig, crdConfig)
 }
 
 func loadBalancerClassValue(crdConfig *metallbv1beta1.MetalLB) string {
@@ -282,7 +282,7 @@ func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 
 func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
 	frrEnabled := false
-	if envConfig.BGPType == params.FRRMode {
+	if crdConfig.BGPBackend() == params.FRRMode {
 		frrEnabled = true
 	}
 	speakerValueMap := map[string]interface{}{
@@ -331,9 +331,9 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 	return speakerValueMap
 }
 
-func metalLBFrrk8sValues(envConfig params.EnvConfig) map[string]interface{} {
+func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
 	enabled := false
-	if envConfig.BGPType == params.FRRK8sMode {
+	if crdConfig.BGPBackend() == params.FRRK8sMode {
 		enabled = true
 	}
 	frrk8sValuesMap := map[string]interface{}{

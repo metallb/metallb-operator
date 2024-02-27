@@ -134,6 +134,13 @@ type MetalLB struct {
 	Status MetalLBStatus `json:"status,omitempty"`
 }
 
+func (m *MetalLB) BGPBackend() params.BGPType {
+	if m.Spec.BGPBackend == "" {
+		return params.FRRMode
+	}
+	return m.Spec.BGPBackend
+}
+
 // +kubebuilder:object:root=true
 
 // MetalLBList contains a list of MetalLB

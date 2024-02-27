@@ -102,6 +102,9 @@ func TestParseFRRK8SOCPSecureMetrics(t *testing.T) {
 			Name:      "metallb",
 			Namespace: MetalLBTestNameSpace,
 		},
+		Spec: metallbv1beta1.MetalLBSpec{
+			BGPBackend: params.FRRMode,
+		},
 	}
 
 	envConfig := defaultEnvConfig
@@ -109,7 +112,6 @@ func TestParseFRRK8SOCPSecureMetrics(t *testing.T) {
 	envConfig.SecureFRRK8sMetricsPort = 9998
 	envConfig.SecureFRRK8sFRRMetricsPort = 9999
 	envConfig.IsOpenshift = true
-	envConfig.BGPType = params.FRRK8sMode
 
 	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())
