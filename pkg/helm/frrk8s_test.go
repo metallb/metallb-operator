@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/pkg/params"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,23 +20,18 @@ const (
 )
 
 func TestLoadFRRK8SChart(t *testing.T) {
-	resetEnv()
 	g := NewGomegaWithT(t)
-	setEnv()
-	_, err := NewFRRK8SChart(invalidFRRK8SHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace, false)
+	_, err := NewFRRK8SChart(invalidFRRK8SHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace)
 	g.Expect(err).NotTo(BeNil())
-	chart, err := NewFRRK8SChart(frrk8sHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace, false)
+	chart, err := NewFRRK8SChart(frrk8sHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace)
 	g.Expect(err).To(BeNil())
 	g.Expect(chart.chart).NotTo(BeNil())
 	g.Expect(chart.chart.Name()).To(Equal(frrk8sHelmChartName))
 }
 
 func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
-	resetEnv()
-
 	g := NewGomegaWithT(t)
-	setEnv(envVar{"FRRK8S_IMAGE", "frr-k8s:test"})
-	chart, err := NewFRRK8SChart(frrk8sHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace, false)
+	chart, err := NewFRRK8SChart(frrk8sHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace)
 	g.Expect(err).To(BeNil())
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -47,7 +43,7 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.Objects(metallb, false)
+	objs, err := chart.Objects(defaultEnvConfig, metallb)
 	g.Expect(err).To(BeNil())
 	var isFRRK8SFound, isFRRK8SWebhookFound bool
 	for _, obj := range objs {
@@ -97,16 +93,9 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 }
 
 func TestParseFRRK8SOCPSecureMetrics(t *testing.T) {
-	resetEnv()
-	setEnv(
-		envVar{"DEPLOY_SERVICEMONITORS", "true"},
-		envVar{"FRRK8S_HTTPS_METRICS_PORT", "9998"},
-		envVar{"FRRK8S_FRR_HTTPS_METRICS_PORT", "9999"},
-		envVar{"METALLB_BGP_TYPE", "frr-k8s"},
-	)
 	g := NewGomegaWithT(t)
 
-	chart, err := NewFRRK8SChart(frrk8sHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace, true)
+	chart, err := NewFRRK8SChart(frrk8sHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace)
 	g.Expect(err).To(BeNil())
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -115,7 +104,14 @@ func TestParseFRRK8SOCPSecureMetrics(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.Objects(metallb, true)
+	envConfig := defaultEnvConfig
+	envConfig.DeployServiceMonitors = true
+	envConfig.SecureFRRK8sMetricsPort = 9998
+	envConfig.SecureFRRK8sFRRMetricsPort = 9999
+	envConfig.IsOpenshift = true
+	envConfig.BGPType = params.FRRK8sMode
+
+	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())
 	for _, obj := range objs {
 		objKind := obj.GetKind()
