@@ -6,14 +6,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/metallb/metallb-operator/pkg/platform"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type ImageInfo struct {
 	Repo string
 	Tag  string
+}
+
+func (i ImageInfo) String() string {
+	return fmt.Sprintf("%s:%s", i.Repo, i.Tag)
 }
 
 const (
@@ -46,76 +47,76 @@ type EnvConfig struct {
 	IsOpenshift                bool
 }
 
-func FromEnvironment() (*EnvConfig, error) {
-	res := &EnvConfig{}
+func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
+	res := EnvConfig{}
 	found := false
 	res.Namespace, found = os.LookupEnv("OPERATOR_NAMESPACE")
 	if !found {
-		return nil, errors.New("Missing mandatory OPERATOR_NAMESPACE env variable")
+		return EnvConfig{}, errors.New("missing mandatory OPERATOR_NAMESPACE env variable")
 	}
 	var err error
 	res.ControllerImage, err = imageFromEnv("CONTROLLER_IMAGE")
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 	res.SpeakerImage, err = imageFromEnv("SPEAKER_IMAGE")
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
 	res.BGPType, err = getBGPType()
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
 	// FRR Image is mandatory only in frr mode
 	res.FRRImage, err = imageFromEnv("FRR_IMAGE")
 	if err != nil && res.BGPType == FRRMode {
-		return nil, fmt.Errorf("FRRImage is mandatory for frr mode, %w", err)
+		return EnvConfig{}, fmt.Errorf("FRRImage is mandatory for frr mode, %w", err)
 	}
 
 	res.KubeRBacImage, err = imageFromEnv("KUBE_RBAC_PROXY_IMAGE")
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
 	res.MLBindPort, err = intValueWithDefault("MEMBER_LIST_BIND_PORT", 7946)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 	res.FRRMetricsPort, err = intValueWithDefault("FRR_METRICS_PORT", 7473)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 	res.SecureFRRMetricsPort, err = intValueWithDefault("FRR_HTTPS_METRICS_PORT", 0)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 	res.MetricsPort, err = intValueWithDefault("METRICS_PORT", 7472)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 	res.SecureMetricsPort, err = intValueWithDefault("HTTPS_METRICS_PORT", 0)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
-	res.FRRK8sMetricsPort, err = intValueWithDefault("FRRK8S_FRR_METRICS_PORT", 7572)
+	res.FRRK8sMetricsPort, err = intValueWithDefault("FRRK8S_METRICS_PORT", 7572)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
 	res.SecureFRRK8sMetricsPort, err = intValueWithDefault("FRRK8s_HTTPS_METRICS_PORT", 9140)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
 	res.FRRK8sFRRMetricsPort, err = intValueWithDefault("FRRK8S_FRR_METRICS_PORT", 7573)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 	res.SecureFRRK8sFRRMetricsPort, err = intValueWithDefault("FRRK8S_FRR_HTTPS_METRICS_PORT", 9141)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
 	if os.Getenv("DEPLOY_PODMONITORS") == "true" {
@@ -125,26 +126,21 @@ func FromEnvironment() (*EnvConfig, error) {
 		res.DeployServiceMonitors = true
 	}
 
-	res.FRRK8sImage, err = imageFromEnv("KUBE_RBAC_PROXY_IMAGE")
+	res.FRRK8sImage, err = imageFromEnv("FRRK8S_IMAGE")
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
+	res.IsOpenshift = isOpenshift
 	err = validate(res)
 	if err != nil {
-		return nil, err
+		return EnvConfig{}, err
 	}
 
-	cfg := ctrl.GetConfigOrDie()
-	platformInfo, err := platform.GetPlatformInfo(cfg)
-	if err != nil {
-		return nil, err
-	}
-	res.IsOpenshift = platformInfo.IsOpenShift()
 	return res, nil
 }
 
-func validate(config *EnvConfig) error {
+func validate(config EnvConfig) error {
 	if config.DeployPodMonitors && config.DeployServiceMonitors {
 		return fmt.Errorf("pod monitors and service monitors are mutually exclusive, only one can be enabled")
 	}
@@ -186,21 +182,9 @@ func intValueWithDefault(name string, def int) (int, error) {
 	if val != "" {
 		res, err := strconv.Atoi(val)
 		if err != nil {
-			return 0, fmt.Errorf("Failed to convert %s from %s to int: %w", val, name, err)
+			return 0, fmt.Errorf("failed to convert %s from %s to int: %w", val, name, err)
 		}
 		return res, nil
 	}
 	return def, nil
-}
-
-func getBGPType() (BGPType, error) {
-	e, found := os.LookupEnv("BGP_TYPE")
-	if !found {
-		return FRRMode, nil
-	}
-	res := BGPType(e)
-	if res != FRRMode && res != FRRK8sMode && res != NativeMode {
-		return res, fmt.Errorf("Invalid BGP Type %s", res)
-	}
-	return res, nil
 }

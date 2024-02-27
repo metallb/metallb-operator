@@ -35,7 +35,6 @@ import (
 	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/status"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -162,7 +161,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	logger.Info("Start")
 
 	objs := []*unstructured.Unstructured{}
-	if r.frrk8sChart != nil {
+	if r.EnvConfig.BGPType == params.FRRK8sMode {
 		frrk8sObjs, err := r.frrk8sChart.Objects(r.EnvConfig, config)
 		if err != nil {
 			return err
@@ -194,10 +193,4 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		}
 	}
 	return nil
-}
-
-func prometheusDeployed(c client.Client) bool {
-	crd := &apiext.CustomResourceDefinition{}
-	err := c.Get(context.Background(), client.ObjectKey{Name: "servicemonitors.monitoring.coreos.com"}, crd)
-	return err == nil
 }
