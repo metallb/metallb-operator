@@ -421,6 +421,12 @@
                 ],
                 "volumes": [
                     {
+                        "name": "metrics-certs",
+                        "secret": {
+                            "secretName": "speaker-certs-secret"
+                        }
+                    },
+                    {
                         "name": "memberlist",
                         "secret": {
                             "defaultMode": 420,
@@ -455,12 +461,6 @@
                     {
                         "emptyDir": {},
                         "name": "metrics"
-                    },
-                    {
-                        "name": "metrics-certs",
-                        "secret": {
-                            "secretName": "speaker-certs-secret"
-                        }
                     }
                 ]
             }

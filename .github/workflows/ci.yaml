@@ -18,7 +18,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Check out code
       uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
         args: --timeout=15m0s --verbose
 
   unit:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: Unit and Integration tests
     steps:
     - name: Checkout
@@ -57,7 +57,7 @@ jobs:
         METALLB_BGP_TYPE=frr-k8s DEPLOY_KUBE_RBAC_PROXIES=true make test
 
   e2e:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image: "metallb-operator:ci" # Arbitrary name
     needs:
@@ -108,7 +108,7 @@ jobs:
         artifact-name: e2e
 
   olm:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - lint
       - unit
@@ -154,11 +154,11 @@ jobs:
         artifact-name: olm
 
   upgrade_version:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image_prev_release: "metallb-operator-prev-rel:ci" # Arbitrary name
       built_image: "metallb-operator:ci" # Arbitrary name
-    name: Go 1.17 -> Go 1.20
+    name: Upgrade version
     defaults:
       run:
         working-directory: metallboperator
@@ -170,12 +170,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: metallboperator
-        ref: v0.12 # previous release version
+        ref: v0.13 # previous release version
         fetch-depth: 0 # Fetch all history for all tags and branches
 
     - uses: actions/setup-go@v2
       with:
-        go-version: '1.17' # this needs to stay to 1.17 as long as the previous release is v0.12
+        go-version: '1.20'
 
     - name: Build image
       run: |
@@ -188,8 +188,15 @@ jobs:
 
     - name: Deploy Previous Release Metal LB Operator
       run: |
-        make deploy-cert-manager
-        IMG=${built_image_prev_release} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" ENABLE_OPERATOR_WEBHOOK="true" make deploy
+        IMG=${built_image_prev_release} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
+
+    - name: Ensure MetalLB operator is ready
+      run: |
+        sleep 5
+        while [ "$(kubectl get pods -n metallb-system -l control-plane='controller-manager' -o jsonpath='{.items[*].status.containerStatuses[0].ready}')" != "true" ]; do
+          sleep 5
+          echo "Waiting for operator pod to be ready."
+        done
 
     - name: E2E Tests
       run: |
@@ -208,14 +215,6 @@ jobs:
       with:
         path: metallboperator-latest
         fetch-depth: 0 # Fetch all history for all tags and branches
-
-    - uses: actions/setup-go@v2
-      with:
-        go-version: '1.20'
-
-    - name: Delete old controller-gen
-      run: |
-        rm $(which controller-gen)
 
     - name: Build image
       run: |
@@ -253,7 +252,7 @@ jobs:
         artifact-name: upgrade_version
 
   metallb_e2e:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image: "metallb-operator:ci" # Arbitrary name
     needs:
@@ -281,13 +280,6 @@ jobs:
           repository: metallb/metallb
           path: metallb
           ref: "${{ steps.metallb_ref.outputs.content }}"
-
-      - name: Checkout MetalLB v0.12
-        uses: actions/checkout@v4
-        with:
-          repository: metallb/metallb
-          path: metallb-0.12
-          ref: v0.12
 
       - name: Install Dependencies
         run: |
@@ -329,6 +321,7 @@ jobs:
       - name: MetalLB E2E Tests
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
+          inv remove-lb-exclusion-from-nodes
           sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE" -e /tmp/kind_logs
 
       - name: Collect Logs
@@ -338,7 +331,7 @@ jobs:
           artifact-name: metallb_e2e
 
   metallb_e2e_frr-k8s:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       built_image: "metallb-operator:ci" # Arbitrary name
     needs:
@@ -423,6 +416,8 @@ jobs:
         run: |
           export KUBECONFIG=${HOME}/.kube/config
           kubectl apply -f config/samples/metallb.yaml
+          sleep 20
+          kubectl wait -n metallb-system --for=condition=Ready pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
 
       - name: frr-k8s E2E Webhooks tests
         run: |
@@ -437,6 +432,7 @@ jobs:
       - name: MetalLB E2E Tests
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
+          inv remove-lb-exclusion-from-nodes
           sudo -E env "PATH=$PATH" inv e2etest -b frr-k8s --skip "IPV6|DUALSTACK|FRR-MODE" -e /tmp/kind_logs
 
       - name: Collect Logs

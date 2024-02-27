@@ -64,7 +64,7 @@ spec:
           readOnly: true
         env:
           - name: METALLB_BGP_TYPE
-            value: "native"          
+            value: "native"
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
@@ -77,4 +77,4 @@ spec:
       - name: cert
         secret:
           defaultMode: 420
-          secretName: webhook-server-cert
+          secretName: metallb-webhook-cert

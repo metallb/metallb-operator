@@ -1,5 +1,5 @@
 name: "collectlogs"
-description: "Collect and upload the logs"
+description: "Collect and upload the kind logs"
 
 inputs:
   artifact-name:
@@ -12,8 +12,8 @@ runs:
     - name: Archive E2E Tests logs
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ inputs.artifact-name }}-e2e-logs
-        path: /tmp/test_e2e_logs/
+        name: ${{ inputs.artifact-name }}-logs
+        path: /tmp/kind_logs
 
     - name: Export kind logs
       shell: bash
