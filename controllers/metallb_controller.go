@@ -32,6 +32,7 @@ import (
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	"github.com/metallb/metallb-operator/pkg/helm"
+	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/status"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -39,12 +40,9 @@ import (
 )
 
 const (
-	defaultMetalLBCrName              = "metallb"
-	MetalLBChartPathController        = "./bindata/deployment/helm/metallb"
-	FRRK8SChartPathController         = "./bindata/deployment/helm/frr-k8s"
-	bgpNative                  string = "native"
-	bgpFrr                     string = "frr"
-	bgpFRRK8S                  string = "frr-k8s"
+	defaultMetalLBCrName       = "metallb"
+	MetalLBChartPathController = "./bindata/deployment/helm/metallb"
+	FRRK8SChartPathController  = "./bindata/deployment/helm/frr-k8s"
 )
 
 // MetalLBReconciler reconciles a MetalLB object
@@ -56,6 +54,7 @@ type MetalLBReconciler struct {
 	Scheme       *runtime.Scheme
 	PlatformInfo platform.PlatformInfo
 	Namespace    string
+	EnvConfig    params.EnvConfig
 }
 
 var MetalLBChartPath = MetalLBChartPathController
@@ -99,7 +98,7 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if req.Name != defaultMetalLBCrName {
 		err := fmt.Errorf("MetalLB resource name must be '%s'", defaultMetalLBCrName)
 		logger.Error(err, "Invalid MetalLB resource name", "name", req.Name)
-		if err := status.Update(context.TODO(), r.Client, instance, status.ConditionDegraded, "IncorrectMetalLBResourceName", fmt.Sprintf("Incorrect MetalLB resource name: %s", req.Name)); err != nil {
+		if err := status.Update(context.TODO(), r.Client, instance, status.ConditionDegraded, "IncorrectMetalLBResourceName"); err != nil {
 			logger.Error(err, "Failed to update metallb status", "Desired status", status.ConditionDegraded)
 			return ctrl.Result{}, nil // Return success to avoid requeue
 		}
@@ -108,15 +107,16 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	result, condition, err := r.reconcileResource(ctx, req, instance)
+	if err != nil {
+		logger.Error(err, "Reconcile failed", "MetalLB", *instance)
+	}
+
 	if condition != "" {
-		errorMsg, wrappedErrMsg := condition, ""
+		errorMsg := condition
 		if err != nil {
-			errorMsg = "internal error"
-			if errors.Unwrap(err) != nil {
-				wrappedErrMsg = errors.Unwrap(err).Error()
-			}
+			errorMsg = "internalerror"
 		}
-		if err := status.Update(context.TODO(), r.Client, instance, condition, errorMsg, wrappedErrMsg); err != nil {
+		if err := status.Update(context.TODO(), r.Client, instance, condition, errorMsg); err != nil {
 			logger.Error(err, "Failed to update metallb status", "Desired status", condition)
 			return ctrl.Result{}, err
 		}
@@ -140,24 +140,16 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) error {
-	if bgpType == "" {
-		bgpType = bgpNative
-	}
-	if bgpType != bgpNative && bgpType != bgpFrr && bgpType != bgpFRRK8S {
-		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
-	}
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	var err error
-	r.metalLBChart, err = helm.NewMetalLBChart(MetalLBChartPath, defaultMetalLBCrName, r.Namespace, r.Client, r.PlatformInfo.IsOpenShift())
+	r.metalLBChart, err = helm.NewMetalLBChart(MetalLBChartPath, defaultMetalLBCrName, r.Namespace, r.Client)
 	if err != nil {
 		return err
 	}
 
-	if bgpType == bgpFRRK8S {
-		r.frrk8sChart, err = helm.NewFRRK8SChart(FRRK8SChartPath, "frr-k8s", r.Namespace, r.PlatformInfo.IsOpenShift())
-		if err != nil {
-			return err
-		}
+	r.frrk8sChart, err = helm.NewFRRK8SChart(FRRK8SChartPath, "frr-k8s", r.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -168,18 +160,17 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) e
 func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
-	withPrometheus := prometheusDeployed(r.Client)
 
 	objs := []*unstructured.Unstructured{}
 	if r.frrk8sChart != nil {
-		frrk8sObjs, err := r.frrk8sChart.Objects(config, withPrometheus)
+		frrk8sObjs, err := r.frrk8sChart.Objects(r.EnvConfig, config)
 		if err != nil {
 			return err
 		}
 		objs = append(objs, frrk8sObjs...)
 	}
 
-	mlbObjs, err := r.metalLBChart.Objects(config, withPrometheus)
+	mlbObjs, err := r.metalLBChart.Objects(r.EnvConfig, config)
 	if err != nil {
 		return err
 	}
