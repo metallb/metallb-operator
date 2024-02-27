@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/pkg/params"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -46,29 +47,50 @@ const (
 	controllerDeployment    = "controller"
 )
 
-type envVar struct {
-	key   string
-	value string
+var defaultEnvConfig = params.EnvConfig{
+	SpeakerImage: params.ImageInfo{
+		Repo: "quay.io/metallb/speaker",
+		Tag:  "v0.0.0",
+	},
+	ControllerImage: params.ImageInfo{
+		Repo: "quay.io/metallb/controller",
+		Tag:  "v0.0.0",
+	},
+	FRRImage: params.ImageInfo{
+		Repo: "frrouting/frr",
+		Tag:  "v7.5.1",
+	},
+	KubeRBacImage: params.ImageInfo{
+		Repo: "gcr.io/kubebuilder/kube-rbac-proxy",
+		Tag:  "v0.12.0",
+	},
+	FRRK8sImage: params.ImageInfo{
+		Repo: "quay.io/metallb/frr-k8s",
+		Tag:  "v0.0.8",
+	},
+	MetricsPort:                7472,
+	FRRMetricsPort:             7473,
+	MLBindPort:                 7946,
+	FRRK8sMetricsPort:          7572,
+	FRRK8sFRRMetricsPort:       7573,
+	SecureFRRK8sFRRMetricsPort: 9141,
+	BGPType:                    params.NativeMode,
+	Namespace:                  "metallb-test-namespace",
 }
 
 func TestLoadMetalLBChart(t *testing.T) {
-	resetEnv()
 	g := NewGomegaWithT(t)
-	setEnv()
-	_, err := NewMetalLBChart(invalidMetalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
+	_, err := NewMetalLBChart(invalidMetalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
 	g.Expect(err).NotTo(BeNil())
-	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
 	g.Expect(err).To(BeNil())
 	g.Expect(chart.chart).NotTo(BeNil())
 	g.Expect(chart.chart.Name()).To(Equal(metalLBChartName))
 }
 
 func TestParseMetalLBChartWithCustomValues(t *testing.T) {
-	resetEnv()
-
 	g := NewGomegaWithT(t)
-	setEnv()
-	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
 	g.Expect(err).To(BeNil())
 	speakerTolerations := []v1.Toleration{
 		{
@@ -123,7 +145,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.Objects(metallb, false)
+	objs, err := chart.Objects(defaultEnvConfig, metallb)
 	g.Expect(err).To(BeNil())
 	var isSpeakerFound, isControllerFound bool
 	for _, obj := range objs {
@@ -207,16 +229,9 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 }
 
 func TestParseOCPSecureMetrics(t *testing.T) {
-	resetEnv()
-	setEnv(envVar{"DEPLOY_SERVICEMONITORS", "true"},
-		envVar{"DEPLOY_SERVICEMONITORS", "true"},
-		envVar{"HTTPS_METRICS_PORT", "9998"},
-		envVar{"FRR_HTTPS_METRICS_PORT", "9999"},
-		envVar{"METALLB_BGP_TYPE", "frr"},
-	)
 	g := NewGomegaWithT(t)
-	setEnv()
-	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, true)
+
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
 	g.Expect(err).To(BeNil())
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -225,7 +240,14 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.Objects(metallb, true)
+	envConfig := defaultEnvConfig
+	envConfig.DeployServiceMonitors = true
+	envConfig.SecureMetricsPort = 9998
+	envConfig.SecureFRRMetricsPort = 9999
+	envConfig.IsOpenshift = true
+	envConfig.BGPType = params.FRRMode
+
+	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())
 	for _, obj := range objs {
 		objKind := obj.GetKind()
@@ -251,17 +273,9 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 }
 
 func TestParseSecureMetrics(t *testing.T) {
-	resetEnv()
-	setEnv(envVar{"DEPLOY_SERVICEMONITORS", "true"},
-		envVar{"DEPLOY_SERVICEMONITORS", "true"},
-		envVar{"HTTPS_METRICS_PORT", "9998"},
-		envVar{"FRR_HTTPS_METRICS_PORT", "9999"},
-		envVar{"METALLB_BGP_TYPE", "frr"},
-		envVar{"KUBE_RBAC_PROXY_IMAGE", "myrepo/image:mytag"},
-	)
+
 	g := NewGomegaWithT(t)
-	setEnv()
-	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil, false)
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
 	g.Expect(err).To(BeNil())
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -270,7 +284,13 @@ func TestParseSecureMetrics(t *testing.T) {
 		},
 	}
 
-	objs, err := chart.Objects(metallb, true)
+	envConfig := defaultEnvConfig
+	envConfig.DeployServiceMonitors = true
+	envConfig.SecureMetricsPort = 9998
+	envConfig.SecureFRRMetricsPort = 9999
+	envConfig.BGPType = params.FRRMode
+
+	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())
 	for _, obj := range objs {
 		objKind := obj.GetKind()
@@ -310,24 +330,4 @@ func validateObject(testcase, name string, obj *unstructured.Unstructured) error
 		return fmt.Errorf("unexpected manifest (-want +got):\n%s", cmp.Diff(string(expected), string(j)))
 	}
 	return nil
-}
-
-func resetEnv() {
-	os.Setenv("CONTROLLER_IMAGE", "quay.io/metallb/controller")
-	os.Setenv("SPEAKER_IMAGE", "quay.io/metallb/speaker")
-	os.Setenv("FRR_IMAGE", "frrouting/frr:v7.5.1")
-	os.Setenv("KUBE_RBAC_PROXY_IMAGE", "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0")
-	os.Setenv("DEPLOY_SERVICEMONITORS", "false")
-	os.Setenv("METALLB_BGP_TYPE", "native")
-
-	os.Setenv("HTTPS_METRICS_PORT", "0")
-	os.Setenv("FRR_HTTPS_METRICS_PORT", "0")
-
-	os.Setenv("FRRK8S_IMAGE", "")
-}
-
-func setEnv(envs ...envVar) {
-	for _, e := range envs {
-		os.Setenv(e.key, e.value)
-	}
 }
