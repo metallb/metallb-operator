@@ -74,7 +74,6 @@ var defaultEnvConfig = params.EnvConfig{
 	FRRK8sMetricsPort:          7572,
 	FRRK8sFRRMetricsPort:       7573,
 	SecureFRRK8sFRRMetricsPort: 9141,
-	BGPType:                    params.NativeMode,
 	Namespace:                  "metallb-test-namespace",
 }
 
@@ -142,6 +141,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 			ControllerConfig:       controllerConfig,
 			SpeakerConfig:          speakerConfig,
 			LoadBalancerClass:      loadBalancerClass,
+			BGPBackend:             params.NativeMode,
 		},
 	}
 
@@ -238,6 +238,9 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 			Name:      "metallb",
 			Namespace: MetalLBTestNameSpace,
 		},
+		Spec: metallbv1beta1.MetalLBSpec{
+			BGPBackend: params.FRRMode,
+		},
 	}
 
 	envConfig := defaultEnvConfig
@@ -245,7 +248,6 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 	envConfig.SecureMetricsPort = 9998
 	envConfig.SecureFRRMetricsPort = 9999
 	envConfig.IsOpenshift = true
-	envConfig.BGPType = params.FRRMode
 
 	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())
@@ -282,13 +284,15 @@ func TestParseSecureMetrics(t *testing.T) {
 			Name:      "metallb",
 			Namespace: MetalLBTestNameSpace,
 		},
+		Spec: metallbv1beta1.MetalLBSpec{
+			BGPBackend: params.FRRMode,
+		},
 	}
 
 	envConfig := defaultEnvConfig
 	envConfig.DeployServiceMonitors = true
 	envConfig.SecureMetricsPort = 9998
 	envConfig.SecureFRRMetricsPort = 9999
-	envConfig.BGPType = params.FRRMode
 
 	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())

@@ -27,7 +27,6 @@ type BGPType string
 
 type EnvConfig struct {
 	Namespace                  string
-	BGPType                    BGPType
 	ControllerImage            ImageInfo
 	SpeakerImage               ImageInfo
 	FRRImage                   ImageInfo
@@ -64,14 +63,9 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 		return EnvConfig{}, err
 	}
 
-	res.BGPType, err = getBGPType()
-	if err != nil {
-		return EnvConfig{}, err
-	}
-
 	// FRR Image is mandatory only in frr mode
 	res.FRRImage, err = imageFromEnv("FRR_IMAGE")
-	if err != nil && res.BGPType == FRRMode {
+	if err != nil {
 		return EnvConfig{}, fmt.Errorf("FRRImage is mandatory for frr mode, %w", err)
 	}
 

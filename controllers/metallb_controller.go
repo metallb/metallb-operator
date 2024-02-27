@@ -161,12 +161,16 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	logger.Info("Start")
 
 	objs := []*unstructured.Unstructured{}
-	if r.EnvConfig.BGPType == params.FRRK8sMode {
-		frrk8sObjs, err := r.frrk8sChart.Objects(r.EnvConfig, config)
-		if err != nil {
-			return err
-		}
+	toDel := []*unstructured.Unstructured{}
+	frrk8sObjs, err := r.frrk8sChart.Objects(r.EnvConfig, config)
+	if err != nil {
+		return err
+	}
+
+	if config.BGPBackend() == params.FRRK8sMode {
 		objs = append(objs, frrk8sObjs...)
+	} else {
+		toDel = append(toDel, frrk8sObjs...)
 	}
 
 	mlbObjs, err := r.metalLBChart.Objects(r.EnvConfig, config)
@@ -174,6 +178,13 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		return err
 	}
 	objs = append(objs, mlbObjs...)
+
+	for _, obj := range toDel {
+		err := r.Client.Delete(context.Background(), obj)
+		if err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "could not delete (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
+		}
+	}
 
 	for _, obj := range objs {
 		objKind := obj.GetKind()
@@ -192,5 +203,6 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 			return errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), objNS, obj.GetName())
 		}
 	}
+
 	return nil
 }
