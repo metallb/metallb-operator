@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"github.com/metallb/metallb-operator/pkg/params"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -83,6 +84,10 @@ type MetalLBSpec struct {
 	// additional configs to be applied on MetalLB Speaker daemonset.
 	// +optional
 	SpeakerConfig *Config `json:"speakerConfig,omitempty"`
+
+	// The type of BGP implementation deployed with MetalLB
+	// +optional
+	BGPBackend params.BGPType `json:"bgpBackend,omitempty"`
 }
 
 type Config struct {
