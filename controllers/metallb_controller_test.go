@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
@@ -263,61 +264,151 @@ var _ = Describe("MetalLB Controller", func() {
 			Entry("FRR Mode", params.FRRMode),
 			Entry("FRR-K8s Mode", params.FRRK8sMode),
 		)
-	})
 
-	It("Should create manifests for frr-k8s", func() {
-		metallb := &metallbv1beta1.MetalLB{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "metallb",
-				Namespace: MetalLBTestNameSpace,
-			},
-			Spec: metallbv1beta1.MetalLBSpec{
-				BGPBackend: params.FRRK8sMode,
-			},
-		}
+		It("Should create manifests for frr-k8s", func() {
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					BGPBackend: params.FRRK8sMode,
+				},
+			}
 
-		frrk8sImage := "frr-k8s:test"
-		frrImage := "test-frr:latest"
-		kubeRbacImage := "test-kube-rbac-proxy:latest"
+			frrk8sImage := "frr-k8s:test"
+			frrImage := "test-frr:latest"
+			kubeRbacImage := "test-kube-rbac-proxy:latest"
 
-		frrk8sContainers := map[string]string{
-			"controller":          frrk8sImage,
-			"frr":                 frrImage,
-			"reloader":            frrImage,
-			"frr-metrics":         frrImage,
-			"kube-rbac-proxy":     kubeRbacImage,
-			"kube-rbac-proxy-frr": kubeRbacImage,
-		}
+			frrk8sContainers := map[string]string{
+				"controller":          frrk8sImage,
+				"frr":                 frrImage,
+				"reloader":            frrImage,
+				"frr-metrics":         frrImage,
+				"kube-rbac-proxy":     kubeRbacImage,
+				"kube-rbac-proxy-frr": kubeRbacImage,
+			}
 
-		frrk8sInitContainers := map[string]string{
-			"cp-frr-files": frrImage,
-			"cp-reloader":  frrk8sImage,
-			"cp-metrics":   frrk8sImage,
-			"cp-liveness":  frrk8sImage,
-		}
+			frrk8sInitContainers := map[string]string{
+				"cp-frr-files": frrImage,
+				"cp-reloader":  frrk8sImage,
+				"cp-metrics":   frrk8sImage,
+				"cp-liveness":  frrk8sImage,
+			}
 
-		By("Creating a MetalLB resource")
-		err := k8sClient.Create(context.Background(), metallb)
-		Expect(err).ToNot(HaveOccurred())
+			By("Creating a MetalLB resource")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
 
-		By("Validating that the variables were templated correctly")
-		frrk8sDaemonSet := &appsv1.DaemonSet{}
-		Eventually(func() error {
-			err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.FRRK8SDaemonsetName, Namespace: MetalLBTestNameSpace}, frrk8sDaemonSet)
-			return err
-		}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
-		Expect(frrk8sDaemonSet).NotTo(BeZero())
-		Expect(len(frrk8sDaemonSet.Spec.Template.Spec.Containers)).To(BeNumerically(">", 0))
-		for _, c := range frrk8sDaemonSet.Spec.Template.Spec.Containers {
-			image, ok := frrk8sContainers[c.Name]
-			Expect(ok).To(BeTrue(), fmt.Sprintf("container %s not found in %s", c.Name, frrk8sContainers))
-			Expect(c.Image).To(Equal(image))
-		}
-		for _, c := range frrk8sDaemonSet.Spec.Template.Spec.InitContainers {
-			image, ok := frrk8sInitContainers[c.Name]
-			Expect(ok).To(BeTrue(), fmt.Sprintf("init container %s not found in %s", c.Name, frrk8sInitContainers))
-			Expect(c.Image).To(Equal(image))
-		}
+			By("Validating that the variables were templated correctly")
+			frrk8sDaemonSet := &appsv1.DaemonSet{}
+			Eventually(func() error {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.FRRK8SDaemonsetName, Namespace: MetalLBTestNameSpace}, frrk8sDaemonSet)
+				return err
+			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
+			Expect(frrk8sDaemonSet).NotTo(BeZero())
+			Expect(len(frrk8sDaemonSet.Spec.Template.Spec.Containers)).To(BeNumerically(">", 0))
+			for _, c := range frrk8sDaemonSet.Spec.Template.Spec.Containers {
+				image, ok := frrk8sContainers[c.Name]
+				Expect(ok).To(BeTrue(), fmt.Sprintf("container %s not found in %s", c.Name, frrk8sContainers))
+				Expect(c.Image).To(Equal(image))
+			}
+			for _, c := range frrk8sDaemonSet.Spec.Template.Spec.InitContainers {
+				image, ok := frrk8sInitContainers[c.Name]
+				Expect(ok).To(BeTrue(), fmt.Sprintf("init container %s not found in %s", c.Name, frrk8sInitContainers))
+				Expect(c.Image).To(Equal(image))
+			}
+
+		})
+		It("Should switch between modes", func() {
+			checkSpeakerBGPMode := func(mode params.BGPType) {
+				bgpTypeMatcher := ContainElement(v1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
+				if mode == params.NativeMode {
+					bgpTypeMatcher = Not(ContainElement(HaveField("Name", "METALLB_BGP_TYPE")))
+				}
+
+				EventuallyWithOffset(1, func() []v1.Container {
+					speakerDaemonSet := &appsv1.DaemonSet{}
+					err := k8sClient.Get(
+						context.Background(),
+						types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: MetalLBTestNameSpace},
+						speakerDaemonSet)
+					if err != nil {
+						return nil
+					}
+
+					return speakerDaemonSet.Spec.Template.Spec.Containers
+				}, 2*time.Second, 200*time.Millisecond).Should(
+					ContainElement(
+						And(
+							WithTransform(nameGetter, Equal("speaker")),
+							WithTransform(envGetter, bgpTypeMatcher),
+						)))
+			}
+
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					BGPBackend: params.FRRK8sMode,
+				},
+			}
+
+			By("Creating a MetalLB resource with frr-k8s mode")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking frr k8s is deployed")
+			frrk8sDaemonSet := &appsv1.DaemonSet{}
+			Eventually(func() error {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.FRRK8SDaemonsetName, Namespace: MetalLBTestNameSpace}, frrk8sDaemonSet)
+				return err
+			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
+
+			By("Checking the speaker is running in frr k8s mode")
+			checkSpeakerBGPMode(params.FRRK8sMode)
+
+			By("Updating to frr mode")
+			toUpdate := &metallbv1beta1.MetalLB{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+			toUpdate.Spec.BGPBackend = params.FRRMode
+			err = k8sClient.Update(context.Background(), toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking frr k8s is not there")
+			Eventually(func() bool {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.FRRK8SDaemonsetName, Namespace: MetalLBTestNameSpace}, frrk8sDaemonSet)
+				return apierrors.IsNotFound(err)
+			}, 5*time.Second, 200*time.Millisecond).Should(BeTrue())
+
+			By("Checking the speaker is running in frr mode")
+			checkSpeakerBGPMode(params.FRRMode)
+
+			By("Updating to native mode")
+			toUpdate = &metallbv1beta1.MetalLB{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+			toUpdate.Spec.BGPBackend = params.NativeMode
+			err = k8sClient.Update(context.Background(), toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking the speaker is running in native mode")
+			checkSpeakerBGPMode(params.NativeMode)
+
+			By("Leaving the bgp backend empty")
+			toUpdate = &metallbv1beta1.MetalLB{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+			toUpdate.Spec.BGPBackend = ""
+			err = k8sClient.Update(context.Background(), toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking the speaker is running in frr mode")
+			checkSpeakerBGPMode(params.FRRMode)
+		})
 	})
 })
 
@@ -335,5 +426,6 @@ func cleanTestNamespace() error {
 }
 
 // Gomega transformation functions for v1.Container
-func argsGetter(c v1.Container) []string { return c.Args }
-func nameGetter(c v1.Container) string   { return c.Name }
+func argsGetter(c v1.Container) []string   { return c.Args }
+func envGetter(c v1.Container) []v1.EnvVar { return c.Env }
+func nameGetter(c v1.Container) string     { return c.Name }
