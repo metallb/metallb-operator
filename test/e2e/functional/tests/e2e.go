@@ -10,17 +10,20 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
 	"github.com/metallb/metallb-operator/test/e2e/metallb"
 	metallbutils "github.com/metallb/metallb-operator/test/e2e/metallb"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	schv1 "k8s.io/api/scheduling/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -73,148 +76,241 @@ var _ = Describe("metallb", func() {
 			}
 		})
 
-		It("should have MetalLB pods in running state", func() {
-			By("checking MetalLB controller deployment is in running state", func() {
-				Eventually(func() error {
-					deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
-					if err != nil {
-						return err
+		Describe("should work when MetalLB is created", func() {
+			DescribeTable("with BGP type", func(bgpType params.BGPType) {
+				checkControllerBGPMode := func(mode params.BGPType) {
+					bgpTypeMatcher := ContainElement(corev1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
+					if mode == params.NativeMode {
+						bgpTypeMatcher = Not(ContainElement(HaveField("Name", "METALLB_BGP_TYPE")))
 					}
 
-					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-						LabelSelector: "component=controller"})
-					if err != nil {
-						return err
-					}
-
-					if len(pods.Items) != int(deploy.Status.Replicas) {
-						return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.MetalLBOperatorDeploymentName, deploy.Status.Replicas, len(pods.Items))
-					}
-
-					for _, pod := range pods.Items {
-						if pod.Status.Phase != corev1.PodRunning {
-							return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.MetalLBOperatorDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+					EventuallyWithOffset(1, func() []corev1.Container {
+						controllerDeployment := &appsv1.Deployment{}
+						err := testclient.Client.Get(
+							context.Background(),
+							types.NamespacedName{Name: consts.MetalLBDeploymentName, Namespace: metallb.Namespace},
+							controllerDeployment)
+						if err != nil {
+							return nil
 						}
+
+						return controllerDeployment.Spec.Template.Spec.Containers
+					}, 2*time.Second, 200*time.Millisecond).Should(
+						ContainElement(
+							And(
+								WithTransform(nameGetter, Equal("controller")),
+								WithTransform(envGetter, bgpTypeMatcher),
+							)))
+				}
+
+				checkSpeakerBGPMode := func(mode params.BGPType) {
+					bgpTypeMatcher := ContainElement(corev1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
+					if mode == params.NativeMode {
+						bgpTypeMatcher = Not(ContainElement(HaveField("Name", "METALLB_BGP_TYPE")))
 					}
 
-					return nil
-				}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
-			})
-
-			By("checking MetalLB daemonset is in running state", func() {
-				Eventually(func() error {
-					daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
-					if err != nil {
-						return err
-					}
-
-					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-						LabelSelector: "component=speaker"})
-					if err != nil {
-						return err
-					}
-
-					if len(pods.Items) != int(daemonset.Status.DesiredNumberScheduled) {
-						return fmt.Errorf("daemonset %s pods are not ready, expected %d generations got %d pods", consts.MetalLBDaemonsetName, int(daemonset.Status.DesiredNumberScheduled), len(pods.Items))
-					}
-
-					for _, pod := range pods.Items {
-						if pod.Status.Phase != corev1.PodRunning {
-							return fmt.Errorf("daemonset %s pod %s is not running, expected status %s got %s", consts.MetalLBDaemonsetName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+					EventuallyWithOffset(1, func() []corev1.Container {
+						speakerDaemonSet := &appsv1.DaemonSet{}
+						err := testclient.Client.Get(
+							context.Background(),
+							types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: metallb.Namespace},
+							speakerDaemonSet)
+						if err != nil {
+							return nil
 						}
-					}
 
-					return nil
-				}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
-			})
-			By("checking MetalLB CR status is set", func() {
-				Eventually(func() bool {
-					config := &metallbv1beta1.MetalLB{}
-					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, config)
+						return speakerDaemonSet.Spec.Template.Spec.Containers
+					}, 2*time.Second, 200*time.Millisecond).Should(
+						ContainElement(
+							And(
+								WithTransform(nameGetter, Equal("speaker")),
+								WithTransform(envGetter, bgpTypeMatcher),
+							)))
+				}
+
+				By("setting the bgpType")
+
+				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
+				if !errors.IsNotFound(err) {
 					Expect(err).ToNot(HaveOccurred())
-					if config.Status.Conditions == nil {
-						return false
+				}
+
+				if errors.IsNotFound(err) {
+					metallb := &metallbv1beta1.MetalLB{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      metallb.Name,
+							Namespace: metallb.Namespace,
+						},
+						Spec: metallbv1beta1.MetalLBSpec{
+							LogLevel:   metallbv1beta1.LogLevelWarn,
+							BGPBackend: bgpType,
+						},
 					}
-					for _, condition := range config.Status.Conditions {
-						switch condition.Type {
-						case status.ConditionAvailable:
-							if condition.Status == metav1.ConditionFalse {
-								return false
-							}
-						case status.ConditionProgressing:
-							if condition.Status == metav1.ConditionTrue {
-								return false
-							}
-						case status.ConditionDegraded:
-							if condition.Status == metav1.ConditionTrue {
-								return false
-							}
-						case status.ConditionUpgradeable:
-							if condition.Status == metav1.ConditionFalse {
-								return false
+					err := testclient.Client.Create(context.Background(), metallb)
+					Expect(err).ToNot(HaveOccurred())
+				} else {
+					metallb.Spec.BGPBackend = bgpType
+					err = testclient.Client.Update(context.Background(), metallb)
+					Expect(err).ToNot(HaveOccurred())
+				}
+
+				By("checking the controller is running in the right bgp mode", func() {
+					checkControllerBGPMode(bgpType)
+				})
+
+				By("checking MetalLB controller deployment is in running state", func() {
+					Eventually(func() error {
+						deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+						if err != nil {
+							return err
+						}
+
+						pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+							LabelSelector: "component=controller"})
+						if err != nil {
+							return err
+						}
+
+						if len(pods.Items) != int(deploy.Status.Replicas) {
+							return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.MetalLBOperatorDeploymentName, deploy.Status.Replicas, len(pods.Items))
+						}
+
+						for _, pod := range pods.Items {
+							if pod.Status.Phase != corev1.PodRunning {
+								return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.MetalLBOperatorDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
 							}
 						}
-					}
-					return true
-				}, 5*time.Minute, 5*time.Second).Should(BeTrue())
-			})
+
+						return nil
+					}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
+				})
+
+				By("checking the speaker is running in the right bgp mode", func() {
+					checkSpeakerBGPMode(bgpType)
+				})
+
+				By("checking MetalLB daemonset is in running state", func() {
+					Eventually(func() error {
+						daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+						if err != nil {
+							return err
+						}
+
+						pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+							LabelSelector: "component=speaker"})
+						if err != nil {
+							return err
+						}
+
+						if len(pods.Items) != int(daemonset.Status.DesiredNumberScheduled) {
+							return fmt.Errorf("daemonset %s pods are not ready, expected %d generations got %d pods", consts.MetalLBDaemonsetName, int(daemonset.Status.DesiredNumberScheduled), len(pods.Items))
+						}
+
+						for _, pod := range pods.Items {
+							if pod.Status.Phase != corev1.PodRunning {
+								return fmt.Errorf("daemonset %s pod %s is not running, expected status %s got %s", consts.MetalLBDaemonsetName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+							}
+						}
+
+						return nil
+					}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
+				})
+				By("checking MetalLB CR status is set", func() {
+					Eventually(func() bool {
+						config := &metallbv1beta1.MetalLB{}
+						err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, config)
+						Expect(err).ToNot(HaveOccurred())
+						if config.Status.Conditions == nil {
+							return false
+						}
+						for _, condition := range config.Status.Conditions {
+							switch condition.Type {
+							case status.ConditionAvailable:
+								if condition.Status == metav1.ConditionFalse {
+									return false
+								}
+							case status.ConditionProgressing:
+								if condition.Status == metav1.ConditionTrue {
+									return false
+								}
+							case status.ConditionDegraded:
+								if condition.Status == metav1.ConditionTrue {
+									return false
+								}
+							case status.ConditionUpgradeable:
+								if condition.Status == metav1.ConditionFalse {
+									return false
+								}
+							}
+						}
+						return true
+					}, 5*time.Minute, 5*time.Second).Should(BeTrue())
+				})
+
+				if bgpType != params.FRRK8sMode {
+					return
+				}
+				By("checking frr-k8s daemonset is in running state", func() {
+					Eventually(func() error {
+						daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.FRRK8SDaemonsetName, metav1.GetOptions{})
+						if err != nil {
+							return err
+						}
+
+						pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+							LabelSelector: "component=frr-k8s"})
+						if err != nil {
+							return err
+						}
+
+						if len(pods.Items) != int(daemonset.Status.DesiredNumberScheduled) {
+							return fmt.Errorf("daemonset %s pods are not ready, expected %d generations got %d pods", consts.MetalLBDaemonsetName, int(daemonset.Status.DesiredNumberScheduled), len(pods.Items))
+						}
+
+						for _, pod := range pods.Items {
+							if pod.Status.Phase != corev1.PodRunning {
+								return fmt.Errorf("daemonset %s pod %s is not running, expected status %s got %s", consts.MetalLBDaemonsetName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+							}
+						}
+
+						return nil
+					}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
+				})
+
+				By("checking frr-k8s webhook deployment is in running state", func() {
+					Eventually(func() error {
+						deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.FRRK8SWebhookDeploymentName, metav1.GetOptions{})
+						if err != nil {
+							return err
+						}
+
+						pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
+							LabelSelector: "component=frr-k8s-webhook-server"})
+						if err != nil {
+							return err
+						}
+
+						if len(pods.Items) != int(deploy.Status.Replicas) {
+							return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.MetalLBOperatorDeploymentName, deploy.Status.Replicas, len(pods.Items))
+						}
+
+						for _, pod := range pods.Items {
+							if pod.Status.Phase != corev1.PodRunning {
+								return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.MetalLBOperatorDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+							}
+						}
+
+						return nil
+					}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
+				})
+
+			},
+				Entry("Native Mode", params.NativeMode),
+				Entry("FRR Mode", params.FRRMode),
+				Entry("FRR-K8s Mode", params.FRRK8sMode),
+			)
 		})
 
-		It("should have frr-k8s pods in running state", func() {
-			By("checking frr-k8s daemonset is in running state", func() {
-				Eventually(func() error {
-					daemonset, err := testclient.Client.DaemonSets(metallb.Namespace).Get(context.Background(), consts.FRRK8SDaemonsetName, metav1.GetOptions{})
-					if err != nil {
-						return err
-					}
-
-					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-						LabelSelector: "component=frr-k8s"})
-					if err != nil {
-						return err
-					}
-
-					if len(pods.Items) != int(daemonset.Status.DesiredNumberScheduled) {
-						return fmt.Errorf("daemonset %s pods are not ready, expected %d generations got %d pods", consts.MetalLBDaemonsetName, int(daemonset.Status.DesiredNumberScheduled), len(pods.Items))
-					}
-
-					for _, pod := range pods.Items {
-						if pod.Status.Phase != corev1.PodRunning {
-							return fmt.Errorf("daemonset %s pod %s is not running, expected status %s got %s", consts.MetalLBDaemonsetName, pod.Name, corev1.PodRunning, pod.Status.Phase)
-						}
-					}
-
-					return nil
-				}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
-			})
-
-			By("checking frr-k8s webhook deployment is in running state", func() {
-				Eventually(func() error {
-					deploy, err := testclient.Client.Deployments(metallb.Namespace).Get(context.Background(), consts.FRRK8SWebhookDeploymentName, metav1.GetOptions{})
-					if err != nil {
-						return err
-					}
-
-					pods, err := testclient.Client.Pods(OperatorNameSpace).List(context.Background(), metav1.ListOptions{
-						LabelSelector: "component=frr-k8s-webhook-server"})
-					if err != nil {
-						return err
-					}
-
-					if len(pods.Items) != int(deploy.Status.Replicas) {
-						return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.MetalLBOperatorDeploymentName, deploy.Status.Replicas, len(pods.Items))
-					}
-
-					for _, pod := range pods.Items {
-						if pod.Status.Phase != corev1.PodRunning {
-							return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.MetalLBOperatorDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
-						}
-					}
-
-					return nil
-				}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
-			})
-		})
 	})
 
 	Context("MetalLB contains incorrect data", func() {
@@ -704,3 +800,7 @@ var _ = Describe("metallb", func() {
 		})
 	})
 })
+
+// Gomega transformation functions for v1.Container
+func envGetter(c v1.Container) []v1.EnvVar { return c.Env }
+func nameGetter(c v1.Container) string     { return c.Name }
