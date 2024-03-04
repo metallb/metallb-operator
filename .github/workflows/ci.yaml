@@ -413,7 +413,7 @@ jobs:
       - name: Deploy MetalLB resource
         run: |
           export KUBECONFIG=${HOME}/.kube/config
-          kubectl apply -f config/samples/metallb.yaml
+          kubectl apply -f config/samples/metallb_frrk8s.yaml
           sleep 20
           kubectl wait -n metallb-system --for=condition=Ready pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
 
