@@ -97,7 +97,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -143,7 +143,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -200,7 +200,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make  test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -238,7 +238,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Checkout
       uses: actions/checkout@v4
