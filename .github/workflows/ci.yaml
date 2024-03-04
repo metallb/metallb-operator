@@ -302,7 +302,7 @@ jobs:
 
       - name: Deploy Metal LB Operator
         run: |
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Ensure MetalLB operator is ready
         run: |
@@ -394,7 +394,7 @@ jobs:
 
       - name: Deploy MetalLB Operator using frr-k8s mode
         run: |
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-k8s-on-ci/" make deploy
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Ensure MetalLB operator is ready
         run: |
