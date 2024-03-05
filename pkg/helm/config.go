@@ -20,8 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
-	"strconv"
 	"strings"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
@@ -29,11 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
-
-type imageInfo struct {
-	repo string
-	tag  string
-}
 
 func parseManifest(manifest string) ([]*unstructured.Unstructured, error) {
 	rendered := bytes.Buffer{}
@@ -92,18 +85,6 @@ func toInterfaceMap(m map[string]string) map[string]interface{} {
 		result[k] = v
 	}
 	return result
-}
-
-func valueWithDefault(name string, def int) (int, error) {
-	val := os.Getenv(name)
-	if val != "" {
-		res, err := strconv.Atoi(val)
-		if err != nil {
-			return 0, err
-		}
-		return res, nil
-	}
-	return def, nil
 }
 
 func getImageNameTag(envValue string) (string, string) {
