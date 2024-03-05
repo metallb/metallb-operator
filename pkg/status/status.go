@@ -33,12 +33,12 @@ const (
 	ConditionUpgradeable = "Upgradeable"
 )
 
-func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1beta1.MetalLB, condition string, reason string, message string) error {
-	conditions := getConditions(condition, reason, message)
+func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1beta1.MetalLB, condition, reason string) error {
+	conditions := getConditions(condition, reason)
 	if equality.Semantic.DeepEqual(conditions, metallb.Status.Conditions) {
 		return nil
 	}
-	metallb.Status.Conditions = getConditions(condition, reason, message)
+	metallb.Status.Conditions = getConditions(condition, reason)
 
 	if err := client.Status().Update(ctx, metallb); err != nil {
 		return errors.Wrapf(err, "could not update status for object %+v", metallb)
@@ -46,7 +46,7 @@ func Update(ctx context.Context, client k8sclient.Client, metallb *metallbv1beta
 	return nil
 }
 
-func getConditions(condition string, reason string, message string) []metav1.Condition {
+func getConditions(condition string, reason string) []metav1.Condition {
 	conditions := getBaseConditions()
 	switch condition {
 	case ConditionAvailable:
@@ -55,11 +55,9 @@ func getConditions(condition string, reason string, message string) []metav1.Con
 	case ConditionProgressing:
 		conditions[2].Status = metav1.ConditionTrue
 		conditions[2].Reason = reason
-		conditions[2].Message = message
 	case ConditionDegraded:
 		conditions[3].Status = metav1.ConditionTrue
 		conditions[3].Reason = reason
-		conditions[3].Message = message
 	}
 	return conditions
 }

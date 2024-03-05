@@ -9,7 +9,7 @@ import (
 
 func TestGetConditionsAvailable(t *testing.T) {
 	g := NewGomegaWithT(t)
-	conditions := getConditions(ConditionAvailable, "testReason", "testMessage")
+	conditions := getConditions(ConditionAvailable, "testReason")
 	validateUnsetConditions(g, conditions, []int{2, 3})
 	validateConditionTypes(g, conditions)
 	g.Expect(conditions[0].Status).To(Equal(metav1.ConditionTrue))
@@ -18,21 +18,19 @@ func TestGetConditionsAvailable(t *testing.T) {
 
 func TestGetConditionsProgressing(t *testing.T) {
 	g := NewGomegaWithT(t)
-	conditions := getConditions(ConditionProgressing, "testReason", "testMessage")
+	conditions := getConditions(ConditionProgressing, "testReason")
 	validateUnsetConditions(g, conditions, []int{0, 1, 3})
 	validateConditionTypes(g, conditions)
 	g.Expect(conditions[2].Status).To(Equal(metav1.ConditionTrue))
-	g.Expect(conditions[2].Message).To(Equal("testMessage"))
 	g.Expect(conditions[2].Reason).To(Equal("testReason"))
 }
 
 func TestGetConditionsDegraded(t *testing.T) {
 	g := NewGomegaWithT(t)
-	conditions := getConditions(ConditionDegraded, "testReason", "testMessage")
+	conditions := getConditions(ConditionDegraded, "testReason")
 	validateUnsetConditions(g, conditions, []int{0, 1, 2})
 	validateConditionTypes(g, conditions)
 	g.Expect(conditions[3].Status).To(Equal(metav1.ConditionTrue))
-	g.Expect(conditions[3].Message).To(Equal("testMessage"))
 	g.Expect(conditions[3].Reason).To(Equal("testReason"))
 }
 
