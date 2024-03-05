@@ -1,11 +1,8 @@
 package helm
 
 import (
-	"fmt"
-	"os"
-
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/pkg/errors"
+	"github.com/metallb/metallb-operator/pkg/params"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -28,28 +25,12 @@ type FRRK8SChart struct {
 	client      *action.Install
 	envSettings *cli.EnvSettings
 	chart       *chart.Chart
-	config      *frrK8SChartConfig
-	namespace   string
-}
-
-type frrK8SChartConfig struct {
-	namespace            string
-	isOpenShift          bool
-	frrk8sImage          *imageInfo
-	frrImage             *imageInfo
-	kubeRbacProxyImage   *imageInfo
-	frrMetricsPort       int
-	metricsPort          int
-	secureMetricsPort    int
-	secureFRRMetricsPort int
-	enableServiceMonitor bool
 }
 
 // NewFRRK8SChart initializes frr-k8s helm chart after loading it from given
 // chart path and creating config object from environment variables.
-func NewFRRK8SChart(path, name, namespace string, isOpenshift bool) (*FRRK8SChart, error) {
+func NewFRRK8SChart(path, name, namespace string) (*FRRK8SChart, error) {
 	chart := &FRRK8SChart{}
-	chart.namespace = namespace
 	chart.envSettings = cli.New()
 	chart.client = action.NewInstall(new(action.Configuration))
 	chart.client.ReleaseName = name
@@ -64,86 +45,19 @@ func NewFRRK8SChart(path, name, namespace string, isOpenshift bool) (*FRRK8SChar
 	if err != nil {
 		return nil, err
 	}
-	chart.config, err = loadFRRK8SConfig(namespace, isOpenshift)
-	if err != nil {
-		return nil, err
-	}
 	return chart, nil
-}
-
-func loadFRRK8SConfig(namespace string, isOCP bool) (*frrK8SChartConfig, error) {
-	config := &frrK8SChartConfig{
-		isOpenShift:        isOCP,
-		namespace:          namespace,
-		kubeRbacProxyImage: &imageInfo{},
-	}
-	var err error
-	frrk8sImage := os.Getenv("FRRK8S_IMAGE")
-	if frrk8sImage != "" {
-		controllerRepo, controllerTag := getImageNameTag(frrk8sImage)
-		config.frrk8sImage = &imageInfo{controllerRepo, controllerTag}
-	}
-
-	frrImage := os.Getenv("FRR_IMAGE")
-	if frrImage == "" {
-		return nil, errors.Errorf("FRR_IMAGE env variable must be set for frr-k8s")
-	}
-	frrRepo, frrTag := getImageNameTag(frrImage)
-	config.frrImage = &imageInfo{frrRepo, frrTag}
-
-	config.metricsPort, err = valueWithDefault("FRRK8S_METRICS_PORT", 7572)
-	if err != nil {
-		return nil, err
-	}
-	config.secureMetricsPort, err = valueWithDefault("FRRK8S_HTTPS_METRICS_PORT", 9140)
-	if err != nil {
-		return nil, err
-	}
-
-	config.frrMetricsPort, err = valueWithDefault("FRRK8S_FRR_METRICS_PORT", 7573)
-	if err != nil {
-		return nil, err
-	}
-	config.secureFRRMetricsPort, err = valueWithDefault("FRRK8S_FRR_HTTPS_METRICS_PORT", 9141)
-	if err != nil {
-		return nil, err
-	}
-
-	// We shouldn't spam the api server trying to apply ServiceMonitors if the resource isn't installed.
-	if os.Getenv("DEPLOY_SERVICEMONITORS") == "true" {
-		config.enableServiceMonitor = true
-	}
-
-	kubeRbacProxyImage := os.Getenv("KUBE_RBAC_PROXY_IMAGE")
-	if kubeRbacProxyImage == "" {
-		return nil, errors.Errorf("KUBE_RBAC_PROXY_IMAGE env variable must be set")
-	}
-	config.kubeRbacProxyImage.repo, config.kubeRbacProxyImage.tag = getImageNameTag(kubeRbacProxyImage)
-	err = validateFRRK8SConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
-}
-
-func validateFRRK8SConfig(c *frrK8SChartConfig) error {
-	if c.isOpenShift && !c.enableServiceMonitor {
-		return fmt.Errorf("service monitors are required on OpenShift")
-	}
-
-	return nil
 }
 
 // Objects retrieves manifests from chart after patching custom values passed in crdConfig
 // and environment variables.
-func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus bool) ([]*unstructured.Unstructured, error) {
+func (h *FRRK8SChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) ([]*unstructured.Unstructured, error) {
 	chartValueOpts := &values.Options{}
 	chartValues, err := chartValueOpts.MergeValues(getter.All(h.envSettings))
 	if err != nil {
 		return nil, err
 	}
 
-	h.config.patchChartValues(crdConfig, withPrometheus, chartValues)
+	patchChartValues(envConfig, crdConfig, chartValues)
 	release, err := h.client.Run(h.chart, chartValues)
 	if err != nil {
 		return nil, err
@@ -158,23 +72,23 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 		// patch namespace into manifests at client.Run.
 		objKind := obj.GetKind()
 		if objKind != "PodSecurityPolicy" {
-			obj.SetNamespace(h.namespace)
+			obj.SetNamespace(envConfig.Namespace)
 		}
 
-		if isFRRK8SWebhookSecret(obj) && h.config.isOpenShift {
+		if isFRRK8SWebhookSecret(obj) && envConfig.IsOpenshift {
 			// We want to skip creating the secret on OpenShift since it is created and managed
 			// via the serving-cert-secret-name annotation on the service.
 			continue
 		}
 
-		if isFRRK8SValidatingWebhook(obj) && h.config.isOpenShift {
+		if isFRRK8SValidatingWebhook(obj) && envConfig.IsOpenshift {
 			err := updateAnnotations(obj, map[string]string{"service.beta.openshift.io/inject-cabundle": "true"})
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		if isFRRK8SWebhookService(obj) && h.config.isOpenShift {
+		if isFRRK8SWebhookService(obj) && envConfig.IsOpenshift {
 			err := updateAnnotations(obj, map[string]string{"service.beta.openshift.io/serving-cert-secret-name": frrk8sWebhookSecretName})
 			if err != nil {
 				return nil, err
@@ -183,7 +97,7 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 
 		// we need to override the security context as helm values are added on top
 		// of hardcoded ones in values.yaml, so it's not possible to reset runAsUser
-		if isFRRK8SWebhookDeployment(obj) && h.config.isOpenShift {
+		if isFRRK8SWebhookDeployment(obj) && envConfig.IsOpenshift {
 			securityContext := map[string]interface{}{
 				"runAsNonRoot": true,
 			}
@@ -192,7 +106,7 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 				return nil, err
 			}
 		}
-		if isServiceMonitor(obj) && h.config.isOpenShift {
+		if isServiceMonitor(obj) && envConfig.IsOpenshift {
 			err := setOcpMonitorFields(obj)
 			if err != nil {
 				return nil, err
@@ -204,12 +118,12 @@ func (h *FRRK8SChart) Objects(crdConfig *metallbv1beta1.MetalLB, withPrometheus 
 	return res, nil
 }
 
-func (c *frrK8SChartConfig) patchChartValues(crdConfig *metallbv1beta1.MetalLB, withPrometheus bool, valuesMap map[string]interface{}) {
-	valuesMap["frrk8s"] = c.frrk8sValues(crdConfig)
-	valuesMap["prometheus"] = c.prometheusValues()
+func patchChartValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB, valuesMap map[string]interface{}) {
+	valuesMap["frrk8s"] = frrk8sValues(envConfig, crdConfig)
+	valuesMap["prometheus"] = prometheusValues(envConfig)
 }
 
-func (c *frrK8SChartConfig) frrk8sValues(crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
+func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
 	frrk8sValueMap := map[string]interface{}{
 		"serviceAccount": map[string]interface{}{
 			"create": false,
@@ -217,23 +131,23 @@ func (c *frrK8SChartConfig) frrk8sValues(crdConfig *metallbv1beta1.MetalLB) map[
 		},
 		"frr": map[string]interface{}{
 			"image": map[string]interface{}{
-				"repository": c.frrImage.repo,
-				"tag":        c.frrImage.tag,
+				"repository": envConfig.FRRImage.Repo,
+				"tag":        envConfig.FRRImage.Tag,
 			},
-			"metricsPort":       c.frrMetricsPort,
-			"secureMetricsPort": c.secureFRRMetricsPort,
+			"metricsPort":       envConfig.FRRK8sFRRMetricsPort,
+			"secureMetricsPort": envConfig.SecureFRRK8sFRRMetricsPort,
 		},
 	}
-	if c.frrk8sImage != nil {
+	if envConfig.FRRK8sImage.Repo != "" {
 		frrk8sValueMap["image"] = map[string]interface{}{
-			"repository": c.frrk8sImage.repo,
-			"tag":        c.frrk8sImage.tag,
+			"repository": envConfig.FRRK8sImage.Repo,
+			"tag":        envConfig.FRRK8sImage.Tag,
 		}
 	}
 	frrk8sValueMap["logLevel"] = logLevelValue(crdConfig)
 	frrk8sValueMap["restartOnRotatorSecretRefresh"] = true
 
-	if c.isOpenShift {
+	if envConfig.IsOpenshift {
 		// OpenShift is responsible of managing the cert secret
 		frrk8sValueMap["disableCertRotation"] = true
 		frrk8sValueMap["restartOnRotatorSecretRefresh"] = nil // the cert rotator isn't started anyways
@@ -242,15 +156,15 @@ func (c *frrK8SChartConfig) frrk8sValues(crdConfig *metallbv1beta1.MetalLB) map[
 	return frrk8sValueMap
 }
 
-func (c *frrK8SChartConfig) prometheusValues() map[string]interface{} {
+func prometheusValues(envConfig params.EnvConfig) map[string]interface{} {
 	tlsConfig := map[string]interface{}{
 		"insecureSkipVerify": true,
 	}
 	annotations := map[string]interface{}{}
 	tlsSecret := ""
 
-	if c.isOpenShift {
-		tlsConfig, annotations, tlsSecret = ocpPromConfigFor("frr-k8s", c.namespace)
+	if envConfig.IsOpenshift {
+		tlsConfig, annotations, tlsSecret = ocpPromConfigFor("frr-k8s", envConfig.Namespace)
 	}
 
 	serviceMonitor := map[string]interface{}{
@@ -259,7 +173,7 @@ func (c *frrK8SChartConfig) prometheusValues() map[string]interface{} {
 		"tlsConfig":   tlsConfig,
 	}
 
-	if c.enableServiceMonitor {
+	if envConfig.DeployServiceMonitors {
 		serviceMonitor["enabled"] = true
 		serviceMonitor["metricRelabelings"] = []map[string]interface{}{
 			{
@@ -278,12 +192,12 @@ func (c *frrK8SChartConfig) prometheusValues() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"metricsPort":       c.metricsPort,
-		"secureMetricsPort": c.secureMetricsPort,
+		"metricsPort":       envConfig.FRRK8sMetricsPort,
+		"secureMetricsPort": envConfig.SecureFRRK8sMetricsPort,
 		"serviceMonitor":    serviceMonitor,
 		"rbacProxy": map[string]interface{}{
-			"repository": c.kubeRbacProxyImage.repo,
-			"tag":        c.kubeRbacProxyImage.tag,
+			"repository": envConfig.KubeRBacImage.Repo,
+			"tag":        envConfig.KubeRBacImage.Tag,
 		},
 		"serviceAccount":   "foo", // required by the chart, we won't render roles or rolebindings anyway
 		"namespace":        "bar",

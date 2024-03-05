@@ -18,6 +18,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
@@ -44,6 +45,7 @@ import (
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
+	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/open-policy-agent/cert-controller/pkg/rotator"
 	// +kubebuilder:scaffold:imports
@@ -94,12 +96,27 @@ func main() {
 
 	setupLog.Info("git commit:", "id", build)
 
-	operatorNamespace := checkEnvVar("OPERATOR_NAMESPACE")
-	checkEnvVar("SPEAKER_IMAGE")
-	checkEnvVar("CONTROLLER_IMAGE")
+	cfg := ctrl.GetConfigOrDie()
+	platformInfo, err := platform.GetPlatformInfo(cfg)
+	if err != nil {
+		setupLog.Error(err, "failed to get platform info")
+		os.Exit(1)
+	}
+	envParams, err := params.FromEnvironment(platformInfo.IsOpenShift())
+	if err != nil {
+		setupLog.Error(err, "failed to parse env params")
+		os.Exit(1)
+	}
+	jsonEnv, err := json.Marshal(envParams)
+	if err != nil {
+		setupLog.Error(err, "failed to marshal env params")
+		os.Exit(1)
+	}
+
+	setupLog.Info("starting with env config ", "config", string(jsonEnv))
 
 	namespaceSelector := cache.ByObject{
-		Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.namespace=%s", operatorNamespace)),
+		Field: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.namespace=%s", envParams.Namespace)),
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -107,7 +124,7 @@ func main() {
 		MetricsBindAddress: *metricsAddr,
 		LeaderElection:     *enableLeaderElection,
 		LeaderElectionID:   "metallb.io.metallboperator",
-		Namespace:          operatorNamespace,
+		Namespace:          envParams.Namespace,
 		Cache: cache.Options{
 			ByObject: map[client.Object]cache.ByObject{
 				&metallbv1beta1.MetalLB{}: namespaceSelector,
@@ -120,21 +137,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg := ctrl.GetConfigOrDie()
-	platformInfo, err := platform.GetPlatformInfo(cfg)
-	if err != nil {
-		setupLog.Error(err, "unable to get platform name")
-		os.Exit(1)
-	}
-
-	bgpType := os.Getenv("METALLB_BGP_TYPE")
 	if err = (&controllers.MetalLBReconciler{
-		Client:       mgr.GetClient(),
-		Log:          ctrl.Log.WithName("controllers").WithName("MetalLB"),
-		Scheme:       mgr.GetScheme(),
-		PlatformInfo: platformInfo,
-		Namespace:    operatorNamespace,
-	}).SetupWithManager(mgr, bgpType); err != nil {
+		Client:    mgr.GetClient(),
+		Log:       ctrl.Log.WithName("controllers").WithName("MetalLB"),
+		Scheme:    mgr.GetScheme(),
+		Namespace: envParams.Namespace,
+		EnvConfig: envParams,
+	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MetalLB")
 		os.Exit(1)
 	}
@@ -173,13 +182,13 @@ func main() {
 		}
 		err = rotator.AddRotator(mgr, &rotator.CertRotator{
 			SecretKey: types.NamespacedName{
-				Namespace: operatorNamespace,
+				Namespace: envParams.Namespace,
 				Name:      webhookSecretName,
 			},
 			CertDir:        *certDir,
 			CAName:         caName,
 			CAOrganization: caOrganization,
-			DNSName:        fmt.Sprintf("%s.%s.svc", *certServiceName, operatorNamespace),
+			DNSName:        fmt.Sprintf("%s.%s.svc", *certServiceName, envParams.Namespace),
 			IsReady:        setupFinished,
 			Webhooks:       webhooks,
 		})
@@ -198,15 +207,6 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
-}
-
-func checkEnvVar(name string) string {
-	value, isSet := os.LookupEnv(name)
-	if !isSet {
-		setupLog.Error(nil, "env variable must be set", "name", name)
-		os.Exit(1)
-	}
-	return value
 }
 
 func webhookServer(port int, withHTTP2 bool) webhook.Server {
