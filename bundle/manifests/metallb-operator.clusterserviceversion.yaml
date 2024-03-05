@@ -273,7 +273,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2024-03-05T10:00:08Z"
+    createdAt: "2024-03-06T15:57:37Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.26.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
@@ -321,6 +321,9 @@ spec:
         displayName: MetalLB
         kind: MetalLB
         name: metallbs.metallb.io
+        version: v1beta1
+      - kind: ServiceL2Status
+        name: servicel2statuses.metallb.io
         version: v1beta1
   description: An operator for deploying MetalLB on a kubernetes cluster.
   displayName: MetalLB Operator
@@ -625,6 +628,13 @@ spec:
                 - subjectaccessreviews
               verbs:
                 - create
+            - apiGroups:
+                - metallb.io
+              resources:
+                - servicel2statuses
+                - servicel2statuses/status
+              verbs:
+                - '*'
             - apiGroups:
                 - ""
               resources:
