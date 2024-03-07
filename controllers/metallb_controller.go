@@ -158,6 +158,10 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
 
+	err := validateBGPMode(config, r.EnvConfig.IsOpenshift)
+	if err != nil {
+		return err
+	}
 	objs := []*unstructured.Unstructured{}
 	toDel := []*unstructured.Unstructured{}
 	frrk8sObjs, err := r.frrk8sChart.Objects(r.EnvConfig, config)
@@ -202,5 +206,18 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		}
 	}
 
+	return nil
+}
+
+func validateBGPMode(config *metallbv1beta1.MetalLB, isOpenshift bool) error {
+	if config.Spec.BGPBackend != "" &&
+		config.Spec.BGPBackend != params.NativeMode &&
+		config.Spec.BGPBackend != params.FRRK8sMode &&
+		config.Spec.BGPBackend != params.FRRMode {
+		return fmt.Errorf("unsupported bgp backend %s", config.Spec.BGPBackend)
+	}
+	if isOpenshift && config.Spec.BGPBackend == params.NativeMode {
+		return fmt.Errorf("native mode is not supported on openshift")
+	}
 	return nil
 }
