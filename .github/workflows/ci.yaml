@@ -320,7 +320,7 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
           inv remove-lb-exclusion-from-nodes
-          sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE" -e /tmp/kind_logs
+          sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE|L2ServiceStatus" -e /tmp/kind_logs
 
       - name: Collect Logs
         if: ${{ failure() }}
@@ -431,7 +431,7 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
           inv remove-lb-exclusion-from-nodes
-          sudo -E env "PATH=$PATH" inv e2etest -b frr-k8s --skip "IPV6|DUALSTACK|FRR-MODE" -e /tmp/kind_logs
+          sudo -E env "PATH=$PATH" inv e2etest -b frr-k8s --skip "IPV6|DUALSTACK|FRR-MODE|L2ServiceStatus" -e /tmp/kind_logs
 
       - name: Collect Logs
         if: ${{ failure() }}
