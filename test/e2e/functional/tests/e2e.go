@@ -27,9 +27,11 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var UseMetallbResourcesFromFile = false
-
-var OperatorNameSpace = consts.DefaultOperatorNameSpace
+var (
+	UseMetallbResourcesFromFile = false
+	OperatorNameSpace           = consts.DefaultOperatorNameSpace
+	isOpenshift                 = false
+)
 
 func init() {
 	if len(os.Getenv("USE_LOCAL_RESOURCES")) != 0 {
@@ -38,6 +40,9 @@ func init() {
 
 	if ns := os.Getenv("OO_INSTALL_NAMESPACE"); len(ns) != 0 {
 		OperatorNameSpace = ns
+	}
+	if os.Getenv("IS_OPENSHIFT") != "" {
+		isOpenshift = true
 	}
 }
 
@@ -78,6 +83,9 @@ var _ = Describe("metallb", func() {
 
 		Describe("should work when MetalLB is created", func() {
 			DescribeTable("with BGP type", func(bgpType params.BGPType) {
+				if isOpenshift && bgpType == params.NativeMode {
+					Skip("Native mode not supported with openshift")
+				}
 				checkControllerBGPMode := func(mode params.BGPType) {
 					bgpTypeMatcher := ContainElement(corev1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
 					if mode == params.NativeMode {
@@ -130,29 +138,30 @@ var _ = Describe("metallb", func() {
 
 				By("setting the bgpType")
 
-				err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
-				if !errors.IsNotFound(err) {
-					Expect(err).ToNot(HaveOccurred())
-				}
-
-				if errors.IsNotFound(err) {
-					metallb := &metallbv1beta1.MetalLB{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      metallb.Name,
-							Namespace: metallb.Namespace,
-						},
-						Spec: metallbv1beta1.MetalLBSpec{
-							LogLevel:   metallbv1beta1.LogLevelWarn,
-							BGPBackend: bgpType,
-						},
+				Eventually(func() error {
+					err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
+					if !errors.IsNotFound(err) {
+						Expect(err).ToNot(HaveOccurred())
 					}
-					err := testclient.Client.Create(context.Background(), metallb)
-					Expect(err).ToNot(HaveOccurred())
-				} else {
+
+					if errors.IsNotFound(err) {
+						metallb := &metallbv1beta1.MetalLB{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      metallb.Name,
+								Namespace: metallb.Namespace,
+							},
+							Spec: metallbv1beta1.MetalLBSpec{
+								LogLevel:   metallbv1beta1.LogLevelWarn,
+								BGPBackend: bgpType,
+							},
+						}
+						err := testclient.Client.Create(context.Background(), metallb)
+						return err
+					}
 					metallb.Spec.BGPBackend = bgpType
 					err = testclient.Client.Update(context.Background(), metallb)
-					Expect(err).ToNot(HaveOccurred())
-				}
+					return err
+				}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
 
 				By("checking the controller is running in the right bgp mode")
 				checkControllerBGPMode(bgpType)
