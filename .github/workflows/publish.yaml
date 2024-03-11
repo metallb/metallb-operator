@@ -40,15 +40,6 @@ jobs:
           make bundle-release
           git diff --exit-code -I'^    createdAt: ' bundle
 
-      - name: Create and set up K8s Kind Cluster
-        run: |
-          ./hack/kind-cluster-with-registry.sh
-          make deploy-olm
-
-      - name: Build bundle image
-        run: |
-          make build-and-push-bundle-images REPO=localhost:5000
-
       - name: Deploy Metal LB Operator with OLM
         run: |
           make deploy-with-olm REPO=localhost:5000
