@@ -31,7 +31,8 @@
                     {
                         "args": [
                             "--port=7472",
-                            "--log-level=info"
+                            "--log-level=info",
+                            "--host=localhost"
                         ],
                         "command": [
                             "/speaker"
@@ -90,6 +91,7 @@
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
+                                "host": "localhost",
                                 "path": "/metrics",
                                 "port": "monitoring"
                             },
@@ -118,6 +120,7 @@
                         "readinessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
+                                "host": "localhost",
                                 "path": "/metrics",
                                 "port": "monitoring"
                             },
@@ -169,7 +172,8 @@
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "path": "/livez",
+                                "host": "localhost",
+                                "path": "livez",
                                 "port": 7473
                             },
                             "initialDelaySeconds": 10,
@@ -191,6 +195,7 @@
                         "startupProbe": {
                             "failureThreshold": 30,
                             "httpGet": {
+                                "host": "localhost",
                                 "path": "/livez",
                                 "port": 7473
                             },
@@ -230,7 +235,8 @@
                     },
                     {
                         "args": [
-                            "--metrics-port=7473"
+                            "--metrics-port=7473",
+                            "--host=localhost"
                         ],
                         "command": [
                             "/etc/frr_metrics/frr-metrics"
@@ -262,20 +268,10 @@
                         "args": [
                             "--logtostderr",
                             "--secure-listen-address=:9998",
-                            "--upstream=http://$(METALLB_HOST):7472/",
+                            "--upstream=http://localhost:7472/",
                             "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
                             "--tls-private-key-file=/etc/metrics/tls.key",
                             "--tls-cert-file=/etc/metrics/tls.crt"
-                        ],
-                        "env": [
-                            {
-                                "name": "METALLB_HOST",
-                                "valueFrom": {
-                                    "fieldRef": {
-                                        "fieldPath": "status.hostIP"
-                                    }
-                                }
-                            }
                         ],
                         "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
                         "imagePullPolicy": null,
@@ -306,7 +302,7 @@
                             "--logtostderr",
                             "--secure-listen-address=:9999",
                             "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
-                            "--upstream=http://$(METALLB_HOST):7473/",
+                            "--upstream=http://localhost:7473/",
                             "--tls-private-key-file=/etc/metrics/tls.key",
                             "--tls-cert-file=/etc/metrics/tls.crt"
                         ],
