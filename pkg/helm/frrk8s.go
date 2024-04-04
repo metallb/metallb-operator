@@ -153,6 +153,15 @@ func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB)
 		frrk8sValueMap["restartOnRotatorSecretRefresh"] = nil // the cert rotator isn't started anyways
 	}
 
+	// Mirror the behaviour of the speaker pods as frrk8s pods must follow the
+	// speaker pods.
+	if crdConfig.Spec.SpeakerNodeSelector != nil {
+		frrk8sValueMap["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
+	}
+	if crdConfig.Spec.SpeakerTolerations != nil {
+		frrk8sValueMap["tolerations"] = crdConfig.Spec.SpeakerTolerations
+	}
+
 	return frrk8sValueMap
 }
 
