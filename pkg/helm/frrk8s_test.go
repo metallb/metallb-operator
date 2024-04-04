@@ -49,6 +49,11 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 			LogLevel:            metallbv1beta1.LogLevelDebug,
 			SpeakerNodeSelector: nodeSelector,
 			SpeakerTolerations:  tolerations,
+			FRRK8SConfig: &metallbv1beta1.FRRK8SConfig{
+				AlwaysBlock: []string{"192.168.1.0/24",
+					"2001:db8::/32",
+				},
+			},
 		},
 	}
 
@@ -69,13 +74,17 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 					g.Expect(container.Image == "frr-k8s:test")
 					frrk8sControllerFound = true
 
-					logLevelChanged := false
+					logLevelChanged, alwaysBlockChanged := false, false
 					for _, a := range container.Args {
 						if a == "--log-level=debug" {
 							logLevelChanged = true
 						}
+						if a == "--always-block=192.168.1.0/24,2001:db8::/32" {
+							alwaysBlockChanged = true
+						}
 					}
 					g.Expect(logLevelChanged).To(BeTrue())
+					g.Expect(alwaysBlockChanged).To(BeTrue())
 				}
 			}
 			g.Expect(frrk8sControllerFound).To(BeTrue())

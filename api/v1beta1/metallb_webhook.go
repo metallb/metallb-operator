@@ -18,6 +18,9 @@ package v1beta1
 
 import (
 	"errors"
+	"fmt"
+	"net"
+	"strings"
 
 	"github.com/metallb/metallb-operator/pkg/params"
 	v1 "k8s.io/api/core/v1"
@@ -109,6 +112,28 @@ func (metallb *MetalLB) validate() error {
 		metallb.Spec.BGPBackend != params.FRRK8sMode &&
 		metallb.Spec.BGPBackend != params.FRRMode {
 		return errors.New("Invalid BGP Backend, must be one of native, frr, frr-k8s")
+	}
+
+	if metallb.Spec.BGPBackend != params.FRRK8sMode &&
+		metallb.Spec.FRRK8SConfig != nil {
+		return fmt.Errorf("can't apply frrk8s config while running in %s mode", metallb.Spec.BGPBackend)
+	}
+
+	if err := validateFRRK8sConfig(metallb.Spec.FRRK8SConfig); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateFRRK8sConfig(config *FRRK8SConfig) error {
+	if config == nil {
+		return nil
+	}
+	for _, cidr := range config.AlwaysBlock {
+		_, _, err := net.ParseCIDR(strings.TrimSpace(cidr))
+		if err != nil {
+			return fmt.Errorf("invalid CIDR %s in AlwaysBlock", cidr)
+		}
 	}
 	return nil
 }
