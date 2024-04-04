@@ -158,7 +158,13 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
 
-	err := validateBGPMode(config, r.EnvConfig.IsOpenshift)
+	err := config.Validate()
+	if err != nil {
+		r.Log.Error(err, "Invalid MetalLB resource")
+		return nil
+	}
+
+	err = validateBGPMode(config, r.EnvConfig.IsOpenshift)
 	if err != nil {
 		return err
 	}
