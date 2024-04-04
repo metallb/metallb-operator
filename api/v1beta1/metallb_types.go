@@ -88,6 +88,14 @@ type MetalLBSpec struct {
 	// The type of BGP implementation deployed with MetalLB
 	// +optional
 	BGPBackend params.BGPType `json:"bgpBackend,omitempty"`
+
+	// The specific frr-k8s configuration
+	FRRK8SConfig *FRRK8SConfig `json:"frrk8sConfig,omitempty"`
+}
+
+type FRRK8SConfig struct {
+	// A list of cidrs we want always to block for incoming routes
+	AlwaysBlock []string `json:"alwaysBlock,omitempty"`
 }
 
 type Config struct {

@@ -930,6 +930,16 @@ spec:
                       type: string
                   type: object
                 type: array
+              frrk8sConfig:
+                description: The specific frr-k8s configuration
+                properties:
+                  alwaysBlock:
+                    description: A list of cidrs we want always to block for incoming
+                      routes
+                    items:
+                      type: string
+                    type: array
+                type: object
               image:
                 description: Foo is an example field of MetalLB. Edit MetalLB_types.go
                   to remove/update

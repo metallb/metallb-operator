@@ -1,6 +1,11 @@
 package helm
 
 import (
+	"fmt"
+	"net"
+	"slices"
+	"strings"
+
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/params"
 	"helm.sh/helm/v3/pkg/action"
@@ -57,7 +62,11 @@ func (h *FRRK8SChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1be
 		return nil, err
 	}
 
-	patchChartValues(envConfig, crdConfig, chartValues)
+	err = patchChartValues(envConfig, crdConfig, chartValues)
+	if err != nil {
+		return nil, err
+	}
+
 	release, err := h.client.Run(h.chart, chartValues)
 	if err != nil {
 		return nil, err
@@ -118,12 +127,17 @@ func (h *FRRK8SChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1be
 	return res, nil
 }
 
-func patchChartValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB, valuesMap map[string]interface{}) {
-	valuesMap["frrk8s"] = frrk8sValues(envConfig, crdConfig)
+func patchChartValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB, valuesMap map[string]interface{}) error {
+	var err error
+	valuesMap["frrk8s"], err = frrk8sValues(envConfig, crdConfig)
+	if err != nil {
+		return err
+	}
 	valuesMap["prometheus"] = prometheusValues(envConfig)
+	return nil
 }
 
-func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
+func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) (map[string]interface{}, error) {
 	frrk8sValueMap := map[string]interface{}{
 		"serviceAccount": map[string]interface{}{
 			"create": false,
@@ -162,7 +176,14 @@ func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB)
 		frrk8sValueMap["tolerations"] = crdConfig.Spec.SpeakerTolerations
 	}
 
-	return frrk8sValueMap
+	if crdConfig.Spec.FRRK8SConfig != nil {
+		var err error
+		frrk8sValueMap["alwaysBlock"], err = alwaysBlockToString(crdConfig.Spec.FRRK8SConfig.AlwaysBlock)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return frrk8sValueMap, nil
 }
 
 func prometheusValues(envConfig params.EnvConfig) map[string]interface{} {
@@ -228,4 +249,18 @@ func isFRRK8SWebhookSecret(obj *unstructured.Unstructured) bool {
 
 func isFRRK8SValidatingWebhook(obj *unstructured.Unstructured) bool {
 	return obj.GetKind() == "ValidatingWebhookConfiguration" && obj.GetName() == frrk8sValidatingWebhookName
+}
+
+func alwaysBlockToString(alwaysBlock []string) (string, error) {
+	toSort := make([]string, len(alwaysBlock))
+	copy(toSort, alwaysBlock)
+	for _, cidr := range alwaysBlock {
+		_, _, err := net.ParseCIDR(strings.TrimSpace(cidr))
+		if err != nil {
+			return "", fmt.Errorf("invalid CIDR %s in AlwaysBlock", cidr)
+		}
+	}
+
+	slices.Sort(toSort)
+	return strings.Join(toSort, ","), nil
 }
