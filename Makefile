@@ -282,6 +282,7 @@ bump_metallb: ## Bumps metallb commit ID and creates manifests. It also validate
 	hack/bump_metallb.sh
 	$(MAKE) bin
 	$(MAKE) bundle-release
+	go test ./pkg/helm/... --update
 
 check_generated: ## Checks if there are any different with the current checkout
 	@echo "Checking generated files"
