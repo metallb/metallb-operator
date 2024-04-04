@@ -42,7 +42,7 @@ var _ webhook.Validator = &MetalLB{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for MetalLB.
 func (metallb *MetalLB) ValidateCreate() (admission.Warnings, error) {
-	if err := metallb.validate(); err != nil {
+	if err := metallb.Validate(); err != nil {
 		return admission.Warnings{}, err
 	}
 
@@ -51,7 +51,7 @@ func (metallb *MetalLB) ValidateCreate() (admission.Warnings, error) {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for MetalLB.
 func (metallb *MetalLB) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	if err := metallb.validate(); err != nil {
+	if err := metallb.Validate(); err != nil {
 		return admission.Warnings{}, err
 	}
 
@@ -63,7 +63,7 @@ func (metallb *MetalLB) ValidateDelete() (admission.Warnings, error) {
 	return admission.Warnings{}, nil
 }
 
-func (metallb *MetalLB) validate() error {
+func (metallb *MetalLB) Validate() error {
 	for _, ct := range metallb.Spec.ControllerTolerations {
 		if ct.TolerationSeconds != nil && *ct.TolerationSeconds > 0 && ct.Effect != v1.TaintEffectNoExecute {
 			return errors.New("ControllerToleration effect must be NoExecute when tolerationSeconds is set")
