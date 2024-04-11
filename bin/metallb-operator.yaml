@@ -899,6 +899,12 @@ spec:
                                     of seconds
                                   rule: duration(self).getMilliseconds() % 1000 ==
                                     0
+                              disableMP:
+                                default: false
+                                description: To set if we want to disable MP BGP that
+                                  will separate IPv4 and IPv6 route exchanges into
+                                  distinct BGP sessions.
+                                type: boolean
                               ebgpMultiHop:
                                 description: EBGPMultiHop indicates if the BGPPeer
                                   is multi-hops away.
@@ -3885,7 +3891,7 @@ spec:
         - name: DEPLOY_KUBE_RBAC_PROXIES
           value: "false"
         - name: FRRK8S_IMAGE
-          value: quay.io/metallb/frr-k8s:v0.0.10
+          value: quay.io/metallb/frr-k8s:v0.0.11
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
