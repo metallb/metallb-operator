@@ -72,9 +72,17 @@ jobs:
   publish-image:
     needs: [main]
     runs-on: ubuntu-20.04
+    permissions:
+      contents: read
+      id-token: write # needed for signing the images with GitHub OIDC Token
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: "v2.2.4"
 
       - name: Code checkout
         uses: actions/checkout@v3
@@ -105,6 +113,7 @@ jobs:
 
       - name: Build and push metallboperator
         uses: docker/build-push-action@v3
+        id: build-and-push
         with:
           context: .
           tags: ${{ steps.meta.outputs.tags }}
@@ -117,6 +126,11 @@ jobs:
           build-args: |
             GIT_BRANCH: ${{ github.ref_name }}
             GIT_COMMIT: ${{ github.sha }}
+
+      - name: Cosign sign tags
+        run: cosign sign --yes ${TAGS}
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}@${{ steps.build-and-push.outputs.digest }}
 
   release:
     needs: [publish-image]
