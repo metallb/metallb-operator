@@ -179,6 +179,13 @@ deploy-with-olm: deploy-olm load-on-kind build-and-push-bundle-images ## deploys
 	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
 	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
 
+deploy-olm-real: export OPERATOR_SDK=operator-sdk
+deploy-olm-real: deploy-olm build-and-push-bundle-images ## deploys the operator via OLM on a real cluster
+	sed -i 's|image:.*|image: $(BUNDLE_INDEX_IMG)|' config/olm-install/install-resources.yaml
+	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
+	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
+	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
+	
 bundle-index-build: opm  ## Build the bundle index image.
 	$(OPM) index add --bundles $(BUNDLE_IMG) --tag $(BUNDLE_INDEX_IMG) -c docker -i quay.io/operator-framework/opm:$(OPM_VERSION)
 
