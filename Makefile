@@ -167,25 +167,13 @@ kind-cluster: kind
 load-on-kind: docker-build kind-cluster ## Load the docker image into the kind cluster.
 	$(KIND) load docker-image ${IMG}
 
-deploy-olm: export KIND_WITH_REGISTRY=true
-deploy-olm: operator-sdk kind-cluster ## deploys OLM on the cluster
-	$(OPERATOR_SDK) olm install --version $(OLM_VERSION) --timeout 5m0s
-	$(OPERATOR_SDK) olm status
-
 deploy-with-olm: export VERSION=dev
-deploy-with-olm: deploy-olm load-on-kind build-and-push-bundle-images ## deploys the operator with OLM instead of manifests
+deploy-with-olm: load-on-kind build-and-push-bundle-images ## deploys the operator with OLM instead of manifests
 	sed -i 's|image:.*|image: $(BUNDLE_INDEX_IMG)|' config/olm-install/install-resources.yaml
 	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
 	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
 	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
 
-deploy-olm-real: export OPERATOR_SDK=operator-sdk
-deploy-olm-real: deploy-olm build-and-push-bundle-images ## deploys the operator via OLM on a real cluster
-	sed -i 's|image:.*|image: $(BUNDLE_INDEX_IMG)|' config/olm-install/install-resources.yaml
-	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
-	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
-	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
-	
 bundle-index-build: opm  ## Build the bundle index image.
 	$(OPM) index add --bundles $(BUNDLE_IMG) --tag $(BUNDLE_INDEX_IMG) -c docker -i quay.io/operator-framework/opm:$(OPM_VERSION)
 
