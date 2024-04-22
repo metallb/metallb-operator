@@ -46,10 +46,10 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION=v1.26.1
-OLM_VERSION=v0.18.3
-OPM_VERSION=v1.23.2
-KUSTOMIZE_VERSION=v5.0.1
+OPERATOR_SDK_VERSION ?= v1.34.1
+OLM_VERSION ?= v0.18.3
+OPM_VERSION ?= v1.23.2
+KUSTOMIZE_VERSION ?= v5.0.1
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
 KIND_VERSION=v0.22.0
