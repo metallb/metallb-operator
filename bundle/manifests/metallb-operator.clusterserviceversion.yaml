@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2024-04-23T11:37:10Z"
+    createdAt: "2024-04-23T11:43:43Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -1237,6 +1237,7 @@ spec:
     - email: rbryant@redhat.com
       name: Russell Bryant
   maturity: alpha
+  minKubeVersion: 1.26.0
   provider:
     name: Community
   version: 0.0.0
