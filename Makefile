@@ -6,6 +6,9 @@ CSV_VERSION = $(shell echo $(VERSION) | sed 's/v//')
 ifeq ($(VERSION), main)
 CSV_VERSION := 0.0.0
 endif
+ifeq ($(VERSION), dev)
+CSV_VERSION := 0.0.0
+endif
 # Default image repo
 REPO ?= quay.io/metallb
 
@@ -43,11 +46,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION=v1.26.1
-OLM_VERSION=v0.18.3
-OPM_VERSION=v1.23.2
-KUSTOMIZE_VERSION=v5.0.1
+OPERATOR_SDK_VERSION ?= v1.34.1
+OLM_VERSION ?= v0.18.3
+OPM_VERSION ?= v1.23.2
+KUSTOMIZE_VERSION ?= v5.0.1
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
+KIND ?= $(shell pwd)/_cache/kind
+KIND_VERSION=v0.22.0
+CACHE_PATH=$(shell pwd)/_cache
+
+
 
 OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
@@ -87,7 +95,8 @@ install: manifests kustomize  ## Install CRDs into a cluster
 uninstall: manifests kustomize  ## Uninstall CRDs from a cluster
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-deploy: manifests kustomize ## Deploy controller in the configured cluster
+deploy: export VERSION=dev
+deploy: manifests kustomize kind-cluster load-on-kind  ## Deploy controller in the configured cluster
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd $(KUSTOMIZE_DEPLOY_DIR) && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
 	cd config/metallb_rbac && $(KUSTOMIZE) edit set namespace $(NAMESPACE)
@@ -140,6 +149,7 @@ docker-push:  ## Push the docker image
 
 bundle: operator-sdk manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs -I{} cp {} bundle/manifests/
+	rm bundle/manifests/metallb.io_servicel2statuses.yaml # TODO remove when metallb support is added
 	$(OPERATOR_SDK) generate kustomize manifests --interactive=false -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker,frr-k8s-daemon"
@@ -150,12 +160,22 @@ bundle-release: kustomize bundle bump_versions  ## Generate the bundle manifests
 build-bundle: ## Build the bundle image.
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
-deploy-olm: operator-sdk ## deploys OLM on the cluster
-	$(OPERATOR_SDK) olm install --version $(OLM_VERSION)
+.PHONY: kind-cluster
+kind-cluster: kind
+	KIND_BIN=$(KIND) hack/kind/kind.sh
+
+.PHONY: load-on-kind
+load-on-kind: docker-build kind-cluster ## Load the docker image into the kind cluster.
+	$(KIND) load docker-image ${IMG}
+
+deploy-olm: export KIND_WITH_REGISTRY=true
+deploy-olm: operator-sdk kind-cluster ## deploys OLM on the cluster
+	$(OPERATOR_SDK) olm install --version $(OLM_VERSION) --timeout 5m0s
 	$(OPERATOR_SDK) olm status
 
-deploy-with-olm: ## deploys the operator with OLM instead of manifests
-	sed -i 's#quay.io/metallb/metallb-operator-bundle-index:$(VERSION)#$(BUNDLE_INDEX_IMG)#g' config/olm-install/install-resources.yaml
+deploy-with-olm: export VERSION=dev
+deploy-with-olm: deploy-olm load-on-kind build-and-push-bundle-images ## deploys the operator with OLM instead of manifests
+	sed -i 's|image:.*|image: $(BUNDLE_INDEX_IMG)|' config/olm-install/install-resources.yaml
 	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
 	$(KUSTOMIZE) build config/olm-install | kubectl apply -f -
 	VERSION=$(CSV_VERSION) NAMESPACE=$(NAMESPACE) hack/wait-for-csv.sh
@@ -177,7 +197,7 @@ deploy-prometheus:
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.1
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
@@ -230,6 +250,12 @@ ifeq (, $(shell which kubectl))
 	}
 endif
 
+.PHONY: kind
+kind: $(KIND) ## Download kind locally if necessary. If wrong version is installed, it will be overwritten.
+$(KIND):
+	test -s $(KIND) && $(KIND)/kind --version | grep -q $(KIND_VERSION) || \
+	GOBIN=$(CACHE_PATH) go install sigs.k8s.io/kind@$(KIND_VERSION)
+
 generate-metallb-manifests: kubectl ## Generate MetalLB manifests
 	@echo "Generating MetalLB manifests"
 	hack/generate-metallb-manifests.sh
@@ -257,6 +283,7 @@ bump_metallb: ## Bumps metallb commit ID and creates manifests. It also validate
 	hack/bump_metallb.sh
 	$(MAKE) bin
 	$(MAKE) bundle-release
+	go test ./pkg/helm/... --update
 
 check_generated: ## Checks if there are any different with the current checkout
 	@echo "Checking generated files"

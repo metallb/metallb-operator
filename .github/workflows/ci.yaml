@@ -46,15 +46,13 @@ jobs:
 
     - name: Verify bin dir
       run: |
-        BIN_FILE="metallb-operator.yaml" make bin
+        make bin
         git diff --exit-code bin/
 
     - name: Unit and Integration Tests
       run: |
         export KUBECONFIG=${HOME}/.kube/config
-        METALLB_BGP_TYPE=native make test
-        METALLB_BGP_TYPE=frr DEPLOY_KUBE_RBAC_PROXIES=true make test
-        METALLB_BGP_TYPE=frr-k8s DEPLOY_KUBE_RBAC_PROXIES=true make test
+        make test
 
   e2e:
     runs-on: ubuntu-22.04
@@ -74,18 +72,9 @@ jobs:
     - name: Setup
       uses: ./.github/workflows/composite/setup
 
-    - name: Build image
-      run: |
-        IMG=${built_image} make docker-build
-
-    - name: Create K8s Kind Cluster
-      run: |
-        ./hack/kind-cluster-without-registry.sh
-        kind load docker-image ${built_image}
-
     - name: Deploy Metal LB Operator
       run: |
-        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
+        KUSTOMIZE_DEPLOY_DIR="config/default/" make deploy
 
     - name: Ensure MetalLB operator is ready
       run: |
@@ -99,7 +88,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -128,15 +117,6 @@ jobs:
         make bundle-release
         git diff --exit-code -I'^    createdAt: ' bundle
 
-    - name: Create and set up K8s Kind Cluster
-      run: |
-        ./hack/kind-cluster-with-registry.sh
-        make deploy-olm
-
-    - name: Build bundle image
-      run: |
-        make build-and-push-bundle-images REPO=localhost:5000
-
     - name: Deploy Metal LB Operator with OLM
       run: |
         make deploy-with-olm REPO=localhost:5000
@@ -145,7 +125,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -175,7 +155,7 @@ jobs:
 
     - uses: actions/setup-go@v2
       with:
-        go-version: '1.20'
+        go-version: '1.21'
 
     - name: Build image
       run: |
@@ -202,7 +182,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make  test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -216,16 +196,10 @@ jobs:
         path: metallboperator-latest
         fetch-depth: 0 # Fetch all history for all tags and branches
 
-    - name: Build image
-      run: |
-        cd ${GITHUB_WORKSPACE}/metallboperator-latest
-        IMG=${built_image} make docker-build
-        kind load docker-image ${built_image}
-
     - name: Deploy Metal LB Operator
       run: |
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
-        IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/kind-ci/"  make deploy
+        KUSTOMIZE_DEPLOY_DIR="config/default/" make deploy
 
     - name: Ensure MetalLB operator is ready
       run: |
@@ -240,7 +214,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        SKIP="frr-k8s" make test-e2e
+        make test-e2e
 
     - name: Checkout
       uses: actions/checkout@v4
@@ -281,13 +255,6 @@ jobs:
           path: metallb
           ref: "${{ steps.metallb_ref.outputs.content }}"
 
-      - name: Checkout MetalLB v0.12
-        uses: actions/checkout@v4
-        with:
-          repository: metallb/metallb
-          path: metallb-0.12
-          ref: v0.12
-
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -295,23 +262,13 @@ jobs:
           sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
           go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
 
-      - name: Build image
+      - name: Deploy Metal LB Operator
         run: |
-          IMG=${built_image} make docker-build
-
-      - name: Create multi-node K8s Kind Cluster
-        run: |
-          ./hack/kind-multi-node-cluster-without-registry.sh
-          kind load docker-image ${built_image}
-          ./hack/create_second_interface.sh
+          KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Deploy Prometheus
         run: |
           make deploy-prometheus
-
-      - name: Deploy Metal LB Operator
-        run: |
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-on-ci/" make deploy
 
       - name: Ensure MetalLB operator is ready
         run: |
@@ -329,7 +286,7 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
           inv remove-lb-exclusion-from-nodes
-          sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE" -e /tmp/kind_logs
+          sudo -E env "PATH=$PATH" inv e2etest -b frr --skip "IPV6|DUALSTACK|FRRK8S-MODE|L2ServiceStatus" -e /tmp/kind_logs
 
       - name: Collect Logs
         if: ${{ failure() }}
@@ -387,23 +344,13 @@ jobs:
           sudo pip3 install -r ${GITHUB_WORKSPACE}/metallb/dev-env/requirements.txt
           go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
 
-      - name: Build image
+      - name: Deploy MetalLB Operator
         run: |
-          IMG=${built_image} make docker-build
-
-      - name: Create multi-node K8s Kind Cluster
-        run: |
-          ./hack/kind-multi-node-cluster-without-registry.sh
-          kind load docker-image ${built_image}
-          ./hack/create_second_interface.sh
+          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-webhook-prometheus/" make deploy
 
       - name: Deploy Prometheus
         run: |
           make deploy-prometheus
-
-      - name: Deploy MetalLB Operator using frr-k8s mode
-        run: |
-          IMG=${built_image} KUSTOMIZE_DEPLOY_DIR="config/frr-k8s-on-ci/" make deploy
 
       - name: Ensure MetalLB operator is ready
         run: |
@@ -422,7 +369,9 @@ jobs:
       - name: Deploy MetalLB resource
         run: |
           export KUBECONFIG=${HOME}/.kube/config
-          kubectl apply -f config/samples/metallb.yaml
+          kubectl apply -f config/samples/metallb_frrk8s.yaml
+          sleep 20
+          kubectl wait -n metallb-system --for=condition=Ready pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
 
       - name: frr-k8s E2E Webhooks tests
         run: |
@@ -438,7 +387,7 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/metallb
           inv remove-lb-exclusion-from-nodes
-          sudo -E env "PATH=$PATH" inv e2etest -b frr-k8s --skip "IPV6|DUALSTACK|FRR-MODE" -e /tmp/kind_logs
+          sudo -E env "PATH=$PATH" inv e2etest -b frr-k8s --skip "IPV6|DUALSTACK|FRR-MODE|L2ServiceStatus" -e /tmp/kind_logs
 
       - name: Collect Logs
         if: ${{ failure() }}

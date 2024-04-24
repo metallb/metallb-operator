@@ -32,19 +32,16 @@ import (
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/apply"
 	"github.com/metallb/metallb-operator/pkg/helm"
+	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/status"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
-	defaultMetalLBCrName              = "metallb"
-	MetalLBChartPathController        = "./bindata/deployment/helm/metallb"
-	FRRK8SChartPathController         = "./bindata/deployment/helm/frr-k8s"
-	bgpNative                  string = "native"
-	bgpFrr                     string = "frr"
-	bgpFRRK8S                  string = "frr-k8s"
+	defaultMetalLBCrName       = "metallb"
+	MetalLBChartPathController = "./bindata/deployment/helm/metallb"
+	FRRK8SChartPathController  = "./bindata/deployment/helm/frr-k8s"
 )
 
 // MetalLBReconciler reconciles a MetalLB object
@@ -56,6 +53,7 @@ type MetalLBReconciler struct {
 	Scheme       *runtime.Scheme
 	PlatformInfo platform.PlatformInfo
 	Namespace    string
+	EnvConfig    params.EnvConfig
 }
 
 var MetalLBChartPath = MetalLBChartPathController
@@ -140,24 +138,15 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, status.ConditionAvailable, nil
 }
 
-func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) error {
-	if bgpType == "" {
-		bgpType = bgpNative
-	}
-	if bgpType != bgpNative && bgpType != bgpFrr && bgpType != bgpFRRK8S {
-		return fmt.Errorf("unsupported BGP implementation type: %s", bgpType)
-	}
+func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	var err error
-	r.metalLBChart, err = helm.NewMetalLBChart(MetalLBChartPath, defaultMetalLBCrName, r.Namespace, r.Client, r.PlatformInfo.IsOpenShift())
+	r.metalLBChart, err = helm.NewMetalLBChart(MetalLBChartPath, defaultMetalLBCrName, r.Namespace, r.Client)
 	if err != nil {
 		return err
 	}
-
-	if bgpType == bgpFRRK8S {
-		r.frrk8sChart, err = helm.NewFRRK8SChart(FRRK8SChartPath, "frr-k8s", r.Namespace, r.PlatformInfo.IsOpenShift())
-		if err != nil {
-			return err
-		}
+	r.frrk8sChart, err = helm.NewFRRK8SChart(FRRK8SChartPath, "frr-k8s", r.Namespace)
+	if err != nil {
+		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -168,22 +157,42 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager, bgpType string) e
 func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
-	withPrometheus := prometheusDeployed(r.Client)
 
-	objs := []*unstructured.Unstructured{}
-	if r.frrk8sChart != nil {
-		frrk8sObjs, err := r.frrk8sChart.Objects(config, withPrometheus)
-		if err != nil {
-			return err
-		}
-		objs = append(objs, frrk8sObjs...)
+	err := config.Validate()
+	if err != nil {
+		r.Log.Error(err, "Invalid MetalLB resource")
+		return nil
 	}
 
-	mlbObjs, err := r.metalLBChart.Objects(config, withPrometheus)
+	err = validateBGPMode(config, r.EnvConfig.IsOpenshift)
+	if err != nil {
+		return err
+	}
+	objs := []*unstructured.Unstructured{}
+	toDel := []*unstructured.Unstructured{}
+	frrk8sObjs, err := r.frrk8sChart.Objects(r.EnvConfig, config)
+	if err != nil {
+		return err
+	}
+
+	if config.BGPBackend() == params.FRRK8sMode {
+		objs = append(objs, frrk8sObjs...)
+	} else {
+		toDel = append(toDel, frrk8sObjs...)
+	}
+
+	mlbObjs, err := r.metalLBChart.Objects(r.EnvConfig, config)
 	if err != nil {
 		return err
 	}
 	objs = append(objs, mlbObjs...)
+
+	for _, obj := range toDel {
+		err := r.Client.Delete(context.Background(), obj)
+		if err != nil && !apierrors.IsNotFound(err) {
+			return errors.Wrapf(err, "could not delete (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
+		}
+	}
 
 	for _, obj := range objs {
 		objKind := obj.GetKind()
@@ -202,11 +211,19 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 			return errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), objNS, obj.GetName())
 		}
 	}
+
 	return nil
 }
 
-func prometheusDeployed(c client.Client) bool {
-	crd := &apiext.CustomResourceDefinition{}
-	err := c.Get(context.Background(), client.ObjectKey{Name: "servicemonitors.monitoring.coreos.com"}, crd)
-	return err == nil
+func validateBGPMode(config *metallbv1beta1.MetalLB, isOpenshift bool) error {
+	if config.Spec.BGPBackend != "" &&
+		config.Spec.BGPBackend != params.NativeMode &&
+		config.Spec.BGPBackend != params.FRRK8sMode &&
+		config.Spec.BGPBackend != params.FRRMode {
+		return fmt.Errorf("unsupported bgp backend %s", config.Spec.BGPBackend)
+	}
+	if isOpenshift && config.Spec.BGPBackend == params.NativeMode {
+		return fmt.Errorf("native mode is not supported on openshift")
+	}
+	return nil
 }

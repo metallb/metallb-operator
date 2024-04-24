@@ -37,6 +37,10 @@ cp -r "$METALLB_PATH"/config/crd/patches/crd-conversion-patch-bgppeers.yaml conf
 cp -r "$METALLB_PATH"/config/webhook config/webhook
 cp -r "$FRRK8S_PATH"/config/crd/bases config/crd
 
+# replace the frr-k8s version in the manager pod
+sed -i -e "s/quay.io\/metallb\/frr-k8s.*$/quay.io\/metallb\/frr-k8s:$FRRK8S_VERSION\"/g" config/manager/env.yaml
+
+
 # generate metallb chart
 rm -rf "$METALLB_PATH"/charts/metallb/charts
 rm -f "$METALLB_PATH"/charts/metallb/templates/rbac.yaml

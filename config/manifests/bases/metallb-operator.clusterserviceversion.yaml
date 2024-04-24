@@ -54,6 +54,7 @@ spec:
   - email: rbryant@redhat.com
     name: Russell Bryant
   maturity: alpha
+  minKubeVersion: 1.26.0
   provider:
     name: Community
   version: 0.0.0

@@ -3,15 +3,16 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/test/consts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
@@ -20,18 +21,24 @@ import (
 
 var _ = Describe("MetalLB Controller", func() {
 	Context("syncMetalLB", func() {
-
 		AfterEach(func() {
 			err := cleanTestNamespace()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("Should create manifests with images and namespace overriden", func() {
+		BeforeEach(func() {
+			reconciler.EnvConfig = defaultEnvConfig
+		})
+
+		DescribeTable("Should create manifests with images and namespace overriden", func(bgpType params.BGPType) {
 
 			metallb := &metallbv1beta1.MetalLB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "metallb",
 					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					BGPBackend: bgpType,
 				},
 			}
 
@@ -195,9 +202,13 @@ var _ = Describe("MetalLB Controller", func() {
 				return k8sClient.Update(context.TODO(), metallb)
 			})
 			Expect(err).NotTo(HaveOccurred())
-		})
+		},
+			Entry("Native Mode", params.NativeMode),
+			Entry("FRR Mode", params.FRRMode),
+			Entry("FRR-K8s Mode", params.FRRK8sMode),
+		)
 
-		It("Should forward logLevel to containers", func() {
+		DescribeTable("Should forward logLevel to containers", func(bgpType params.BGPType) {
 
 			metallb := &metallbv1beta1.MetalLB{
 				ObjectMeta: metav1.ObjectMeta{
@@ -205,7 +216,8 @@ var _ = Describe("MetalLB Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: metallbv1beta1.MetalLBSpec{
-					LogLevel: metallbv1beta1.LogLevelWarn,
+					LogLevel:   metallbv1beta1.LogLevelWarn,
+					BGPBackend: bgpType,
 				},
 			}
 
@@ -247,21 +259,24 @@ var _ = Describe("MetalLB Controller", func() {
 						WithTransform(nameGetter, Equal("controller")),
 						WithTransform(argsGetter, ContainElement("--log-level=warn")),
 					)))
-		})
+		},
+			Entry("Native Mode", params.NativeMode),
+			Entry("FRR Mode", params.FRRMode),
+			Entry("FRR-K8s Mode", params.FRRK8sMode),
+		)
 
-		It("Should create manifests with images and namespace overriden for frr-k8s", func() {
-			if os.Getenv("METALLB_BGP_TYPE") != bgpFRRK8S {
-				Skip("irrelevant for non frr-k8s deployments")
-			}
-
+		It("Should create manifests for frr-k8s", func() {
 			metallb := &metallbv1beta1.MetalLB{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "metallb",
 					Namespace: MetalLBTestNameSpace,
 				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					BGPBackend: params.FRRK8sMode,
+				},
 			}
 
-			frrk8sImage := "test-frr-k8s:latest"
+			frrk8sImage := "frr-k8s:test"
 			frrImage := "test-frr:latest"
 			kubeRbacImage := "test-kube-rbac-proxy:latest"
 
@@ -303,6 +318,98 @@ var _ = Describe("MetalLB Controller", func() {
 				Expect(ok).To(BeTrue(), fmt.Sprintf("init container %s not found in %s", c.Name, frrk8sInitContainers))
 				Expect(c.Image).To(Equal(image))
 			}
+
+		})
+		It("Should switch between modes", func() {
+			checkSpeakerBGPMode := func(mode params.BGPType) {
+				bgpTypeMatcher := ContainElement(v1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
+				// Since when running in native mode the helm chart doesn't set the type, here we
+				// check for the absence of the env variable instead of having it set with a given value.
+				if mode == params.NativeMode {
+					bgpTypeMatcher = Not(ContainElement(HaveField("Name", "METALLB_BGP_TYPE")))
+				}
+
+				EventuallyWithOffset(1, func() []v1.Container {
+					speakerDaemonSet := &appsv1.DaemonSet{}
+					err := k8sClient.Get(
+						context.Background(),
+						types.NamespacedName{Name: consts.MetalLBDaemonsetName, Namespace: MetalLBTestNameSpace},
+						speakerDaemonSet)
+					if err != nil {
+						return nil
+					}
+
+					return speakerDaemonSet.Spec.Template.Spec.Containers
+				}, 2*time.Second, 200*time.Millisecond).Should(
+					ContainElement(
+						And(
+							WithTransform(nameGetter, Equal("speaker")),
+							WithTransform(envGetter, bgpTypeMatcher),
+						)))
+			}
+
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					BGPBackend: params.FRRK8sMode,
+				},
+			}
+
+			By("Creating a MetalLB resource with frr-k8s mode")
+			err := k8sClient.Create(context.Background(), metallb)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking frr k8s is deployed")
+			frrk8sDaemonSet := &appsv1.DaemonSet{}
+			Eventually(func() error {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.FRRK8SDaemonsetName, Namespace: MetalLBTestNameSpace}, frrk8sDaemonSet)
+				return err
+			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
+
+			By("Checking the speaker is running in frr k8s mode")
+			checkSpeakerBGPMode(params.FRRK8sMode)
+
+			By("Updating to frr mode")
+			toUpdate := &metallbv1beta1.MetalLB{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+			toUpdate.Spec.BGPBackend = params.FRRMode
+			err = k8sClient.Update(context.Background(), toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking frr k8s is not there")
+			Eventually(func() bool {
+				err := k8sClient.Get(context.Background(), types.NamespacedName{Name: consts.FRRK8SDaemonsetName, Namespace: MetalLBTestNameSpace}, frrk8sDaemonSet)
+				return apierrors.IsNotFound(err)
+			}, 5*time.Second, 200*time.Millisecond).Should(BeTrue())
+
+			By("Checking the speaker is running in frr mode")
+			checkSpeakerBGPMode(params.FRRMode)
+
+			By("Updating to native mode")
+			toUpdate = &metallbv1beta1.MetalLB{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+			toUpdate.Spec.BGPBackend = params.NativeMode
+			err = k8sClient.Update(context.Background(), toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking the speaker is running in native mode")
+			checkSpeakerBGPMode(params.NativeMode)
+
+			By("Leaving the bgp backend empty")
+			toUpdate = &metallbv1beta1.MetalLB{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+			toUpdate.Spec.BGPBackend = ""
+			err = k8sClient.Update(context.Background(), toUpdate)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Checking the speaker is running in frr mode")
+			checkSpeakerBGPMode(params.FRRMode)
 		})
 	})
 })
@@ -321,5 +428,6 @@ func cleanTestNamespace() error {
 }
 
 // Gomega transformation functions for v1.Container
-func argsGetter(c v1.Container) []string { return c.Args }
-func nameGetter(c v1.Container) string   { return c.Name }
+func argsGetter(c v1.Container) []string   { return c.Args }
+func envGetter(c v1.Container) []v1.EnvVar { return c.Env }
+func nameGetter(c v1.Container) string     { return c.Name }

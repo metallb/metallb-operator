@@ -1,8 +1,9 @@
 
 patchesStrategicMerge:
-- imagePullPolicyNever.yaml
+- bgpTypeFRR.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - ../default
+- prometheus_sa.yaml
 namespace: metallb-system

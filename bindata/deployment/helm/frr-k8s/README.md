@@ -1,6 +1,6 @@
 # frr-k8s
 
-![Version: 0.0.8](https://img.shields.io/badge/Version-0.0.8-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.0.8](https://img.shields.io/badge/AppVersion-v0.0.8-informational?style=flat-square)
+![Version: 0.0.11](https://img.shields.io/badge/Version-0.0.11-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.0.11](https://img.shields.io/badge/AppVersion-v0.0.11-informational?style=flat-square)
 
 A cloud native wrapper of FRR
 
@@ -16,7 +16,7 @@ Kubernetes: `>= 1.19.0-0`
 
 | Repository | Name | Version |
 |------------|------|---------|
-|  | crds | 0.0.8 |
+|  | crds | 0.0.11 |
 
 ## Values
 
@@ -29,7 +29,7 @@ Kubernetes: `>= 1.19.0-0`
 | frrk8s.disableCertRotation | bool | `false` |  |
 | frrk8s.frr.image.pullPolicy | string | `nil` |  |
 | frrk8s.frr.image.repository | string | `"quay.io/frrouting/frr"` |  |
-| frrk8s.frr.image.tag | string | `"8.4.2"` |  |
+| frrk8s.frr.image.tag | string | `"9.0.2"` |  |
 | frrk8s.frr.metricsBindAddress | string | `"127.0.0.1"` |  |
 | frrk8s.frr.metricsPort | int | `7573` |  |
 | frrk8s.frr.resources | object | `{}` |  |

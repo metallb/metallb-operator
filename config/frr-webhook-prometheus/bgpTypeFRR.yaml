@@ -9,14 +9,15 @@ spec:
       containers:
         - name: manager
           env:
-            - name: METALLB_BGP_TYPE
-              value: "frr"
+            - name: DEPLOY_SERVICEMONITORS
+              value: "true"
             - name: FRR_HTTPS_METRICS_PORT
               value: "9120"
             - name: HTTPS_METRICS_PORT
               value: "9121"
-            - name: DEPLOY_SERVICEMONITORS
-              value: "true"
+            - name: FRRK8S_HTTPS_METRICS_PORT
+              value: "9122"
+
 ---
 apiVersion: apps/v1
 kind: Deployment

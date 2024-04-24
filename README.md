@@ -3,19 +3,6 @@
 This is the official MetalLB Operator, implementing the [operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 for deploying MetalLB on a kubernetes cluster, as described in the [related design proposal](https://github.com/metallb/metallb/blob/main/design/metallb-operator.md).
 
-## Prerequisites
-
-Need to install the following packages:
-
-- operator-sdk 1.8.0+
-- controller-gen v0.11.1+
-
-To install controller-gen, run the following:
-
-```
-go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.1
-```
-
 ## Quick Setup
 
 To install the MetalLB Operator using the prebuilt manifests, run the following:
@@ -60,45 +47,8 @@ metadata:
 
 A quick, local installation can be done using a [kind](https://kind.sigs.k8s.io/) cluster and a local registry. Follow the steps below to run a locally-built metallb-operator on kind.
 
-**Install and run kind**
-
-Install kind using the instructions [here](https://kind.sigs.k8s.io/docs/user/quick-start/).
-
-Once kind is installed, run the following to start a kind cluster:
-
 ```shell
-kind create cluster
-kind get kubeconfig > kubeconfig
-export KUBECONFIG=$(pwd)/kubeconfig
-```
-
-**Build and deploy the operator**
-
-To build and deploy the operator, run the following:
-
-```shell
-export IMAGE_NAME=metallb-operator
-
-make docker-build IMG=$IMAGE_NAME
-kind load docker-image $IMAGE_NAME
-IMG=$IMAGE_NAME KUSTOMIZE_DEPLOY_DIR="config/kind-ci/" make deploy
-```
-
-Alternatively, the image can be pushed to a Docker registry.
-
-### Building and deploying using a remote repo
-
-To build and push an image, run the following commands, specifying the preferred image repository and image:
-
-```shell
-make docker-build IMG=quay.io/example/metallboperator
-make docker-push IMG=quay.io/example/metallboperator
-```
-
-Once the images are pushed to the repo, you can deploy MetalLB using your custom images by running the following:
-
-```shell
-make deploy IMG=quay.io/example/metallboperator
+make deploy
 ```
 
 ### Create a MetalLB deployment
