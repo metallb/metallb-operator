@@ -5,6 +5,152 @@ metadata:
     alm-examples: |-
       [
         {
+          "apiVersion": "frrk8s.metallb.io/v1beta1",
+          "kind": "FRRConfiguration",
+          "metadata": {
+            "name": "basic",
+            "namespace": "frr-k8s-system"
+          },
+          "spec": {
+            "bgp": {
+              "routers": [
+                {
+                  "asn": 64512,
+                  "neighbors": [
+                    {
+                      "address": "172.30.0.3",
+                      "asn": 64512,
+                      "port": 180,
+                      "toAdvertise": {
+                        "allowed": {
+                          "mode": "all"
+                        }
+                      },
+                      "toReceive": {
+                        "allowed": {
+                          "mode": "all"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "apiVersion": "frrk8s.metallb.io/v1beta1",
+          "kind": "FRRConfiguration",
+          "metadata": {
+            "name": "two-neighs",
+            "namespace": "frr-k8s-system"
+          },
+          "spec": {
+            "bgp": {
+              "routers": [
+                {
+                  "asn": 64512,
+                  "neighbors": [
+                    {
+                      "address": "172.30.0.3",
+                      "asn": 4200000000,
+                      "ebgpMultiHop": true,
+                      "port": 180,
+                      "toAdvertise": {
+                        "allowed": {
+                          "mode": "all"
+                        }
+                      }
+                    },
+                    {
+                      "address": "172.18.0.6",
+                      "asn": 4200000000,
+                      "port": 179,
+                      "toAdvertise": {
+                        "allowed": {
+                          "prefixes": [
+                            "192.168.2.0/24"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "prefixes": [
+                    "192.168.2.0/24",
+                    "192.169.2.0/24"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "apiVersion": "frrk8s.metallb.io/v1beta1",
+          "kind": "FRRConfiguration",
+          "metadata": {
+            "name": "two-routers-vrf",
+            "namespace": "frr-k8s-system"
+          },
+          "spec": {
+            "bgp": {
+              "routers": [
+                {
+                  "asn": 64513,
+                  "neighbors": [
+                    {
+                      "address": "172.32.0.3",
+                      "asn": 4200000000,
+                      "ebgpMultiHop": true,
+                      "port": 180,
+                      "toAdvertise": {
+                        "allowed": {
+                          "mode": "all"
+                        }
+                      }
+                    }
+                  ],
+                  "prefixes": [
+                    "192.168.2.0/24",
+                    "192.169.2.0/24"
+                  ]
+                },
+                {
+                  "asn": 64515,
+                  "neighbors": [
+                    {
+                      "address": "172.31.0.3",
+                      "asn": 4200000000,
+                      "port": 179,
+                      "toAdvertise": {
+                        "allowed": {
+                          "mode": "all"
+                        }
+                      }
+                    }
+                  ],
+                  "prefixes": [
+                    "192.168.2.0/24",
+                    "192.169.2.0/24"
+                  ],
+                  "vrf": "red"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "apiVersion": "frrk8s.metallb.io/v1beta1",
+          "kind": "FRRNodeState",
+          "metadata": {
+            "name": "frr-k8s-worker"
+          },
+          "status": {
+            "lastConversionResult": "success",
+            "lastReloadResult": "success",
+            "runningConfig": "Building configuration...\n\nCurrent configuration:\n!\nfrr version 9.0.2_git\nfrr defaults traditional\nhostname frr-k8s-worker\nlog file /etc/frr/frr.log informational\nlog timestamp precision 3\nno ipv6 forwarding\nservice integrated-vtysh-config\n!\nip nht resolve-via-default\n!\nipv6 nht resolve-via-default\n!\nend\n"
+          }
+        },
+        {
           "apiVersion": "metallb.io/v1beta1",
           "kind": "BFDProfile",
           "metadata": {
@@ -117,6 +263,19 @@ metadata:
                 }
               }
             ]
+          }
+        },
+        {
+          "apiVersion": "metallb.io/v1beta1",
+          "kind": "BGPPeer",
+          "metadata": {
+            "name": "bgp-peer-beta1",
+            "namespace": "metallb-system"
+          },
+          "spec": {
+            "myASN": 64512,
+            "peerASN": 64512,
+            "peerAddress": "172.30.0.3"
           }
         },
         {
@@ -273,10 +432,10 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2024-04-11T05:05:00Z"
+    createdAt: "2024-04-23T11:43:43Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
-    operators.operatorframework.io/builder: operator-sdk-v1.26.1
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+    operators.operatorframework.io/builder: operator-sdk-v1.34.1
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/metallb/metallb-operator
     support: Community
   labels:
@@ -321,9 +480,6 @@ spec:
         displayName: MetalLB
         kind: MetalLB
         name: metallbs.metallb.io
-        version: v1beta1
-      - kind: ServiceL2Status
-        name: servicel2statuses.metallb.io
         version: v1beta1
   description: An operator for deploying MetalLB on a kubernetes cluster.
   displayName: MetalLB Operator
@@ -1081,6 +1237,7 @@ spec:
     - email: rbryant@redhat.com
       name: Russell Bryant
   maturity: alpha
+  minKubeVersion: 1.26.0
   provider:
     name: Community
   version: 0.0.0

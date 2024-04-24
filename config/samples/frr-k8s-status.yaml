@@ -1,0 +1,25 @@
+apiVersion: frrk8s.metallb.io/v1beta1
+kind: FRRNodeState
+metadata:
+  name: frr-k8s-worker
+status:
+  lastConversionResult: success
+  lastReloadResult: success
+  runningConfig: |
+    Building configuration...
+
+    Current configuration:
+    !
+    frr version 9.0.2_git
+    frr defaults traditional
+    hostname frr-k8s-worker
+    log file /etc/frr/frr.log informational
+    log timestamp precision 3
+    no ipv6 forwarding
+    service integrated-vtysh-config
+    !
+    ip nht resolve-via-default
+    !
+    ipv6 nht resolve-via-default
+    !
+    end

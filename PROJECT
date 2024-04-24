@@ -1,6 +1,6 @@
 domain: metallb.io
 layout:
-- go.kubebuilder.io/v2
+- go.kubebuilder.io/v4
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
@@ -8,7 +8,7 @@ projectName: metallb-operator
 repo: github.com/metallb/metallb-operator
 resources:
 - api:
-    crdVersion: v1beta1
+    crdVersion: v1
     namespaced: true
   controller: true
   domain: metallb.io

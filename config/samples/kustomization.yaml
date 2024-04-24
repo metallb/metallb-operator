@@ -2,8 +2,13 @@
 resources:
 - metallb.yaml
 - metallb.io_v1beta1_bfdprofile.yaml
+- metallb.io_v1beta1_bgppeer.yaml
 - metallb.io_v1beta2_bgppeer.yaml
 - metallb.io_v1beta1_ipaddresspool.yaml
 - metallb_v1beta1_bgpadvertisement.yaml
 - metallb_v1beta1_l2advertisement.yaml
+- frr-k8s-basic.yaml
+- frr-k8s-two-neighs.yaml
+- frr-k8s-two-routers-vrfs.yaml
+- frr-k8s-status.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

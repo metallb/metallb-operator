@@ -46,10 +46,10 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION=v1.26.1
-OLM_VERSION=v0.18.3
-OPM_VERSION=v1.23.2
-KUSTOMIZE_VERSION=v5.0.1
+OPERATOR_SDK_VERSION ?= v1.34.1
+OLM_VERSION ?= v0.18.3
+OPM_VERSION ?= v1.23.2
+KUSTOMIZE_VERSION ?= v5.0.1
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
 KIND_VERSION=v0.22.0
@@ -149,6 +149,7 @@ docker-push:  ## Push the docker image
 
 bundle: operator-sdk manifests  ## Generate bundle manifests and metadata, then validate generated files.
 	ls -d config/crd/bases/* | grep -v metallb.io_metallbs | xargs -I{} cp {} bundle/manifests/
+	rm bundle/manifests/metallb.io_servicel2statuses.yaml # TODO remove when metallb support is added
 	$(OPERATOR_SDK) generate kustomize manifests --interactive=false -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(CSV_VERSION) $(BUNDLE_METADATA_OPTS) --extra-service-accounts "controller,speaker,frr-k8s-daemon"
