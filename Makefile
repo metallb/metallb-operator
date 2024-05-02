@@ -174,6 +174,7 @@ deploy-olm: operator-sdk kind-cluster ## deploys OLM on the cluster
 	$(OPERATOR_SDK) olm status
 
 deploy-with-olm: export VERSION=dev
+deploy-with-olm: export CSV_VERSION=0.0.0
 deploy-with-olm: deploy-olm load-on-kind build-and-push-bundle-images ## deploys the operator with OLM instead of manifests
 	sed -i 's|image:.*|image: $(BUNDLE_INDEX_IMG)|' config/olm-install/install-resources.yaml
 	sed -i 's#mymetallb#$(NAMESPACE)#g' config/olm-install/install-resources.yaml
