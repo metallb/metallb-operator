@@ -241,6 +241,12 @@
                         "command": [
                             "/etc/frr_metrics/frr-metrics"
                         ],
+                        "env": [
+                            {
+                                "name": "VTYSH_HISTFILE",
+                                "value": "/dev/null"
+                            }
+                        ],
                         "image": "frrouting/frr:v7.5.1",
                         "name": "frr-metrics",
                         "ports": [
@@ -368,9 +374,9 @@
                     },
                     {
                         "command": [
-                            "/bin/sh",
-                            "-c",
-                            "cp -f /frr-reloader.sh /etc/frr_reloader/"
+                            "/cp-tool",
+                            "/frr-reloader.sh",
+                            "/etc/frr_reloader/frr-reloader.sh"
                         ],
                         "image": "quay.io/metallb/speaker:v0.0.0",
                         "name": "cp-reloader",
@@ -383,9 +389,9 @@
                     },
                     {
                         "command": [
-                            "/bin/sh",
-                            "-c",
-                            "cp -f /frr-metrics /etc/frr_metrics/"
+                            "/cp-tool",
+                            "/frr-metrics",
+                            "/etc/frr_metrics/frr-metrics"
                         ],
                         "image": "quay.io/metallb/speaker:v0.0.0",
                         "name": "cp-metrics",

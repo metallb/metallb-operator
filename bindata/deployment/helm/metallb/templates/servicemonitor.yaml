@@ -70,6 +70,7 @@ metadata:
   {{- end }}
   labels:
     name: speaker-monitor-service
+    {{- include "metallb.labels" . | nindent 4 }}
   name: speaker-monitor-service
   namespace: {{ .Release.Namespace | quote }}
 spec:

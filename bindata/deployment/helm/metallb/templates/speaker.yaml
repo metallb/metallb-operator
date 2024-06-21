@@ -210,14 +210,14 @@ spec:
         # Copies the reloader to the shared volume between the speaker and reloader.
         - name: cp-reloader
           image: {{ .Values.speaker.image.repository }}:{{ .Values.speaker.image.tag | default .Chart.AppVersion }}
-          command: ["/bin/sh", "-c", "cp -f /frr-reloader.sh /etc/frr_reloader/"]
+          command: ["/cp-tool","/frr-reloader.sh","/etc/frr_reloader/frr-reloader.sh"]
           volumeMounts:
             - name: reloader
               mountPath: /etc/frr_reloader
         # Copies the metrics exporter
         - name: cp-metrics
           image: {{ .Values.speaker.image.repository }}:{{ .Values.speaker.image.tag | default .Chart.AppVersion }}
-          command: ["/bin/sh", "-c", "cp -f /frr-metrics /etc/frr_metrics/"]
+          command: ["/cp-tool","/frr-metrics","/etc/frr_metrics/frr-metrics"]
           volumeMounts:
             - name: metrics
               mountPath: /etc/frr_metrics
@@ -443,6 +443,9 @@ spec:
           {{- if .Values.prometheus.secureMetricsPort }}
           - --host=localhost
           {{- end }}
+        env:
+          - name: VTYSH_HISTFILE
+            value: /dev/null
         ports:
           - containerPort: {{ .Values.speaker.frr.metricsPort }}
             name: monitoring
