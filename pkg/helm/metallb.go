@@ -282,9 +282,10 @@ func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 
 func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
 	frrEnabled := false
-	if crdConfig.BGPBackend() == params.FRRMode {
+	if params.BGPType(crdConfig, envConfig.IsOpenshift) == metallbv1beta1.FRRMode {
 		frrEnabled = true
 	}
+
 	speakerValueMap := map[string]interface{}{
 		"image": map[string]interface{}{
 			"repository": envConfig.SpeakerImage.Repo,
@@ -333,7 +334,7 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 
 func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
 	enabled := false
-	if crdConfig.BGPBackend() == params.FRRK8sMode {
+	if params.BGPType(crdConfig, envConfig.IsOpenshift) == metallbv1beta1.FRRK8sMode {
 		enabled = true
 	}
 	frrk8sValuesMap := map[string]interface{}{

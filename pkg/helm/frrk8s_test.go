@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/metallb/metallb-operator/pkg/params"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -123,7 +122,7 @@ func TestParseFRRK8SOCPSecureMetrics(t *testing.T) {
 			Namespace: MetalLBTestNameSpace,
 		},
 		Spec: metallbv1beta1.MetalLBSpec{
-			BGPBackend: params.FRRMode,
+			BGPBackend: metallbv1beta1.FRRMode,
 		},
 	}
 

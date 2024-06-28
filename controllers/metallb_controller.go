@@ -175,7 +175,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		return err
 	}
 
-	if config.BGPBackend() == params.FRRK8sMode {
+	if params.BGPType(config, r.EnvConfig.IsOpenshift) == metallbv1beta1.FRRK8sMode {
 		objs = append(objs, frrk8sObjs...)
 	} else {
 		toDel = append(toDel, frrk8sObjs...)
@@ -217,12 +217,12 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 
 func validateBGPMode(config *metallbv1beta1.MetalLB, isOpenshift bool) error {
 	if config.Spec.BGPBackend != "" &&
-		config.Spec.BGPBackend != params.NativeMode &&
-		config.Spec.BGPBackend != params.FRRK8sMode &&
-		config.Spec.BGPBackend != params.FRRMode {
+		config.Spec.BGPBackend != metallbv1beta1.NativeMode &&
+		config.Spec.BGPBackend != metallbv1beta1.FRRK8sMode &&
+		config.Spec.BGPBackend != metallbv1beta1.FRRMode {
 		return fmt.Errorf("unsupported bgp backend %s", config.Spec.BGPBackend)
 	}
-	if isOpenshift && config.Spec.BGPBackend == params.NativeMode {
+	if isOpenshift && config.Spec.BGPBackend == metallbv1beta1.NativeMode {
 		return fmt.Errorf("native mode is not supported on openshift")
 	}
 	return nil

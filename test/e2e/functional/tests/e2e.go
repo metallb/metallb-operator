@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
@@ -81,13 +80,13 @@ var _ = Describe("metallb", func() {
 			}
 		})
 
-		DescribeTable("with BGP type", func(bgpType params.BGPType) {
-			if isOpenshift && bgpType == params.NativeMode {
+		DescribeTable("with BGP type", func(bgpType metallbv1beta1.BGPType) {
+			if isOpenshift && bgpType == metallbv1beta1.NativeMode {
 				Skip("Native mode not supported with openshift")
 			}
-			checkControllerBGPMode := func(mode params.BGPType) {
+			checkControllerBGPMode := func(mode metallbv1beta1.BGPType) {
 				bgpTypeMatcher := ContainElement(corev1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
-				if mode == params.NativeMode {
+				if mode == metallbv1beta1.NativeMode {
 					bgpTypeMatcher = Not(ContainElement(HaveField("Name", "METALLB_BGP_TYPE")))
 				}
 
@@ -110,9 +109,9 @@ var _ = Describe("metallb", func() {
 						)))
 			}
 
-			checkSpeakerBGPMode := func(mode params.BGPType) {
+			checkSpeakerBGPMode := func(mode metallbv1beta1.BGPType) {
 				bgpTypeMatcher := ContainElement(corev1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
-				if mode == params.NativeMode {
+				if mode == metallbv1beta1.NativeMode {
 					bgpTypeMatcher = Not(ContainElement(HaveField("Name", "METALLB_BGP_TYPE")))
 				}
 
@@ -251,7 +250,7 @@ var _ = Describe("metallb", func() {
 				return true
 			}, 5*time.Minute, 5*time.Second).Should(BeTrue())
 
-			if bgpType != params.FRRK8sMode {
+			if bgpType != metallbv1beta1.FRRK8sMode {
 				return
 			}
 			By("checking frr-k8s daemonset is in running state")
@@ -307,9 +306,9 @@ var _ = Describe("metallb", func() {
 			}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
 
 		},
-			Entry("Native Mode", params.NativeMode),
-			Entry("FRR Mode", params.FRRMode),
-			Entry("FRR-K8s Mode", params.FRRK8sMode),
+			Entry("Native Mode", metallbv1beta1.NativeMode),
+			Entry("FRR Mode", metallbv1beta1.FRRMode),
+			Entry("FRR-K8s Mode", metallbv1beta1.FRRK8sMode),
 		)
 
 	})
