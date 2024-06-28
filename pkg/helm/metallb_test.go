@@ -141,7 +141,7 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 			ControllerConfig:       controllerConfig,
 			SpeakerConfig:          speakerConfig,
 			LoadBalancerClass:      loadBalancerClass,
-			BGPBackend:             params.NativeMode,
+			BGPBackend:             metallbv1beta1.NativeMode,
 		},
 	}
 
@@ -239,7 +239,7 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 			Namespace: MetalLBTestNameSpace,
 		},
 		Spec: metallbv1beta1.MetalLBSpec{
-			BGPBackend: params.FRRMode,
+			BGPBackend: metallbv1beta1.FRRMode,
 		},
 	}
 
@@ -285,7 +285,7 @@ func TestParseSecureMetrics(t *testing.T) {
 			Namespace: MetalLBTestNameSpace,
 		},
 		Spec: metallbv1beta1.MetalLBSpec{
-			BGPBackend: params.FRRMode,
+			BGPBackend: metallbv1beta1.FRRMode,
 		},
 	}
 

@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/metallb/metallb-operator/pkg/params"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,6 +35,14 @@ const (
 	LogLevelError MetalLBLogLevel = "error"
 	LogLevelNone  MetalLBLogLevel = "none"
 )
+
+const (
+	FRRMode    BGPType = "frr"
+	NativeMode BGPType = "native"
+	FRRK8sMode BGPType = "frr-k8s"
+)
+
+type BGPType string
 
 // MetalLBSpec defines the desired state of MetalLB
 type MetalLBSpec struct {
@@ -87,7 +94,7 @@ type MetalLBSpec struct {
 
 	// The type of BGP implementation deployed with MetalLB
 	// +optional
-	BGPBackend params.BGPType `json:"bgpBackend,omitempty"`
+	BGPBackend BGPType `json:"bgpBackend,omitempty"`
 
 	// The specific frr-k8s configuration
 	FRRK8SConfig *FRRK8SConfig `json:"frrk8sConfig,omitempty"`
@@ -140,13 +147,6 @@ type MetalLB struct {
 
 	Spec   MetalLBSpec   `json:"spec,omitempty"`
 	Status MetalLBStatus `json:"status,omitempty"`
-}
-
-func (m *MetalLB) BGPBackend() params.BGPType {
-	if m.Spec.BGPBackend == "" {
-		return params.FRRMode
-	}
-	return m.Spec.BGPBackend
 }
 
 // +kubebuilder:object:root=true

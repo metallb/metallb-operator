@@ -6,7 +6,6 @@ import (
 	"time"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/test/consts"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,7 +29,7 @@ var _ = Describe("MetalLB Controller", func() {
 			reconciler.EnvConfig = defaultEnvConfig
 		})
 
-		DescribeTable("Should create manifests with images and namespace overriden", func(bgpType params.BGPType) {
+		DescribeTable("Should create manifests with images and namespace overriden", func(bgpType metallbv1beta1.BGPType) {
 
 			metallb := &metallbv1beta1.MetalLB{
 				ObjectMeta: metav1.ObjectMeta{
@@ -203,12 +202,12 @@ var _ = Describe("MetalLB Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 		},
-			Entry("Native Mode", params.NativeMode),
-			Entry("FRR Mode", params.FRRMode),
-			Entry("FRR-K8s Mode", params.FRRK8sMode),
+			Entry("Native Mode", metallbv1beta1.NativeMode),
+			Entry("FRR Mode", metallbv1beta1.FRRMode),
+			Entry("FRR-K8s Mode", metallbv1beta1.FRRK8sMode),
 		)
 
-		DescribeTable("Should forward logLevel to containers", func(bgpType params.BGPType) {
+		DescribeTable("Should forward logLevel to containers", func(bgpType metallbv1beta1.BGPType) {
 
 			metallb := &metallbv1beta1.MetalLB{
 				ObjectMeta: metav1.ObjectMeta{
@@ -260,9 +259,9 @@ var _ = Describe("MetalLB Controller", func() {
 						WithTransform(argsGetter, ContainElement("--log-level=warn")),
 					)))
 		},
-			Entry("Native Mode", params.NativeMode),
-			Entry("FRR Mode", params.FRRMode),
-			Entry("FRR-K8s Mode", params.FRRK8sMode),
+			Entry("Native Mode", metallbv1beta1.NativeMode),
+			Entry("FRR Mode", metallbv1beta1.FRRMode),
+			Entry("FRR-K8s Mode", metallbv1beta1.FRRK8sMode),
 		)
 
 		It("Should create manifests for frr-k8s", func() {
@@ -272,7 +271,7 @@ var _ = Describe("MetalLB Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: metallbv1beta1.MetalLBSpec{
-					BGPBackend: params.FRRK8sMode,
+					BGPBackend: metallbv1beta1.FRRK8sMode,
 				},
 			}
 
@@ -321,11 +320,11 @@ var _ = Describe("MetalLB Controller", func() {
 
 		})
 		It("Should switch between modes", func() {
-			checkSpeakerBGPMode := func(mode params.BGPType) {
+			checkSpeakerBGPMode := func(mode metallbv1beta1.BGPType) {
 				bgpTypeMatcher := ContainElement(v1.EnvVar{Name: "METALLB_BGP_TYPE", Value: string(mode)})
 				// Since when running in native mode the helm chart doesn't set the type, here we
 				// check for the absence of the env variable instead of having it set with a given value.
-				if mode == params.NativeMode {
+				if mode == metallbv1beta1.NativeMode {
 					bgpTypeMatcher = Not(ContainElement(HaveField("Name", "METALLB_BGP_TYPE")))
 				}
 
@@ -354,7 +353,7 @@ var _ = Describe("MetalLB Controller", func() {
 					Namespace: MetalLBTestNameSpace,
 				},
 				Spec: metallbv1beta1.MetalLBSpec{
-					BGPBackend: params.FRRK8sMode,
+					BGPBackend: metallbv1beta1.FRRK8sMode,
 				},
 			}
 
@@ -370,13 +369,13 @@ var _ = Describe("MetalLB Controller", func() {
 			}, 2*time.Second, 200*time.Millisecond).ShouldNot((HaveOccurred()))
 
 			By("Checking the speaker is running in frr k8s mode")
-			checkSpeakerBGPMode(params.FRRK8sMode)
+			checkSpeakerBGPMode(metallbv1beta1.FRRK8sMode)
 
 			By("Updating to frr mode")
 			toUpdate := &metallbv1beta1.MetalLB{}
 			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
 			Expect(err).ToNot(HaveOccurred())
-			toUpdate.Spec.BGPBackend = params.FRRMode
+			toUpdate.Spec.BGPBackend = metallbv1beta1.FRRMode
 			err = k8sClient.Update(context.Background(), toUpdate)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -387,18 +386,18 @@ var _ = Describe("MetalLB Controller", func() {
 			}, 5*time.Second, 200*time.Millisecond).Should(BeTrue())
 
 			By("Checking the speaker is running in frr mode")
-			checkSpeakerBGPMode(params.FRRMode)
+			checkSpeakerBGPMode(metallbv1beta1.FRRMode)
 
 			By("Updating to native mode")
 			toUpdate = &metallbv1beta1.MetalLB{}
 			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "metallb", Namespace: MetalLBTestNameSpace}, toUpdate)
 			Expect(err).ToNot(HaveOccurred())
-			toUpdate.Spec.BGPBackend = params.NativeMode
+			toUpdate.Spec.BGPBackend = metallbv1beta1.NativeMode
 			err = k8sClient.Update(context.Background(), toUpdate)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking the speaker is running in native mode")
-			checkSpeakerBGPMode(params.NativeMode)
+			checkSpeakerBGPMode(metallbv1beta1.NativeMode)
 
 			By("Leaving the bgp backend empty")
 			toUpdate = &metallbv1beta1.MetalLB{}
@@ -409,7 +408,7 @@ var _ = Describe("MetalLB Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking the speaker is running in frr mode")
-			checkSpeakerBGPMode(params.FRRMode)
+			checkSpeakerBGPMode(metallbv1beta1.FRRMode)
 		})
 	})
 })

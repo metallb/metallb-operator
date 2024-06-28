@@ -22,7 +22,6 @@ import (
 	"net"
 	"strings"
 
-	"github.com/metallb/metallb-operator/pkg/params"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -108,13 +107,13 @@ func (metallb *MetalLB) Validate() error {
 	}
 
 	if metallb.Spec.BGPBackend != "" &&
-		metallb.Spec.BGPBackend != params.NativeMode &&
-		metallb.Spec.BGPBackend != params.FRRK8sMode &&
-		metallb.Spec.BGPBackend != params.FRRMode {
+		metallb.Spec.BGPBackend != NativeMode &&
+		metallb.Spec.BGPBackend != FRRK8sMode &&
+		metallb.Spec.BGPBackend != FRRMode {
 		return errors.New("Invalid BGP Backend, must be one of native, frr, frr-k8s")
 	}
 
-	if metallb.Spec.BGPBackend != params.FRRK8sMode &&
+	if metallb.Spec.BGPBackend != FRRK8sMode &&
 		metallb.Spec.FRRK8SConfig != nil {
 		return fmt.Errorf("can't apply frrk8s config while running in %s mode", metallb.Spec.BGPBackend)
 	}

@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/metallb/metallb-operator/api/v1beta1"
 )
 
 type ImageInfo struct {
@@ -13,13 +15,15 @@ type ImageInfo struct {
 	Tag  string
 }
 
-const (
-	FRRMode    BGPType = "frr"
-	NativeMode BGPType = "native"
-	FRRK8sMode BGPType = "frr-k8s"
-)
-
-type BGPType string
+func BGPType(m *v1beta1.MetalLB, isOpenshift bool) v1beta1.BGPType {
+	if m.Spec.BGPBackend == "" {
+		if isOpenshift {
+			return v1beta1.FRRK8sMode
+		}
+		return v1beta1.FRRMode
+	}
+	return m.Spec.BGPBackend
+}
 
 type EnvConfig struct {
 	Namespace                  string
