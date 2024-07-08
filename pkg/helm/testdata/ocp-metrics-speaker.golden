@@ -85,6 +85,14 @@
                             {
                                 "name": "METALLB_BGP_TYPE",
                                 "value": "frr"
+                            },
+                            {
+                                "name": "METALLB_POD_NAME",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.name"
+                                    }
+                                }
                             }
                         ],
                         "image": "quay.io/metallb/speaker:v0.0.0",
