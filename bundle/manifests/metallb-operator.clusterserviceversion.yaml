@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2024-07-08T16:47:14Z"
+    createdAt: "2024-07-12T05:05:13Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -788,6 +788,16 @@ spec:
               verbs:
                 - create
             - apiGroups:
+                - frrk8s.metallb.io
+              resources:
+                - frrconfigurations
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+            - apiGroups:
                 - metallb.io
               resources:
                 - servicel2statuses
@@ -864,7 +874,7 @@ spec:
                       - name: DEPLOY_KUBE_RBAC_PROXIES
                         value: "false"
                       - name: FRRK8S_IMAGE
-                        value: quay.io/metallb/frr-k8s:v0.0.11
+                        value: quay.io/metallb/frr-k8s:v0.0.12
                       - name: OPERATOR_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -1132,16 +1142,6 @@ spec:
                 - watch
           serviceAccountName: manager-account
         - rules:
-            - apiGroups:
-                - frrk8s.metallb.io
-              resources:
-                - frrconfigurations
-              verbs:
-                - get
-                - list
-                - watch
-                - create
-                - update
             - apiGroups:
                 - ""
               resources:
