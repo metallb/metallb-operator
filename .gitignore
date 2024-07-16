@@ -20,3 +20,4 @@ testbin/
 
 # Ignore .idea files
 .idea/
+*.swp
