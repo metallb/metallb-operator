@@ -3677,8 +3677,6 @@ spec:
                 x-kubernetes-validations:
                 - message: Value is immutable
                   rule: self == oldSelf
-                - message: Value is immutable
-                  rule: self == oldSelf
               serviceNamespace:
                 description: ServiceNamespace indicates the namespace of the service
                 type: string
@@ -3961,7 +3959,7 @@ spec:
         - name: DEPLOY_KUBE_RBAC_PROXIES
           value: "false"
         - name: FRRK8S_IMAGE
-          value: quay.io/metallb/frr-k8s:v0.0.12
+          value: quay.io/metallb/frr-k8s:v0.0.13
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
