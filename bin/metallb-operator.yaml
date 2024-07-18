@@ -2626,6 +2626,10 @@ spec:
                     items:
                       type: string
                     type: array
+                  namespace:
+                    description: The namespace frr-k8s is running on in case of frr-k8s
+                      external mode
+                    type: string
                 type: object
               image:
                 description: Foo is an example field of MetalLB. Edit MetalLB_types.go
@@ -3814,6 +3818,14 @@ rules:
   - list
   - watch
 - apiGroups:
+  - config.openshift.io
+  resources:
+  - clusteroperators
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - metallb.io
   resources:
   - metallbs
@@ -3864,6 +3876,15 @@ rules:
   - get
   - list
   - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - networks
+  verbs:
+  - get
+  - list
   - update
   - watch
 - apiGroups:

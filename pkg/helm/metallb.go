@@ -282,7 +282,7 @@ func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 
 func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
 	frrEnabled := false
-	if params.BGPType(crdConfig, envConfig.IsOpenshift) == metallbv1beta1.FRRMode {
+	if params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRMode {
 		frrEnabled = true
 	}
 
@@ -334,7 +334,7 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 
 func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
 	enabled := false
-	if params.BGPType(crdConfig, envConfig.IsOpenshift) == metallbv1beta1.FRRK8sMode {
+	if params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRK8sMode {
 		enabled = true
 	}
 
@@ -344,7 +344,7 @@ func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.M
 	}
 
 	external := false
-	if params.BGPType(crdConfig, envConfig.IsOpenshift) == metallbv1beta1.FRRK8sExternalMode {
+	if params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRK8sExternalMode {
 		external = true
 	}
 	frrk8sValuesMap := map[string]interface{}{

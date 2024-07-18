@@ -35,6 +35,8 @@ import (
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/params"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	openshiftoperatorv1 "github.com/openshift/api/operator/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -96,7 +98,9 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases"),
+			filepath.Join("..", "hack", "openshiftapicrds"),
+		},
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -106,6 +110,11 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).ToNot(BeNil())
 
 	err = metallbv1beta1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = openshiftoperatorv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = openshiftconfigv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
