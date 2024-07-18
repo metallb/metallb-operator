@@ -59,6 +59,8 @@ type MetalLBReconciler struct {
 var MetalLBChartPath = MetalLBChartPathController
 var FRRK8SChartPath = FRRK8SChartPathController
 
+var EmbeddedFRRK8sSupportNotAvailable = errors.New("current CNO version does not support deploying frr-k8s")
+
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=monitoring.coreos.com,resources=podmonitors,verbs=get;list;watch;create;update;patch;delete
@@ -124,7 +126,10 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1beta1.MetalLB) (ctrl.Result, string, error) {
-	err := r.syncMetalLBResources(instance)
+	err := r.syncMetalLBResources(ctx, instance)
+	if errors.Is(err, EmbeddedFRRK8sSupportNotAvailable) {
+		return ctrl.Result{RequeueAfter: 2 * time.Minute}, "", nil
+	}
 	if err != nil {
 		return ctrl.Result{}, status.ConditionDegraded, errors.Wrapf(err, "FailedToSyncMetalLBResources")
 	}
@@ -154,9 +159,11 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB) error {
+func (r *MetalLBReconciler) syncMetalLBResources(ctx context.Context, config *metallbv1beta1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
 	logger.Info("Start")
+
+	bgpType := params.BGPType(config, r.EnvConfig.IsOpenshift)
 
 	err := config.Validate()
 	if err != nil {
@@ -175,7 +182,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(config *metallbv1beta1.MetalLB)
 		return err
 	}
 
-	if params.BGPType(config, r.EnvConfig.IsOpenshift) == metallbv1beta1.FRRK8sMode {
+	if bgpType == metallbv1beta1.FRRK8sMode {
 		objs = append(objs, frrk8sObjs...)
 	} else {
 		toDel = append(toDel, frrk8sObjs...)

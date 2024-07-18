@@ -337,8 +337,20 @@ func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.M
 	if params.BGPType(crdConfig, envConfig.IsOpenshift) == metallbv1beta1.FRRK8sMode {
 		enabled = true
 	}
+
+	frrK8sNamespace := envConfig.FRRK8sExternalNamespace
+	if crdConfig.Spec.FRRK8SConfig != nil && crdConfig.Spec.FRRK8SConfig.Namespace != "" {
+		frrK8sNamespace = crdConfig.Spec.FRRK8SConfig.Namespace
+	}
+
+	external := false
+	if params.BGPType(crdConfig, envConfig.IsOpenshift) == metallbv1beta1.FRRK8sExternalMode {
+		external = true
+	}
 	frrk8sValuesMap := map[string]interface{}{
-		"enabled": enabled,
+		"enabled":   enabled,
+		"external":  external,
+		"namespace": frrK8sNamespace,
 	}
 	return frrk8sValuesMap
 }
