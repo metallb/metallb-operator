@@ -154,7 +154,7 @@ func main() {
 		setupLog.Info("waiting to create operator webhook for MetalLB CR")
 		<-setupFinished
 		setupLog.Info("creating operator webhook for MetalLB CR")
-		if err = (&metallbv1beta1.MetalLB{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&metallbv1beta1.MetalLB{}).SetupWebhookWithManager(mgr, envParams.FRRK8sExternalNamespace); err != nil {
 			setupLog.Error(err, "unable to create webhook", "operator webhook", "MetalLB")
 			os.Exit(1)
 		}

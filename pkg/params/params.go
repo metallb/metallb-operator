@@ -27,6 +27,7 @@ func BGPType(m *v1beta1.MetalLB, isOpenshift bool) v1beta1.BGPType {
 
 type EnvConfig struct {
 	Namespace                  string
+	FRRK8sExternalNamespace    string
 	ControllerImage            ImageInfo
 	SpeakerImage               ImageInfo
 	FRRImage                   ImageInfo
@@ -120,6 +121,8 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 	if os.Getenv("DEPLOY_SERVICEMONITORS") == "true" {
 		res.DeployServiceMonitors = true
 	}
+
+	res.FRRK8sExternalNamespace = os.Getenv("FRRK8S_EXTERNAL_NAMESPACE")
 
 	// Ignoring the error, if not set we'll consume the image from the chart
 	res.FRRK8sImage, _ = imageFromEnv("FRRK8S_IMAGE")

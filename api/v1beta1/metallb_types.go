@@ -37,9 +37,10 @@ const (
 )
 
 const (
-	FRRMode    BGPType = "frr"
-	NativeMode BGPType = "native"
-	FRRK8sMode BGPType = "frr-k8s"
+	FRRMode            BGPType = "frr"
+	NativeMode         BGPType = "native"
+	FRRK8sMode         BGPType = "frr-k8s"
+	FRRK8sExternalMode BGPType = "frr-k8s-external"
 )
 
 type BGPType string
@@ -103,6 +104,8 @@ type MetalLBSpec struct {
 type FRRK8SConfig struct {
 	// A list of cidrs we want always to block for incoming routes
 	AlwaysBlock []string `json:"alwaysBlock,omitempty"`
+	// The namespace frr-k8s is running on in case of frr-k8s external mode
+	Namespace string `json:"namespace,omitempty"`
 }
 
 type Config struct {

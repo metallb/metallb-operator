@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2024-07-19T12:33:20Z"
+    createdAt: "2024-07-22T10:18:02Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.34.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -875,6 +875,8 @@ spec:
                         value: "false"
                       - name: FRRK8S_IMAGE
                         value: quay.io/metallb/frr-k8s:v0.0.14
+                      - name: FRRK8S_EXTERNAL_NAMESPACE
+                        value: frr-k8s-system
                       - name: OPERATOR_NAMESPACE
                         valueFrom:
                           fieldRef:

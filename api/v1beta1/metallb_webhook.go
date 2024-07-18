@@ -29,7 +29,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func (metallb *MetalLB) SetupWebhookWithManager(mgr ctrl.Manager) error {
+var ExternalFRRK8sNamespace string
+
+func (metallb *MetalLB) SetupWebhookWithManager(mgr ctrl.Manager, externalFRRK8sNamespace string) error {
+	ExternalFRRK8sNamespace = externalFRRK8sNamespace
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(metallb).
 		Complete()
@@ -109,22 +112,24 @@ func (metallb *MetalLB) Validate() error {
 	if metallb.Spec.BGPBackend != "" &&
 		metallb.Spec.BGPBackend != NativeMode &&
 		metallb.Spec.BGPBackend != FRRK8sMode &&
+		metallb.Spec.BGPBackend != FRRK8sExternalMode &&
 		metallb.Spec.BGPBackend != FRRMode {
 		return errors.New("Invalid BGP Backend, must be one of native, frr, frr-k8s")
 	}
 
-	if metallb.Spec.BGPBackend != FRRK8sMode &&
-		metallb.Spec.FRRK8SConfig != nil {
-		return fmt.Errorf("can't apply frrk8s config while running in %s mode", metallb.Spec.BGPBackend)
-	}
-
-	if err := validateFRRK8sConfig(metallb.Spec.FRRK8SConfig); err != nil {
+	if err := validateFRRK8sConfig(metallb.Spec); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateFRRK8sConfig(config *FRRK8SConfig) error {
+func validateFRRK8sConfig(spec MetalLBSpec) error {
+	config := spec.FRRK8SConfig
+	if spec.BGPBackend == FRRK8sExternalMode &&
+		ExternalFRRK8sNamespace == "" && (config == nil || config.Namespace == "") {
+		return errors.New("bgp backend: frrk8s external and no default or user provided namespace")
+	}
+
 	if config == nil {
 		return nil
 	}
