@@ -5,9 +5,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.13",
+            "app.kubernetes.io/version": "v0.0.14",
             "component": "frr-k8s",
-            "helm.sh/chart": "frr-k8s-0.0.13"
+            "helm.sh/chart": "frr-k8s-0.0.14"
         },
         "name": "frr-k8s",
         "namespace": "metallb-test-namespace"
