@@ -10,7 +10,7 @@ runs:
         path: metallboperator
         fetch-depth: 0 # Fetch all history for all tags and branches 
 
-    - uses: actions/setup-go@v4
+    - uses: actions/setup-go@v5
       with:
         go-version-file: "go.mod"
         cache: true
