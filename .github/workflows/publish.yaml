@@ -18,11 +18,11 @@ jobs:
     name: Go ${{ matrix.go }}
     steps:
       - name: Checkout Metal LB Operator
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Fetch all history for all tags and branches
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v5
         id: go
         with:
           go-version: ${{ matrix.go }}
@@ -52,7 +52,7 @@ jobs:
 
       - name: Archive E2E Tests logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: test_e2e_logs
           path: /tmp/test_e2e_logs/
@@ -64,7 +64,7 @@ jobs:
 
       - name: Archive kind logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: kind_logs
           path: /tmp/kind_logs
@@ -85,7 +85,7 @@ jobs:
           cosign-release: "v2.2.4"
 
       - name: Code checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup docker buildx
         uses: docker/setup-buildx-action@v2
@@ -138,7 +138,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') # we craft releases only for tags
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Build changelog

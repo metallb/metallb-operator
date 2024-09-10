@@ -153,7 +153,7 @@ jobs:
         ref: v0.13 # previous release version
         fetch-depth: 0 # Fetch all history for all tags and branches
 
-    - uses: actions/setup-go@v2
+    - uses: actions/setup-go@v5
       with:
         go-version-file: "go.mod"
         cache: true
@@ -325,14 +325,14 @@ jobs:
           rm -f Chart.yaml
 
       - name: Checkout MetalLB
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: metallb/metallb
           path: metallb
           ref: "${{ steps.metallb_ref.outputs.content }}"
 
       - name: Checkout frr-k8s
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: metallb/frr-k8s
           path: frr-k8s
