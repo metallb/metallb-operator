@@ -287,7 +287,7 @@ var _ = Describe("metallb", func() {
 				return nil
 			}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
 
-			By("checking frr-k8s webhook deployment is in running state")
+			By("checking frr-k8s webhook deployment is in healthy state")
 			Eventually(func() error {
 				deploy, err := testclient.Client.Deployments(frrk8sNamespace).Get(context.Background(), consts.FRRK8SWebhookDeploymentName, metav1.GetOptions{})
 				if err != nil {
@@ -305,14 +305,13 @@ var _ = Describe("metallb", func() {
 				}
 
 				for _, pod := range pods.Items {
-					if pod.Status.Phase != corev1.PodRunning {
-						return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.FRRK8SWebhookDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+					if !PodIsReady(&pod) {
+						return fmt.Errorf("deployment %s pod %s is not ready, %+v", consts.MetalLBOperatorDeploymentName, pod.Name, pod.Status)
 					}
 				}
 
 				return nil
 			}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
-
 		},
 			Entry("Native Mode", metallbv1beta1.NativeMode),
 			Entry("FRR Mode", metallbv1beta1.FRRMode),
@@ -808,3 +807,12 @@ var _ = Describe("metallb", func() {
 // Gomega transformation functions for v1.Container
 func envGetter(c v1.Container) []v1.EnvVar { return c.Env }
 func nameGetter(c v1.Container) string     { return c.Name }
+
+func PodIsReady(p *corev1.Pod) bool {
+	for _, c := range p.Status.Conditions {
+		if c.Type == v1.PodReady && c.Status == v1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
