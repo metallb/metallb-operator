@@ -14,10 +14,13 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
+	frrk8sDaemonsetName         = "frr-k8s"
 	frrk8sWebhookDeploymentName = "frr-k8s-webhook-server"
 	frrk8sWebhookServiceName    = "frr-k8s-webhook-service"
 	frrk8sWebhookSecretName     = "frr-k8s-webhook-server-cert"
@@ -82,6 +85,13 @@ func (h *FRRK8SChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1be
 		objKind := obj.GetKind()
 		if objKind != "PodSecurityPolicy" {
 			obj.SetNamespace(envConfig.Namespace)
+		}
+
+		if isFRRK8SDaemonset(obj) && crdConfig.Spec.SpeakerConfig != nil {
+			obj, err = overrideFRRK8SDaemonParameters(crdConfig, obj)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if isFRRK8SWebhookSecret(obj) && envConfig.IsOpenshift {
@@ -175,6 +185,10 @@ func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB)
 	if crdConfig.Spec.SpeakerTolerations != nil {
 		frrk8sValueMap["tolerations"] = crdConfig.Spec.SpeakerTolerations
 	}
+	if crdConfig.Spec.SpeakerConfig != nil {
+		frrk8sValueMap["priorityClassName"] = crdConfig.Spec.SpeakerConfig.PriorityClassName
+		frrk8sValueMap["runtimeClassName"] = crdConfig.Spec.SpeakerConfig.RuntimeClassName
+	}
 
 	if crdConfig.Spec.FRRK8SConfig != nil {
 		var err error
@@ -233,6 +247,32 @@ func prometheusValues(envConfig params.EnvConfig) map[string]interface{} {
 		"namespace":        "bar",
 		"metricsTLSSecret": tlsSecret,
 	}
+}
+
+func overrideFRRK8SDaemonParameters(crdConfig *metallbv1beta1.MetalLB, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	config := crdConfig.Spec.SpeakerConfig
+	var daemon *appsv1.DaemonSet
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &daemon)
+	if err != nil {
+		return nil, err
+	}
+	if config.Affinity != nil {
+		daemon.Spec.Template.Spec.Affinity = config.Affinity
+	}
+	for j, container := range daemon.Spec.Template.Spec.Containers {
+		if container.Name == "controller" && config.Resources != nil {
+			daemon.Spec.Template.Spec.Containers[j].Resources = *config.Resources
+		}
+	}
+	objMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(daemon)
+	if err != nil {
+		return nil, err
+	}
+	return &unstructured.Unstructured{Object: objMap}, nil
+}
+
+func isFRRK8SDaemonset(obj *unstructured.Unstructured) bool {
+	return obj.GetKind() == "DaemonSet" && obj.GetName() == frrk8sDaemonsetName
 }
 
 func isFRRK8SWebhookDeployment(obj *unstructured.Unstructured) bool {

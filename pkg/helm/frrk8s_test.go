@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -48,6 +49,15 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 			LogLevel:            metallbv1beta1.LogLevelDebug,
 			SpeakerNodeSelector: nodeSelector,
 			SpeakerTolerations:  tolerations,
+			SpeakerConfig: &metallbv1beta1.Config{
+				PriorityClassName: "high-priority",
+				RuntimeClassName:  "cri-o",
+				Resources:         &corev1.ResourceRequirements{Limits: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *resource.NewMilliQuantity(200, resource.DecimalSI)}},
+				Affinity: &corev1.Affinity{PodAffinity: &corev1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "metallb",
+					}}}}}},
+			},
 			FRRK8SConfig: &metallbv1beta1.FRRK8SConfig{
 				AlwaysBlock: []string{"192.168.1.0/24",
 					"2001:db8::/32",
@@ -67,6 +77,9 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &frrk8s)
 			g.Expect(err).To(BeNil())
 			g.Expect(frrk8s.GetName()).To(Equal(frrk8sDaemonSetName))
+			g.Expect(frrk8s.Spec.Template.Spec.PriorityClassName).To(Equal("high-priority"))
+			g.Expect(*frrk8s.Spec.Template.Spec.RuntimeClassName).To(Equal("cri-o"))
+			g.Expect(frrk8s.Spec.Template.Spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution[0].LabelSelector.MatchLabels["app"]).To(Equal("metallb"))
 			var frrk8sControllerFound bool
 			for _, container := range frrk8s.Spec.Template.Spec.Containers {
 				if container.Name == "controller" {
@@ -84,6 +97,8 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 					}
 					g.Expect(logLevelChanged).To(BeTrue())
 					g.Expect(alwaysBlockChanged).To(BeTrue())
+					g.Expect(container.Resources).NotTo(BeNil())
+					g.Expect(container.Resources.Limits.Cpu().MilliValue()).To(Equal(int64(200)))
 				}
 			}
 			g.Expect(frrk8sControllerFound).To(BeTrue())
