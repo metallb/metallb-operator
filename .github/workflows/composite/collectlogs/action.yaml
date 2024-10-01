@@ -1,3 +1,4 @@
+---
 name: "collectlogs"
 description: "Collect and upload the kind logs"
 
@@ -26,7 +27,7 @@ runs:
           sudo chmod -R o+r /tmp/kind_logs
 
     - name: Archive kind logs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name:  ${{ inputs.artifact-name }}-kind-logs
+        name: ${{ inputs.artifact-name }}-kind-logs
         path: /tmp/kind_logs
