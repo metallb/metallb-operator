@@ -8,9 +8,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.14",
+            "app.kubernetes.io/version": "v0.0.15",
             "component": "frr-k8s",
-            "helm.sh/chart": "frr-k8s-0.0.14"
+            "helm.sh/chart": "frr-k8s-0.0.15"
         },
         "name": "frr-k8s-monitor",
         "namespace": "metallb-test-namespace"

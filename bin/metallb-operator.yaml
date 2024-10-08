@@ -9,7 +9,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: bfdprofiles.metallb.io
 spec:
   group: metallb.io
@@ -130,7 +130,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: bgpadvertisements.metallb.io
 spec:
   group: metallb.io
@@ -347,7 +347,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: bgppeers.metallb.io
 spec:
   conversion:
@@ -383,6 +383,8 @@ spec:
     - jsonPath: .spec.ebgpMultiHop
       name: Multi Hops
       type: string
+    deprecated: true
+    deprecationWarning: v1beta1 is deprecated, please use v1beta2
     name: v1beta1
     schema:
       openAPIV3Schema:
@@ -695,7 +697,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: communities.metallb.io
 spec:
   group: metallb.io
@@ -913,8 +915,9 @@ spec:
                                   the session with.
                                 type: string
                               asn:
-                                description: ASN is the AS number to use for the local
-                                  end of the session.
+                                description: |-
+                                  ASN is the AS number to use for the local end of the session.
+                                  ASN and DynamicASN are mutually exclusive and one of them must be specified.
                                 format: int32
                                 maximum: 4294967295
                                 minimum: 0
@@ -944,6 +947,17 @@ spec:
                                   will separate IPv4 and IPv6 route exchanges into
                                   distinct BGP sessions.
                                 type: boolean
+                              dynamicASN:
+                                description: |-
+                                  DynamicASN detects the AS number to use for the local end of the session
+                                  without explicitly setting it via the ASN field. Limited to:
+                                  internal - if the neighbor's ASN is different than the router's the connection is denied.
+                                  external - if the neighbor's ASN is the same as the router's the connection is denied.
+                                  ASN and DynamicASN are mutually exclusive and one of them must be specified.
+                                enum:
+                                - internal
+                                - external
+                                type: string
                               ebgpMultiHop:
                                 description: EBGPMultiHop indicates if the BGPPeer
                                   is multi-hops away.
@@ -1123,7 +1137,6 @@ spec:
                                 type: object
                             required:
                             - address
-                            - asn
                             type: object
                           type: array
                         prefixes:
@@ -1287,7 +1300,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: ipaddresspools.metallb.io
 spec:
   group: metallb.io
@@ -1503,7 +1516,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: l2advertisements.metallb.io
 spec:
   group: metallb.io
@@ -3627,7 +3640,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: servicel2statuses.metallb.io
 spec:
   group: metallb.io
@@ -3999,7 +4012,7 @@ spec:
         - name: DEPLOY_KUBE_RBAC_PROXIES
           value: "false"
         - name: FRRK8S_IMAGE
-          value: quay.io/metallb/frr-k8s:v0.0.14
+          value: quay.io/metallb/frr-k8s:v0.0.15
         - name: FRRK8S_EXTERNAL_NAMESPACE
           value: frr-k8s-system
         - name: OPERATOR_NAMESPACE
@@ -4700,7 +4713,6 @@ rules:
   - metallb-webhook-configuration
   resources:
   - validatingwebhookconfigurations
-  - mutatingwebhookconfigurations
   verbs:
   - create
   - delete
@@ -4713,7 +4725,6 @@ rules:
   - admissionregistration.k8s.io
   resources:
   - validatingwebhookconfigurations
-  - mutatingwebhookconfigurations
   verbs:
   - list
   - watch
@@ -4761,6 +4772,7 @@ rules:
   - watch
   - create
   - update
+  - delete
 - apiGroups:
   - metallb.io
   resources:
