@@ -6,7 +6,6 @@
             "app": "metallb",
             "app.kubernetes.io/managed-by": "Helm",
             "app.kubernetes.io/version": "v0.0.0",
-            "component": "speaker",
             "helm.sh/chart": "metallb-0.0.0"
         },
         "name": "controller-monitor",
