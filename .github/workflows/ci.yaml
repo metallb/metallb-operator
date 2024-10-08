@@ -155,8 +155,7 @@ jobs:
 
     - uses: actions/setup-go@v5
       with:
-        go-version-file: "go.mod"
-        cache: true
+        go-version-file: "metallboperator/go.mod"
 
     - name: Build image
       run: |
@@ -196,6 +195,10 @@ jobs:
       with:
         path: metallboperator-latest
         fetch-depth: 0 # Fetch all history for all tags and branches
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: "metallboperator-latest/go.mod"
 
     - name: Deploy Metal LB Operator
       run: |
