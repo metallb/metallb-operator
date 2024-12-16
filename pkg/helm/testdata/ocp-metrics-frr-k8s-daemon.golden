@@ -5,9 +5,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.15",
+            "app.kubernetes.io/version": "v0.0.16",
             "component": "frr-k8s",
-            "helm.sh/chart": "frr-k8s-0.0.15"
+            "helm.sh/chart": "frr-k8s-0.0.16"
         },
         "name": "frr-k8s",
         "namespace": "metallb-test-namespace"
@@ -33,8 +33,7 @@
                             "--node-name=$(NODE_NAME)",
                             "--namespace=$(NAMESPACE)",
                             "--metrics-bind-address=127.0.0.1:7572",
-                            "--log-level=info",
-                            "--health-probe-bind-address=127.0.0.1:8081"
+                            "--log-level=info"
                         ],
                         "command": [
                             "/frr-k8s"
@@ -70,8 +69,8 @@
                             "failureThreshold": 3,
                             "httpGet": {
                                 "host": "127.0.0.1",
-                                "path": "/healthz",
-                                "port": 8081
+                                "path": "/metrics",
+                                "port": "monitoring"
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10,
@@ -89,8 +88,8 @@
                             "failureThreshold": 3,
                             "httpGet": {
                                 "host": "127.0.0.1",
-                                "path": "/healthz",
-                                "port": 8081
+                                "path": "/metrics",
+                                "port": "monitoring"
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10,
