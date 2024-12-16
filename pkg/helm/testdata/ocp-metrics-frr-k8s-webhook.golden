@@ -5,9 +5,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.15",
+            "app.kubernetes.io/version": "v0.0.16",
             "component": "frr-k8s-webhook-server",
-            "helm.sh/chart": "frr-k8s-0.0.15"
+            "helm.sh/chart": "frr-k8s-0.0.16"
         },
         "name": "frr-k8s-webhook-server",
         "namespace": "metallb-test-namespace"
@@ -35,7 +35,7 @@
                             "--webhook-mode=onlywebhook",
                             "--disable-cert-rotation=true",
                             "--namespace=$(NAMESPACE)",
-                            "--health-probe-bind-address=:8081"
+                            "--metrics-bind-address=:7572"
                         ],
                         "command": [
                             "/frr-k8s"
@@ -54,18 +54,24 @@
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "path": "/healthz",
-                                "port": 8081
+                                "path": "/metrics",
+                                "port": "monitoring"
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10
                         },
                         "name": "frr-k8s-webhook-server",
+                        "ports": [
+                            {
+                                "containerPort": 7572,
+                                "name": "monitoring"
+                            }
+                        ],
                         "readinessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "path": "/readyz",
-                                "port": 8081
+                                "path": "/metrics",
+                                "port": "monitoring"
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10
