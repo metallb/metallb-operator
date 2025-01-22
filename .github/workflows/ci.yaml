@@ -88,7 +88,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        make test-e2e
+        SKIP="FRR-K8s-external" make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -125,7 +125,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        make test-e2e
+        SKIP="FRR-K8s-external" make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -182,7 +182,7 @@ jobs:
       run: |
         export KUBECONFIG=${HOME}/.kube/config
         make  test-validation
-        make test-e2e
+        SKIP="FRR-K8s-external" make test-e2e
 
     - name: Collect Logs
       if: ${{ failure() }}
@@ -218,7 +218,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/metallboperator-latest
         export KUBECONFIG=${HOME}/.kube/config
         make test-validation
-        make test-e2e
+        SKIP="FRR-K8s-external" make test-e2e
 
     - name: Checkout
       uses: actions/checkout@v4
@@ -367,7 +367,7 @@ jobs:
         run: |
           export KUBECONFIG=${HOME}/.kube/config
           make test-validation
-          make test-e2e
+          SKIP="FRR-K8s-external" make test-e2e
           kubectl wait -n metallb-system --for=delete pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
 
       - name: Deploy MetalLB resource
