@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Masterminds/semver"
 	"github.com/metallb/metallb-operator/api/v1beta1"
 )
 
@@ -36,6 +37,7 @@ type EnvConfig struct {
 	FRRImage                   ImageInfo
 	FRRK8sImage                ImageInfo
 	KubeRBacImage              ImageInfo
+	CNOMinFRRK8sVersion        string
 	MLBindPort                 int
 	FRRMetricsPort             int
 	SecureFRRMetricsPort       int
@@ -133,6 +135,7 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 
 	// Ignoring the error, if not set we'll consume the image from the chart
 	res.FRRK8sImage, _ = imageFromEnv("FRRK8S_IMAGE")
+	res.CNOMinFRRK8sVersion = os.Getenv("CNO_MIN_FRRK8S_VERSION")
 
 	err = validate(res)
 	if err != nil {
@@ -151,6 +154,12 @@ func validate(config EnvConfig) error {
 	}
 	if config.SecureFRRMetricsPort != 0 && !config.DeployServiceMonitors {
 		return fmt.Errorf("secureFRRMetricsPort is available only if service monitors are enabled")
+	}
+	if config.CNOMinFRRK8sVersion != "" {
+		_, err := semver.NewVersion(config.CNOMinFRRK8sVersion)
+		if err != nil {
+			return fmt.Errorf("invalid cno min frrk8s supported version: %w", err)
+		}
 	}
 	return nil
 }

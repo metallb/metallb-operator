@@ -174,7 +174,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(ctx context.Context, config *me
 
 	bgpType := params.BGPType(config, r.EnvConfig)
 	if r.EnvConfig.MustDeployFRRK8sFromCNO && r.EnvConfig.IsOpenshift && (bgpType == metallbv1beta1.FRRK8sExternalMode) {
-		supportsFRRK8s, err := openshift.SupportsFRRK8s(ctx, r.Client)
+		supportsFRRK8s, err := openshift.SupportsFRRK8s(ctx, r.Client, r.EnvConfig)
 		if err != nil {
 			return err
 		}
