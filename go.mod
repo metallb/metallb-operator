@@ -25,6 +25,7 @@ require (
 
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect

@@ -3,6 +3,7 @@ package openshift
 import (
 	"testing"
 
+	"github.com/metallb/metallb-operator/pkg/params"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 )
 
@@ -103,7 +104,8 @@ func TestCnoSupportsFRRK8s(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			supports, err := cnoSupportsFRRK8s(test.cno)
+			envConfig := params.EnvConfig{CNOMinFRRK8sVersion: "4.17.0-0"}
+			supports, err := cnoSupportsFRRK8s(test.cno, envConfig)
 			if test.shouldErr && err == nil {
 				t.Fatalf("expected error, got nil")
 			}
