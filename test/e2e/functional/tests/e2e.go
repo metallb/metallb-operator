@@ -166,7 +166,11 @@ var _ = Describe("metallb", func() {
 			}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
 
 			By("checking the controller is running in the right bgp mode")
-			checkControllerBGPMode(bgpType)
+			expectedMode := bgpType
+			if bgpType == metallbv1beta1.FRRK8sExternalMode {
+				expectedMode = metallbv1beta1.FRRK8sMode
+			}
+			checkControllerBGPMode(expectedMode)
 
 			By("checking MetalLB controller deployment is in running state")
 			Eventually(func() error {
@@ -195,7 +199,7 @@ var _ = Describe("metallb", func() {
 			}, metallbutils.DeployTimeout, metallbutils.Interval).ShouldNot(HaveOccurred())
 
 			By("checking the speaker is running in the right bgp mode")
-			checkSpeakerBGPMode(bgpType)
+			checkSpeakerBGPMode(expectedMode)
 
 			By("checking MetalLB daemonset is in running state")
 			Eventually(func() error {
@@ -254,7 +258,7 @@ var _ = Describe("metallb", func() {
 				return true
 			}, 5*time.Minute, 5*time.Second).Should(BeTrue())
 
-			if bgpType != metallbv1beta1.FRRK8sMode {
+			if bgpType != metallbv1beta1.FRRK8sMode && bgpType != metallbv1beta1.FRRK8sExternalMode {
 				return
 			}
 			By("checking frr-k8s daemonset is in running state")

@@ -245,6 +245,9 @@ func (r *MetalLBReconciler) syncMetalLBResources(ctx context.Context, config *me
 }
 
 func validateBGPMode(config *metallbv1beta1.MetalLB, isOpenshift bool) error {
+	if config.Spec.BGPBackend == metallbv1beta1.FRRK8sExternalMode && isOpenshift {
+		return nil
+	}
 	if config.Spec.BGPBackend != "" &&
 		config.Spec.BGPBackend != metallbv1beta1.NativeMode &&
 		config.Spec.BGPBackend != metallbv1beta1.FRRK8sMode &&
