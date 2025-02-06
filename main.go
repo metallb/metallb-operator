@@ -35,6 +35,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	policyv1beta1 "k8s.io/kubernetes/pkg/apis/policy/v1beta1"
 	rbacv1 "k8s.io/kubernetes/pkg/apis/rbac/v1"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -124,11 +125,13 @@ func main() {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: *metricsAddr,
-		LeaderElection:     *enableLeaderElection,
-		LeaderElectionID:   "metallb.io.metallboperator",
-		Namespace:          envParams.Namespace,
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: *metricsAddr,
+		},
+
+		LeaderElection:   *enableLeaderElection,
+		LeaderElectionID: "metallb.io.metallboperator",
 		Cache: cache.Options{
 			ByObject: map[client.Object]cache.ByObject{
 				&metallbv1beta1.MetalLB{}: namespaceSelector,
