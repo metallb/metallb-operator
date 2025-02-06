@@ -2,6 +2,7 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
+  creationTimestamp: null
   name: metallb-operator-webhook-configuration
 webhooks:
 - admissionReviewVersions:
