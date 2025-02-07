@@ -434,7 +434,7 @@ metadata:
     containerImage: quay.io/metallb/metallb-operator
     createdAt: "2025-03-10T05:05:17Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
-    operators.operatorframework.io/builder: operator-sdk-v1.34.1
+    operators.operatorframework.io/builder: operator-sdk-v1.38.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/metallb/metallb-operator
     support: Community
@@ -707,6 +707,14 @@ spec:
                 - customresourcedefinitions
               verbs:
                 - get
+                - list
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - daemonsets
+                - deployments
+              verbs:
                 - list
                 - watch
             - apiGroups:
