@@ -12,6 +12,7 @@ resources:
   - bases/metallb.io_servicel2statuses.yaml
   - bases/frrk8s.metallb.io_frrconfigurations.yaml
   - bases/frrk8s.metallb.io_frrnodestates.yaml
+  - bases/metallb.io_servicebgpstatuses.yaml
 
 # +kubebuilder:scaffold:crdkustomizeresource
 
