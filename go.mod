@@ -1,10 +1,9 @@
 module github.com/metallb/metallb-operator
 
-go 1.22.0
-
-toolchain go1.22.5
+go 1.22.12
 
 require (
+	github.com/Masterminds/semver v1.5.0
 	github.com/go-logr/logr v1.4.1
 	github.com/golang/glog v1.2.1
 	github.com/google/go-cmp v0.6.0
@@ -25,7 +24,6 @@ require (
 
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
