@@ -26,7 +26,7 @@ jobs:
     - name: Verify
       uses: golangci/golangci-lint-action@v3
       with:
-        version: v1.62.2
+        version: v1.64.4
         args: --timeout=15m0s --verbose
 
   unit:
@@ -387,7 +387,7 @@ jobs:
           # TODO: remove skipping the conflict test, curerntly broken for multiple namespaces
           KUBECONFIG_PATH=${HOME}/.kube/config GINKGO_ARGS="--focus Webhooks --skip conflict" TEST_ARGS="--report-path=/tmp/kind_logs" make e2etests
           kubectl delete ns frr-k8s-system
-          #TODO remove when the webhook tests do not leave resources behind 
+          #TODO remove when the webhook tests do not leave resources behind
           kubectl delete frrconfiguration --all -n metallb-system
 
 
