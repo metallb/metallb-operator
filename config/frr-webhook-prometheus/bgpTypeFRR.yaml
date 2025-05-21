@@ -11,9 +11,9 @@ spec:
           env:
             - name: DEPLOY_SERVICEMONITORS
               value: "true"
-            - name: FRR_HTTPS_METRICS_PORT
-              value: "9120"
             - name: HTTPS_METRICS_PORT
+              value: "9120"
+            - name: FRR_HTTPS_METRICS_PORT
               value: "9121"
             - name: FRRK8S_HTTPS_METRICS_PORT
               value: "9122"
