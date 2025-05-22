@@ -1,0 +1,48 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: metallb-controller
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "metallb.selectorLabels" . | nindent 6 }}
+      component: controller
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 6443
+  ingress:
+    - ports:
+        - protocol: TCP
+          {{- if .Values.prometheus.secureMetricsPort }}
+          port: {{ .Values.prometheus.secureMetricsPort }}
+          {{ else }}
+          port: {{ .Values.prometheus.metricsPort }}
+          {{- end }}
+  policyTypes:
+    - Egress
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: metallb-webhook
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "metallb.selectorLabels" . | nindent 6 }}
+      component: webhook-server
+  egress:
+    - ports:
+       - protocol: TCP
+         port: 6443
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 9443
+  policyTypes:
+    - Egress
+    - Ingress

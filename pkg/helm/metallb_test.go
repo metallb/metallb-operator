@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -45,6 +46,8 @@ const (
 	MetalLBTestNameSpace    = "metallb-test-namespace"
 	speakerDaemonSet        = "speaker"
 	controllerDeployment    = "controller"
+	controllerNetworkPolicy = "metallb-controller"
+	webhookNetworkPolicy    = "metallb-webhook"
 )
 
 var defaultEnvConfig = params.EnvConfig{
@@ -147,9 +150,21 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 
 	objs, err := chart.Objects(defaultEnvConfig, metallb)
 	g.Expect(err).To(BeNil())
-	var isSpeakerFound, isControllerFound bool
+	var isSpeakerFound, isControllerFound, isControllerNetworkPolicyFound, isWebhookNetworkPolicyFound bool
 	for _, obj := range objs {
 		objKind := obj.GetKind()
+		if objKind == "NetworkPolicy" && obj.GetName() == controllerNetworkPolicy {
+			n := networkingv1.NetworkPolicy{}
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &n)
+			g.Expect(err).To(BeNil())
+			isControllerNetworkPolicyFound = true
+		}
+		if objKind == "NetworkPolicy" && obj.GetName() == webhookNetworkPolicy {
+			n := networkingv1.NetworkPolicy{}
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &n)
+			g.Expect(err).To(BeNil())
+			isWebhookNetworkPolicyFound = true
+		}
 		if objKind == "DaemonSet" {
 			g.Expect(obj.GetName()).To(Equal(speakerDaemonSet))
 			speaker := appsv1.DaemonSet{}
@@ -226,6 +241,8 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 	}
 	g.Expect(isSpeakerFound).To(BeTrue())
 	g.Expect(isControllerFound).To(BeTrue())
+	g.Expect(isControllerNetworkPolicyFound).To(BeTrue())
+	g.Expect(isWebhookNetworkPolicyFound).To(BeTrue())
 }
 
 func TestParseOCPSecureMetrics(t *testing.T) {

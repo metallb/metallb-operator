@@ -70,6 +70,7 @@ var EmbeddedFRRK8sSupportNotAvailable = errors.New("current CNO version does not
 // +kubebuilder:rbac:groups="coordination.k8s.io",namespace=metallb-system,resources=leases,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",namespace=metallb-system,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups="",namespace=metallb-system,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=networking.k8s.io,namespace=metallb-system,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 
 // Cluster Scoped
 // +kubebuilder:rbac:groups=apps,resources=deployments;daemonsets,verbs=list;watch
