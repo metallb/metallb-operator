@@ -4240,6 +4240,18 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -4590,53 +4602,10 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: controller
-  namespace: metallb-system
-spec:
-  egress:
-  - ports:
-    - port: 6443
-      protocol: TCP
-  ingress:
-  - ports:
-    - port: 9120
-      protocol: TCP
-  podSelector:
-    matchLabels:
-      app: metallb
-      component: controller
-  policyTypes:
-  - Egress
-  - Ingress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: default-deny
   namespace: metallb-system
 spec:
   podSelector: {}
-  policyTypes:
-  - Ingress
-  - Egress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: frr-k8s-webhook-server
-  namespace: metallb-system
-spec:
-  egress:
-  - ports:
-    - port: 6443
-      protocol: TCP
-  ingress:
-  - ports:
-    - port: 9443
-      protocol: TCP
-  podSelector:
-    matchLabels:
-      component: frr-k8s-webhook-server
   policyTypes:
   - Ingress
   - Egress
@@ -4658,27 +4627,6 @@ spec:
   podSelector:
     matchLabels:
       control-plane: controller-manager
-  policyTypes:
-  - Egress
-  - Ingress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: metallb-webhook-service
-  namespace: metallb-system
-spec:
-  egress:
-  - ports:
-    - port: 6443
-      protocol: TCP
-  ingress:
-  - ports:
-    - port: 9443
-      protocol: TCP
-  podSelector:
-    matchLabels:
-      component: webhook-server
   policyTypes:
   - Egress
   - Ingress

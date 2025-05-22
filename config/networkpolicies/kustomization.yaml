@@ -1,6 +1,6 @@
 resources:
 - deny_all.yaml
 - metallb_operator.yaml
-- metallb_operand.yaml
-- metallb_operand_webhook.yaml
-- metallb_operand_frrk8s.yaml
+# - metallb_operand.yaml
+# - metallb_operand_webhook.yaml
+# - metallb_operand_frrk8s.yaml
