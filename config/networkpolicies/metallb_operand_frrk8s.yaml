@@ -1,0 +1,21 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frr-k8s-webhook-server
+  namespace: metallb-system
+spec:
+  podSelector:
+    matchLabels:
+      component: frr-k8s-webhook-server
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 9443
+  egress:
+    - ports:
+       - protocol: TCP
+         port: 6443
+  policyTypes:
+    - Ingress
+    - Egress

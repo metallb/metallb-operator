@@ -52,7 +52,7 @@ OPM_VERSION ?= v1.23.2
 KUSTOMIZE_VERSION ?= v5.5.0
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
-KIND_VERSION=v0.23.0
+KIND_VERSION=v0.26.0
 CACHE_PATH=$(shell pwd)/_cache
 
 
