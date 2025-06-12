@@ -25,7 +25,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -39,8 +38,6 @@ func (metallb *MetalLB) SetupWebhookWithManager(mgr ctrl.Manager, externalFRRK8s
 }
 
 //+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1beta1-metallb,mutating=false,failurePolicy=fail,groups=metallb.io,resources=metallbs,versions=v1beta1,name=metallbvalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
-
-var _ webhook.Validator = &MetalLB{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for MetalLB.
 func (metallb *MetalLB) ValidateCreate() (admission.Warnings, error) {

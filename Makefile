@@ -46,13 +46,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION ?= v1.38.0
+OPERATOR_SDK_VERSION ?= v1.40.0
 OLM_VERSION ?= v0.18.3
-OPM_VERSION ?= v1.23.2
-KUSTOMIZE_VERSION ?= v5.5.0
+OPM_VERSION ?= v1.55.2
+KUSTOMIZE_VERSION ?= v5.6.0
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
-KIND_VERSION=v0.23.0
+KIND_VERSION ?= v0.29.0
+KUBECTL_VERSION ?= v1.33.1
+ENVTEST_VERSION ?= 1.33.0
+CONTROLLER_GEN_VERSION ?= v0.18.0
 CACHE_PATH=$(shell pwd)/_cache
 
 
@@ -62,11 +65,9 @@ OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/r
 TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
 VALIDATION_TESTS_REPORTS_PATH ?= /tmp/test_validation_logs/
 
-ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: generate fmt vet manifests ## Run unit and integration tests
-	mkdir -p ${ENVTEST_ASSETS_DIR}
-	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race ./... -coverprofile cover.out
+test: generate fmt vet manifests setup-envtest ## Run unit and integration tests
+	source <(_cache/setup-envtest use -p env --bin-dir ${CACHE_PATH} ${ENVTEST_VERSION} ) && \
+	go test -race ./... -coverprofile cover.out
 
 all: manager ## Default make target if no options specified
 
@@ -126,7 +127,7 @@ bin: manifests kustomize ## Create manifests
 	$(KUSTOMIZE) build config/metallb_rbac >> bin/$(BIN_FILE)
 
 manifests: controller-gen generate-metallb-manifests  ## Generate manifests e.g. CRD, RBAC etc.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=metallb-manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CACHE_PATH)/controller-gen $(CRD_OPTIONS) rbac:roleName=metallb-manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	sed -i -e 's/validating-webhook-configuration/metallb-operator-webhook-configuration/g' config/webhook/manifests.yaml
 	sed -i -e 's/webhook-service/metallb-operator-webhook-service/g' config/webhook/manifests.yaml
 
@@ -138,7 +139,7 @@ vet:  ## Run go vet against code
 	go vet ./...
 
 generate: controller-gen  ## Generate code
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CACHE_PATH)/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 # Build the docker image
 docker-build:  ## Build the docker image
@@ -194,15 +195,18 @@ build-and-push-bundle-images: docker-build docker-push  ## Generate and push bun
 deploy-prometheus:
 	hack/deploy_prometheus.sh
 
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
+setup-envtest:
+	mkdir -p _cache
+ifeq (,$(findstring v0.0.0,$(shell _cache/setup-envtest version)))
+	GOBIN=$(CACHE_PATH) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 endif
+
+controller-gen:
+	mkdir -p _cache
+ifeq (,$(findstring $(CONTROLLER_GEN_VERSION),$(shell _cache/controller-gen --version)))
+	GOBIN=$(CACHE_PATH) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
+endif
+
 
 # Get the current operator-sdk binary into the _cache dir.
 kustomize:
@@ -246,7 +250,7 @@ kubectl:
 ifeq (, $(shell which kubectl))
 	@{ \
 	set -e ;\
-	curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl > $(GOBIN)/kubectl ;\
+	curl -LO https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/linux/amd64/kubectl > $(GOBIN)/kubectl ;\
 	chmod u+x $(GOBIN)/kubectl ;\
 	}
 endif
