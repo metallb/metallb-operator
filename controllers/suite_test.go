@@ -161,6 +161,8 @@ var _ = AfterSuite(func() {
 	// restore Manifestpaths for both controller to their original value
 	MetalLBChartPath = MetalLBChartPathController
 	FRRK8SChartPath = FRRK8SChartPathController
-	err := testEnv.Stop()
-	Expect(err).ToNot(HaveOccurred())
+	Eventually(func() error {
+		return testEnv.Stop()
+	}, "1m", "10s").Should(Succeed())
+
 })

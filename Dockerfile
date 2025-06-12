@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.2
 
-FROM --platform=$BUILDPLATFORM docker.io/golang:1.22.12 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/golang:1.24.3 AS builder
 ARG GIT_COMMIT=dev
 ARG GIT_BRANCH=dev
 
