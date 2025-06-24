@@ -432,9 +432,9 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2025-07-02T05:08:22Z"
+    createdAt: "2025-07-07T09:19:59Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
-    operators.operatorframework.io/builder: operator-sdk-v1.38.0
+    operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/metallb/metallb-operator
     support: Community
@@ -781,17 +781,6 @@ spec:
                 - monitoring.coreos.com
               resources:
                 - podmonitors
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - monitoring.coreos.com
-              resources:
                 - servicemonitors
               verbs:
                 - create
