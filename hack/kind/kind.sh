@@ -49,7 +49,7 @@ fi
 # Create a second network interface, useful for metallb's e2e tests
 docker network create --ipv6 --subnet fc00:f853:ccd:e791::/64 -d bridge network2
 
-KIND_NODES=$(kind get nodes --name "${KIND_CLUSTER_NAME}")
+KIND_NODES=$("${KIND_BIN}" get nodes --name "${KIND_CLUSTER_NAME}")
 for n in $KIND_NODES; do
   docker network connect network2 "$n"
 done

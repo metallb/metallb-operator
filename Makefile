@@ -53,7 +53,7 @@ OPM=$(shell pwd)/_cache/opm
 KUSTOMIZE_VERSION ?= v5.5.0
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
-KIND_VERSION=v0.23.0
+KIND_VERSION ?= v0.29.0
 CACHE_PATH=$(shell pwd)/_cache
 
 
