@@ -49,6 +49,7 @@ endif
 OPERATOR_SDK_VERSION ?= v1.40.0
 OLM_VERSION ?= v0.32.0
 OPM_VERSION ?= v1.55.0
+OPM=$(shell pwd)/_cache/opm
 KUSTOMIZE_VERSION ?= v5.5.0
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
@@ -232,12 +233,9 @@ opm:
 ifeq (, $(shell which opm))
 	@{ \
 	set -e ;\
-	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$(OPM_VERSION)/linux-amd64-opm > $(GOBIN)/opm ;\
-	chmod u+x $(GOBIN)/opm ;\
+	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$(OPM_VERSION)/linux-amd64-opm > _cache/opm ;\
+	chmod u+x _cache/opm ;\
 	}
-OPM=$(GOBIN)/opm
-else
-OPM=$(shell which opm)
 endif
 
 # Get the current kubectl binary. If there isn't any, we'll use the
