@@ -46,9 +46,9 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION ?= v1.38.0
-OLM_VERSION ?= v0.18.3
-OPM_VERSION ?= v1.23.2
+OPERATOR_SDK_VERSION ?= v1.40.0
+OLM_VERSION ?= v0.32.0
+OPM_VERSION ?= v1.55.0
 KUSTOMIZE_VERSION ?= v5.5.0
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
@@ -198,7 +198,7 @@ deploy-prometheus:
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.18.0
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
