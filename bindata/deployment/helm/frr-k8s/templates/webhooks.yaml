@@ -31,6 +31,7 @@ spec:
       - command:
         - /frr-k8s
         args:
+        - --webhook-port={{ .Values.frrk8s.webhookPort }}
         {{- with .Values.frrk8s.logLevel }}
         - --log-level={{ . }}
         {{- end }}
@@ -42,7 +43,6 @@ spec:
         - "--restart-on-rotator-secret-refresh=true"
         {{- end }}
         - "--namespace=$(NAMESPACE)"
-        - "--metrics-bind-address=:{{ .Values.prometheus.metricsPort }}"
         env:
         - name: NAMESPACE
           valueFrom:
@@ -60,13 +60,14 @@ spec:
               - ALL
           readOnlyRootFilesystem: true
         ports:
-        - containerPort: {{ .Values.prometheus.metricsPort }}
-          name: monitoring
+        - containerPort: {{ .Values.frrk8s.webhookPort }}
+          name: webhook
         {{- if .Values.frrk8s.livenessProbe.enabled }}
         livenessProbe:
           httpGet:
-            path: /metrics
-            port: monitoring
+            path: /healthz
+            port: webhook
+            scheme: HTTPS
           initialDelaySeconds: {{ .Values.frrk8s.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.frrk8s.livenessProbe.periodSeconds }}
           failureThreshold: {{ .Values.frrk8s.livenessProbe.failureThreshold }}
@@ -74,8 +75,9 @@ spec:
         {{- if .Values.frrk8s.readinessProbe.enabled }}
         readinessProbe:
           httpGet:
-            path: /metrics
-            port: monitoring
+            path: /healthz
+            port: webhook
+            scheme: HTTPS
           initialDelaySeconds: {{ .Values.frrk8s.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.frrk8s.readinessProbe.periodSeconds }}
           failureThreshold: {{ .Values.frrk8s.readinessProbe.failureThreshold }}
@@ -116,6 +118,7 @@ spec:
             secretName: frr-k8s-webhook-server-cert
       serviceAccountName: {{ template "frrk8s.serviceAccountName" . }}
       terminationGracePeriodSeconds: 10
+      hostNetwork: true
 ---
 apiVersion: v1
 kind: Secret
@@ -131,7 +134,7 @@ metadata:
 spec:
   ports:
   - port: 443
-    targetPort: 9443
+    targetPort: webhook
   selector:
     component: frr-k8s-webhook-server
 ---

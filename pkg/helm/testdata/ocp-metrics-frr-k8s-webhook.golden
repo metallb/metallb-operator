@@ -5,9 +5,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.17",
+            "app.kubernetes.io/version": "v0.0.20",
             "component": "frr-k8s-webhook-server",
-            "helm.sh/chart": "frr-k8s-0.0.17"
+            "helm.sh/chart": "frr-k8s-0.0.20"
         },
         "name": "frr-k8s-webhook-server",
         "namespace": "metallb-test-namespace"
@@ -31,11 +31,11 @@
                 "containers": [
                     {
                         "args": [
+                            "--webhook-port=19443",
                             "--log-level=info",
                             "--webhook-mode=onlywebhook",
                             "--disable-cert-rotation=true",
-                            "--namespace=$(NAMESPACE)",
-                            "--metrics-bind-address=:7572"
+                            "--namespace=$(NAMESPACE)"
                         ],
                         "command": [
                             "/frr-k8s"
@@ -54,8 +54,9 @@
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "path": "/metrics",
-                                "port": "monitoring"
+                                "path": "/healthz",
+                                "port": "webhook",
+                                "scheme": "HTTPS"
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10
@@ -63,15 +64,16 @@
                         "name": "frr-k8s-webhook-server",
                         "ports": [
                             {
-                                "containerPort": 7572,
-                                "name": "monitoring"
+                                "containerPort": 19443,
+                                "name": "webhook"
                             }
                         ],
                         "readinessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "path": "/metrics",
-                                "port": "monitoring"
+                                "path": "/healthz",
+                                "port": "webhook",
+                                "scheme": "HTTPS"
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10
@@ -94,6 +96,7 @@
                         ]
                     }
                 ],
+                "hostNetwork": true,
                 "securityContext": {
                     "runAsNonRoot": true
                 },
