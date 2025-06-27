@@ -284,15 +284,17 @@ var _ = Describe("MetalLB Controller", func() {
 				"frr":                 frrImage,
 				"reloader":            frrImage,
 				"frr-metrics":         frrImage,
+				"frr-status":          frrImage,
 				"kube-rbac-proxy":     kubeRbacImage,
 				"kube-rbac-proxy-frr": kubeRbacImage,
 			}
 
 			frrk8sInitContainers := map[string]string{
-				"cp-frr-files": frrImage,
-				"cp-reloader":  frrk8sImage,
-				"cp-metrics":   frrk8sImage,
-				"cp-liveness":  frrk8sImage,
+				"cp-frr-files":  frrImage,
+				"cp-frr-status": frrk8sImage,
+				"cp-reloader":   frrk8sImage,
+				"cp-metrics":    frrk8sImage,
+				"cp-liveness":   frrk8sImage,
 			}
 
 			By("Creating a MetalLB resource")
