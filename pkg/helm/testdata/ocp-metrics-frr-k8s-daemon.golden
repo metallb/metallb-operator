@@ -5,9 +5,9 @@
         "labels": {
             "app": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.17",
+            "app.kubernetes.io/version": "v0.0.20",
             "component": "frr-k8s",
-            "helm.sh/chart": "frr-k8s-0.0.17"
+            "helm.sh/chart": "frr-k8s-0.0.20"
         },
         "name": "frr-k8s",
         "namespace": "metallb-test-namespace"
@@ -222,6 +222,59 @@
                     },
                     {
                         "args": [
+                            "--node-name=$(NODE_NAME)",
+                            "--namespace=$(NAMESPACE)",
+                            "--pod-name=$(POD_NAME)",
+                            "--poll-interval=2m"
+                        ],
+                        "command": [
+                            "/etc/frr_status/frr-status"
+                        ],
+                        "env": [
+                            {
+                                "name": "NODE_NAME",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "spec.nodeName"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "POD_NAME",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.name"
+                                    }
+                                }
+                            }
+                        ],
+                        "image": "frrouting/frr:v7.5.1",
+                        "name": "frr-status",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/frr",
+                                "name": "frr-sockets"
+                            },
+                            {
+                                "mountPath": "/etc/frr",
+                                "name": "frr-conf"
+                            },
+                            {
+                                "mountPath": "/etc/frr_status",
+                                "name": "frr-status"
+                            }
+                        ]
+                    },
+                    {
+                        "args": [
                             "--logtostderr",
                             "--secure-listen-address=:9998",
                             "--upstream=http://127.0.0.1:7572/",
@@ -341,6 +394,21 @@
                                 "name": "metrics"
                             }
                         ]
+                    },
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "cp -f /frr-status /etc/frr_status/"
+                        ],
+                        "image": "quay.io/metallb/frr-k8s:v0.0.8",
+                        "name": "cp-frr-status",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/frr_status",
+                                "name": "frr-status"
+                            }
+                        ]
                     }
                 ],
                 "nodeSelector": {
@@ -383,6 +451,10 @@
                     {
                         "emptyDir": {},
                         "name": "metrics"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "frr-status"
                     },
                     {
                         "name": "metrics-certs",

@@ -1,6 +1,6 @@
 # frr-k8s
 
-![Version: 0.0.17](https://img.shields.io/badge/Version-0.0.17-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.0.17](https://img.shields.io/badge/AppVersion-v0.0.17-informational?style=flat-square)
+![Version: 0.0.20](https://img.shields.io/badge/Version-0.0.20-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.0.20](https://img.shields.io/badge/AppVersion-v0.0.20-informational?style=flat-square)
 
 A cloud native wrapper of FRR
 
@@ -16,7 +16,7 @@ Kubernetes: `>= 1.19.0-0`
 
 | Repository | Name | Version |
 |------------|------|---------|
-|  | crds | 0.0.17 |
+|  | crds | 0.0.20 |
 
 ## Values
 
@@ -36,6 +36,8 @@ Kubernetes: `>= 1.19.0-0`
 | frrk8s.frr.resources | object | `{}` |  |
 | frrk8s.frr.secureMetricsPort | int | `9141` |  |
 | frrk8s.frrMetrics.resources | object | `{}` |  |
+| frrk8s.frrStatus.pollInterval | string | `"2m"` |  |
+| frrk8s.frrStatus.resources | object | `{}` |  |
 | frrk8s.image.pullPolicy | string | `nil` |  |
 | frrk8s.image.repository | string | `"quay.io/metallb/frr-k8s"` |  |
 | frrk8s.image.tag | string | `nil` |  |
@@ -69,6 +71,7 @@ Kubernetes: `>= 1.19.0-0`
 | frrk8s.tolerateMaster | bool | `true` |  |
 | frrk8s.tolerations | list | `[]` |  |
 | frrk8s.updateStrategy.type | string | `"RollingUpdate"` |  |
+| frrk8s.webhookPort | int | `19443` |  |
 | fullnameOverride | string | `""` |  |
 | nameOverride | string | `""` |  |
 | prometheus.metricsBindAddress | string | `"127.0.0.1"` |  |

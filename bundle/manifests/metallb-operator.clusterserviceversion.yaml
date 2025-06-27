@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2025-04-03T05:06:30Z"
+    createdAt: "2025-06-27T09:06:00Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.38.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -461,6 +461,9 @@ spec:
       - kind: BGPPeer
         name: bgppeers.metallb.io
         version: v1beta2
+      - kind: BGPSessionState
+        name: bgpsessionstates.frrk8s.metallb.io
+        version: v1beta1
       - kind: Community
         name: communities.metallb.io
         version: v1beta1
@@ -616,6 +619,26 @@ spec:
               resources:
                 - validatingwebhookconfigurations
               verbs:
+                - update
+            - apiGroups:
+                - frrk8s.metallb.io
+              resources:
+                - bgpsessionstates
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - frrk8s.metallb.io
+              resources:
+                - bgpsessionstates/status
+              verbs:
+                - get
+                - patch
                 - update
             - apiGroups:
                 - frrk8s.metallb.io
@@ -901,7 +924,7 @@ spec:
                       - name: DEPLOY_KUBE_RBAC_PROXIES
                         value: "false"
                       - name: FRRK8S_IMAGE
-                        value: quay.io/metallb/frr-k8s:v0.0.17
+                        value: quay.io/metallb/frr-k8s:v0.0.20
                       - name: FRRK8S_EXTERNAL_NAMESPACE
                         value: frr-k8s-system
                       - name: OPERATOR_NAMESPACE
@@ -1111,6 +1134,14 @@ spec:
                 - list
                 - watch
                 - update
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - get
+                - list
+                - watch
             - apiGroups:
                 - security.openshift.io
               resourceNames:
