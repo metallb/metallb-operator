@@ -10,6 +10,7 @@ resources:
 - ../rbac
 - ../manager
 - ../webhook
+- ../networkpolicies
 
 transformers:
 - ./kustomizeconfig/add-prefix.yaml

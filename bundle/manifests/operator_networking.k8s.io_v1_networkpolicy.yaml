@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: operator
+spec:
+  egress:
+  - ports:
+    - port: 6443
+      protocol: TCP
+  ingress:
+  - ports:
+    - port: 9443
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      control-plane: controller-manager
+  policyTypes:
+  - Egress
+  - Ingress
