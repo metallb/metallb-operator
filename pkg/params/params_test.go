@@ -101,6 +101,44 @@ func TestFromEnvironment(t *testing.T) {
 				DeployServiceMonitors:      true,
 			},
 		},
+		{
+			desc: "with network policies enabled",
+			setup: func() {
+				setBasics()
+				os.Setenv("DISABLE_NETWORK_POLICIES", "true")
+			},
+			expected: EnvConfig{
+				Namespace: "test-namespace",
+				ControllerImage: ImageInfo{
+					Repo: "test-controller-image",
+					Tag:  "1",
+				},
+				SpeakerImage: ImageInfo{
+					Repo: "test-speaker-image",
+					Tag:  "2",
+				},
+				FRRImage: ImageInfo{
+					Repo: "test-frr-image",
+					Tag:  "3",
+				},
+				KubeRBacImage: ImageInfo{
+					Repo: "test-kube-rbac-proxy-image",
+					Tag:  "4",
+				},
+				FRRK8sImage: ImageInfo{
+					Repo: "test-frrk8s-image",
+					Tag:  "5",
+				},
+				MLBindPort:                 7946,
+				MetricsPort:                7472,
+				FRRMetricsPort:             7473,
+				FRRK8sMetricsPort:          7572,
+				FRRK8sFRRMetricsPort:       7573,
+				SecureFRRK8sMetricsPort:    9140,
+				SecureFRRK8sFRRMetricsPort: 9141,
+				DisableNetworkPolicies:     true,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -118,10 +156,8 @@ func TestFromEnvironment(t *testing.T) {
 			if res != test.expected {
 				t.Errorf("res different from expected, %s", cmp.Diff(res, test.expected))
 			}
-
 		})
 	}
-
 }
 
 func unset() {
@@ -138,8 +174,10 @@ func unset() {
 	os.Unsetenv("FRRK8S_FRR_METRICS_PORT")
 	os.Unsetenv("FRRK8S_HTTPS_METRICS_PORT")
 	os.Unsetenv("FRRK8S_FRR_HTTPS_METRICS_PORT")
+	os.Unsetenv("FRRK8S_METRICS_PORT")
 	os.Unsetenv("DEPLOY_PODMONITORS")
 	os.Unsetenv("DEPLOY_SERVICEMONITORS")
+	os.Unsetenv("DISABLE_NETWORK_POLICIES")
 	os.Unsetenv("KUBE_RBAC_PROXY_IMAGE")
 }
 
