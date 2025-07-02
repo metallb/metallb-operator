@@ -186,6 +186,7 @@ func patchMetalLBChartValues(envConfig params.EnvConfig, crdConfig *metallbv1bet
 	valuesMap["controller"] = controllerValues(envConfig, crdConfig)
 	valuesMap["speaker"] = speakerValues(envConfig, crdConfig)
 	valuesMap["frrk8s"] = metalLBFrrk8sValues(envConfig, crdConfig)
+	valuesMap["networkpolicies"] = netpolValues(envConfig)
 }
 
 func loadBalancerClassValue(crdConfig *metallbv1beta1.MetalLB) string {
@@ -330,6 +331,13 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 		}
 	}
 	return speakerValueMap
+}
+
+func netpolValues(envConfig params.EnvConfig) map[string]any {
+	ret := map[string]any{
+		"enabled": !envConfig.DisableNetworkPolicies,
+	}
+	return ret
 }
 
 func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
