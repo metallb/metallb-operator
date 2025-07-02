@@ -59,6 +59,8 @@ const (
 	caOrganization = "metallb"
 )
 
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs="*"
+
 var (
 	scheme            = runtime.NewScheme()
 	setupLog          = ctrl.Log.WithName("setup")
