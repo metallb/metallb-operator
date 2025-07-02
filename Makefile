@@ -54,6 +54,8 @@ KUSTOMIZE_VERSION ?= v5.5.0
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
 KIND_VERSION ?= v0.29.0
+CONTROLLER_GEN=$(shell pwd)/_cache/controller-gen
+CONTROLLER_GEN_VERSION ?= v0.18.0
 CACHE_PATH=$(shell pwd)/_cache
 
 
@@ -196,11 +198,9 @@ deploy-prometheus:
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
-ifeq (, $(shell which controller-gen))
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.18.0
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
+	mkdir -p _cache
+ifeq (,$(findstring $(CONTROLLER_GEN_VERSION),$(shell _cache/controller-gen --version)))
+	GOBIN=$(CACHE_PATH) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 endif
 
 # Get the current operator-sdk binary into the _cache dir.
