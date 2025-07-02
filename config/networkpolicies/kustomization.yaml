@@ -1,0 +1,4 @@
+resources:
+- deny_all.yaml
+- operator.yaml
+- webhook.yaml

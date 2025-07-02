@@ -1,0 +1,21 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+ name: operator
+ namespace: metallb-system
+spec:
+  podSelector:
+    matchLabels:
+      control-plane: controller-manager
+  egress:
+     - ports: # to-api
+         - protocol: TCP
+           port: 6443
+  ingress:
+    - ports: # webhook for metallb.metallb.io
+        - protocol: TCP
+          port: 9443
+  policyTypes:
+    - Egress
+    - Ingress

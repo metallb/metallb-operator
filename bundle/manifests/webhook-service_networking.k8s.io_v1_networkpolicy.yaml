@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: webhook-service
+spec:
+  egress:
+  - ports:
+    - port: 6443
+      protocol: TCP
+  ingress:
+  - ports:
+    - port: 9443
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      component: webhook-server
+  policyTypes:
+  - Egress
+  - Ingress
