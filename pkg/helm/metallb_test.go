@@ -116,7 +116,8 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 		Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
 				"app": "metallb",
-			}}}}}},
+			},
+		}}}}},
 	}
 	speakerConfig := &metallbv1beta1.Config{
 		PriorityClassName: "high-priority",
@@ -126,7 +127,8 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 		Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
 				"app": "metallb",
-			}}}}}},
+			},
+		}}}}},
 	}
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -275,7 +277,6 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 }
 
 func TestParseSecureMetrics(t *testing.T) {
-
 	g := NewGomegaWithT(t)
 	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
 	g.Expect(err).To(BeNil())
@@ -313,6 +314,59 @@ func TestParseSecureMetrics(t *testing.T) {
 	}
 }
 
+func TestNetworkPolicies(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
+	g.Expect(err).To(BeNil())
+
+	metallb := &metallbv1beta1.MetalLB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "metallb",
+			Namespace: MetalLBTestNameSpace,
+		},
+		Spec: metallbv1beta1.MetalLBSpec{
+			BGPBackend: metallbv1beta1.FRRMode,
+		},
+	}
+
+	// Test with network policies enabled
+	envConfig := defaultEnvConfig
+	envConfig.DeployNetworkPolicies = true
+	values := netpolValues(envConfig, metallb)
+	g.Expect(values["enabled"]).To(BeTrue())
+	g.Expect(values["defaultDeny"]).To(BeFalse())
+	objs, err := chart.Objects(envConfig, metallb)
+	g.Expect(err).To(BeNil())
+	var networkPolicyFound bool
+	for _, obj := range objs {
+		if obj.GetKind() == "NetworkPolicy" {
+			networkPolicyFound = true
+			g.Expect(obj.GetName()).To(Equal("controller"))
+			g.Expect(obj.GetNamespace()).To(Equal(MetalLBTestNameSpace))
+			break
+		}
+	}
+	g.Expect(networkPolicyFound).To(BeTrue())
+
+	// Test with network policies disabled
+	envConfig = defaultEnvConfig
+	envConfig.DeployNetworkPolicies = false
+	values = netpolValues(envConfig, metallb)
+	g.Expect(values["enabled"]).To(BeFalse())
+	g.Expect(values["defaultDeny"]).To(BeFalse())
+	objs, err = chart.Objects(envConfig, metallb)
+	g.Expect(err).To(BeNil())
+	networkPolicyFound = false
+	for _, obj := range objs {
+		if obj.GetKind() == "NetworkPolicy" {
+			networkPolicyFound = true
+			break
+		}
+	}
+	g.Expect(networkPolicyFound).To(BeFalse())
+}
+
 func validateObject(testcase, name string, obj *unstructured.Unstructured) error {
 	goldenFile := filepath.Join("testdata", testcase+"-"+name+".golden")
 	j, err := json.MarshalIndent(obj, "", "    ")
@@ -320,7 +374,7 @@ func validateObject(testcase, name string, obj *unstructured.Unstructured) error
 		return err
 	}
 	if *update {
-		if err := os.WriteFile(goldenFile, j, 0644); err != nil {
+		if err := os.WriteFile(goldenFile, j, 0o644); err != nil {
 			return err
 		}
 	}

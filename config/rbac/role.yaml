@@ -85,17 +85,6 @@ rules:
   - monitoring.coreos.com
   resources:
   - podmonitors
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
   - servicemonitors
   verbs:
   - create
@@ -105,6 +94,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - '*'
 - apiGroups:
   - operator.openshift.io
   resources:

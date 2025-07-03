@@ -22,7 +22,7 @@ spec:
   podSelector:
     matchLabels:
       {{- include "metallb.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: controller
+      component: controller
   egress:
     - ports:
         - protocol: TCP

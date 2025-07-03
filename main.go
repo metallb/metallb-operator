@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
@@ -24,9 +25,11 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -58,6 +61,8 @@ const (
 	caName         = "cert"
 	caOrganization = "metallb"
 )
+
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs="*"
 
 var (
 	scheme            = runtime.NewScheme()
@@ -112,6 +117,11 @@ func main() {
 		setupLog.Error(err, "failed to parse env params")
 		os.Exit(1)
 	}
+
+	if _, exists := os.LookupEnv("DEPLOY_NETWORK_POLICIES"); !exists {
+		envParams.DeployNetworkPolicies = hasNetworkPolicies(envParams.Namespace)
+	}
+
 	jsonEnv, err := json.Marshal(envParams)
 	if err != nil {
 		setupLog.Error(err, "failed to marshal env params")
@@ -231,4 +241,29 @@ func webhookServer(port int, withHTTP2 bool) webhook.Server {
 
 	res := webhook.NewServer(webhookServerOptions)
 	return res
+}
+
+func hasNetworkPolicies(ns string) bool {
+	c, err := client.New(ctrl.GetConfigOrDie(), client.Options{})
+	if err != nil {
+		setupLog.Error(err, "failed to create k8s client for network policy detection")
+		return false
+	}
+
+	policies := &networkingv1.NetworkPolicyList{}
+	if err := c.List(context.Background(), policies, client.InNamespace(ns)); err != nil {
+		setupLog.Error(err, "failed to list network policies", "namespace", ns)
+		return false
+	}
+
+	if len(policies.Items) > 0 {
+		var names []string
+		for _, p := range policies.Items {
+			names = append(names, p.GetName())
+		}
+		setupLog.Info("enabling network policies for operand because networkpolicies exist in the namespace", "namespace", ns, "policies", strings.Join(names, ", "))
+		return true
+	}
+
+	return false
 }

@@ -99,7 +99,8 @@ func (h *MetalLBChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1b
 // NewMetalLBChart initializes metallb helm chart after loading it from given
 // chart path and creating config object from environment variables.
 func NewMetalLBChart(chartPath, chartName, namespace string,
-	client client.Client) (*MetalLBChart, error) {
+	client client.Client,
+) (*MetalLBChart, error) {
 	chart := &MetalLBChart{}
 	chart.envSettings = cli.New()
 	chart.client = action.NewInstall(new(action.Configuration))
@@ -186,6 +187,7 @@ func patchMetalLBChartValues(envConfig params.EnvConfig, crdConfig *metallbv1bet
 	valuesMap["controller"] = controllerValues(envConfig, crdConfig)
 	valuesMap["speaker"] = speakerValues(envConfig, crdConfig)
 	valuesMap["frrk8s"] = metalLBFrrk8sValues(envConfig, crdConfig)
+	valuesMap["networkpolicies"] = netpolValues(envConfig, crdConfig)
 }
 
 func loadBalancerClassValue(crdConfig *metallbv1beta1.MetalLB) string {
@@ -330,6 +332,14 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 		}
 	}
 	return speakerValueMap
+}
+
+func netpolValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
+	ret := map[string]interface{}{
+		"enabled":     envConfig.DeployNetworkPolicies,
+		"defaultDeny": false,
+	}
+	return ret
 }
 
 func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
