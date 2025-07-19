@@ -260,7 +260,7 @@
                         "ports": [
                             {
                                 "containerPort": 7473,
-                                "name": "monitoring"
+                                "name": "frrmetrics"
                             }
                         ],
                         "volumeMounts": [
