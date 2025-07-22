@@ -548,8 +548,15 @@ spec:
                   rule: duration(self).getMilliseconds() % 1000 == 0
               disableMP:
                 default: false
-                description: To set if we want to disable MP BGP that will separate
-                  IPv4 and IPv6 route exchanges into distinct BGP sessions.
+                description: |-
+                  To set if we want to disable MP BGP that will separate IPv4 and IPv6 route exchanges into distinct BGP sessions.
+                  Deprecated: DisableMP is deprecated in favor of dualStackAddressFamily.
+                type: boolean
+              dualStackAddressFamily:
+                default: false
+                description: |-
+                  To set if we want to enable the neighbor not only for the ipfamily related to its session,
+                  but also the other one. This allows to advertise/receive IPv4 prefixes over IPv6 sessions and vice versa.
                 type: boolean
               dynamicASN:
                 description: |-
@@ -704,6 +711,83 @@ spec:
             type: object
           status:
             description: BGPPeerStatus defines the observed state of Peer.
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: bgpsessionstates.frrk8s.metallb.io
+spec:
+  group: frrk8s.metallb.io
+  names:
+    kind: BGPSessionState
+    listKind: BGPSessionStateList
+    plural: bgpsessionstates
+    singular: bgpsessionstate
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.node
+      name: Node
+      type: string
+    - jsonPath: .status.peer
+      name: Peer
+      type: string
+    - jsonPath: .status.vrf
+      name: VRF
+      type: string
+    - jsonPath: .status.bgpStatus
+      name: BGP
+      type: string
+    - jsonPath: .status.bfdStatus
+      name: BFD
+      type: string
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: BGPSessionState exposes the status of a BGP Session from the
+          FRR instance running on the node.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: BGPSessionStateSpec defines the desired state of BGPSessionState.
+            type: object
+          status:
+            description: BGPSessionStateStatus defines the observed state of BGPSessionState.
+            properties:
+              bfdStatus:
+                type: string
+              bgpStatus:
+                type: string
+              node:
+                type: string
+              peer:
+                type: string
+              vrf:
+                type: string
             type: object
         type: object
     served: true
@@ -961,9 +1045,15 @@ spec:
                                     0
                               disableMP:
                                 default: false
-                                description: To set if we want to disable MP BGP that
-                                  will separate IPv4 and IPv6 route exchanges into
-                                  distinct BGP sessions.
+                                description: |-
+                                  To set if we want to disable MP BGP that will separate IPv4 and IPv6 route exchanges into distinct BGP sessions.
+                                  Deprecated: DisableMP is deprecated in favor of dualStackAddressFamily.
+                                type: boolean
+                              dualStackAddressFamily:
+                                default: false
+                                description: |-
+                                  To set if we want to enable the neighbor not only for the ipfamily related to its session,
+                                  but also the other one. This allows to advertise/receive IPv4 prefixes over IPv6 sessions and vice versa.
                                 type: boolean
                               dynamicASN:
                                 description: |-
@@ -999,6 +1089,8 @@ spec:
                                   represents an interface name on the host and if user provides an invalid
                                   value, only the actual BGP session will not be established.
                                   Address and Interface are mutually exclusive and one of them must be specified.
+                                  Note: when enabling unnumbered, the neighbor will be enabled for both
+                                  IPv4 and IPv6 address families.
                                 type: string
                               keepaliveTime:
                                 description: |-
@@ -1749,7 +1841,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.18.0
   name: metallbs.metallb.io
 spec:
   group: metallb.io
@@ -2737,10 +2829,8 @@ spec:
                           Claims lists the names of resources, defined in spec.resourceClaims,
                           that are used by this container.
 
-
                           This is an alpha field and requires enabling the
                           DynamicResourceAllocation feature gate.
-
 
                           This field is immutable. It can only be set for containers.
                         items:
@@ -3825,10 +3915,8 @@ spec:
                           Claims lists the names of resources, defined in spec.resourceClaims,
                           that are used by this container.
 
-
                           This is an alpha field and requires enabling the
                           DynamicResourceAllocation feature gate.
-
 
                           This field is immutable. It can only be set for containers.
                         items:
@@ -3924,16 +4012,8 @@ spec:
               conditions:
                 description: Conditions show the current state of the MetalLB Operator
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource.\n---\nThis struct is intended for
-                    direct use as an array at the field path .status.conditions.  For
-                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
-                    observations of a foo's current state.\n\t    // Known .status.conditions.type
-                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
-                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
-                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                    \   // other fields\n\t}"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -3974,12 +4054,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: |-
-                        type of condition in CamelCase or in foo.example.com/CamelCase.
-                        ---
-                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                        useful (see .node.status.conditions), the ability to deconflict is important.
-                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
@@ -4327,17 +4402,6 @@ rules:
   - monitoring.coreos.com
   resources:
   - podmonitors
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
   - servicemonitors
   verbs:
   - create
@@ -4347,6 +4411,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - '*'
 - apiGroups:
   - operator.openshift.io
   resources:
@@ -4468,7 +4538,7 @@ spec:
         - name: DEPLOY_KUBE_RBAC_PROXIES
           value: "false"
         - name: FRRK8S_IMAGE
-          value: quay.io/metallb/frr-k8s:v0.0.17
+          value: quay.io/metallb/frr-k8s:v0.0.20
         - name: FRRK8S_EXTERNAL_NAMESPACE
           value: frr-k8s-system
         - name: OPERATOR_NAMESPACE
@@ -4586,6 +4656,59 @@ spec:
         secret:
           defaultMode: 420
           secretName: metallb-webhook-cert
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: metallb-system
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: operator
+  namespace: metallb-system
+spec:
+  egress:
+  - ports:
+    - port: 6443
+      protocol: TCP
+  ingress:
+  - ports:
+    - port: 9443
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      control-plane: controller-manager
+  policyTypes:
+  - Egress
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: webhook-service
+  namespace: metallb-system
+spec:
+  egress:
+  - ports:
+    - port: 6443
+      protocol: TCP
+  ingress:
+  - ports:
+    - port: 9443
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      component: webhook-server
+  policyTypes:
+  - Egress
+  - Ingress
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -4876,6 +4999,14 @@ rules:
   - list
   - watch
   - update
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -5043,6 +5174,26 @@ rules:
   resources:
   - validatingwebhookconfigurations
   verbs:
+  - update
+- apiGroups:
+  - frrk8s.metallb.io
+  resources:
+  - bgpsessionstates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - frrk8s.metallb.io
+  resources:
+  - bgpsessionstates/status
+  verbs:
+  - get
+  - patch
   - update
 - apiGroups:
   - frrk8s.metallb.io

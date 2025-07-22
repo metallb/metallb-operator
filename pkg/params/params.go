@@ -49,6 +49,7 @@ type EnvConfig struct {
 	SecureMetricsPort          int
 	DeployPodMonitors          bool
 	DeployServiceMonitors      bool
+	DisableNetworkPolicies     bool
 	IsOpenshift                bool
 	MustDeployFRRK8sFromCNO    bool
 }
@@ -126,6 +127,9 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 	}
 	if os.Getenv("DEPLOY_SERVICEMONITORS") == "true" {
 		res.DeployServiceMonitors = true
+	}
+	if os.Getenv("DISABLE_NETWORK_POLICIES") == "true" {
+		res.DisableNetworkPolicies = true
 	}
 
 	res.FRRK8sExternalNamespace = os.Getenv("FRRK8S_EXTERNAL_NAMESPACE")

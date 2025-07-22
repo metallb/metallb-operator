@@ -50,6 +50,7 @@ rm -f "$METALLB_PATH"/charts/metallb/templates/webhooks.yaml
 yq e --inplace 'del(."dependencies")' "$METALLB_PATH"/charts/metallb/Chart.yaml
 
 find "$METALLB_PATH"/charts/metallb -type f -exec sed -i -e 's/{{ template "metallb.fullname" . }}-//g' {} \;
+sed -i -e 's/app.kubernetes.io\///g' "$METALLB_PATH"/charts/metallb/templates/networkpolicy.yaml
 sed -i -e 's/app.kubernetes.io\///g' "$METALLB_PATH"/charts/metallb/templates/controller.yaml
 sed -i -e 's/metallb-webhook-service/webhook-service/g' "$METALLB_PATH"/charts/metallb/templates/controller.yaml
 sed -i -e 's/app.kubernetes.io\/component/component/g' "$METALLB_PATH"/charts/metallb/templates/speaker.yaml

@@ -17,7 +17,7 @@ Kubernetes: `>= 1.19.0-0`
 | Repository | Name | Version |
 |------------|------|---------|
 |  | crds | 0.0.0 |
-| https://metallb.github.io/frr-k8s | frr-k8s | 0.0.17 |
+| https://metallb.github.io/frr-k8s | frr-k8s | 0.0.20 |
 
 ## Values
 
@@ -58,6 +58,7 @@ Kubernetes: `>= 1.19.0-0`
 | controller.tlsCipherSuites | string | `""` |  |
 | controller.tlsMinVersion | string | `"VersionTLS12"` |  |
 | controller.tolerations | list | `[]` |  |
+| controller.webhookMode | string | `"enabled"` |  |
 | crds.enabled | bool | `true` |  |
 | crds.validationFailurePolicy | string | `"Fail"` |  |
 | frrk8s.enabled | bool | `false` |  |
@@ -67,6 +68,9 @@ Kubernetes: `>= 1.19.0-0`
 | imagePullSecrets | list | `[]` |  |
 | loadBalancerClass | string | `""` |  |
 | nameOverride | string | `""` |  |
+| networkpolicies.apiPort | int | `6443` |  |
+| networkpolicies.defaultDeny | bool | `false` |  |
+| networkpolicies.enabled | bool | `false` |  |
 | prometheus.controllerMetricsTLSSecret | string | `""` |  |
 | prometheus.metricsPort | int | `7472` |  |
 | prometheus.namespace | string | `""` |  |
@@ -79,8 +83,10 @@ Kubernetes: `>= 1.19.0-0`
 | prometheus.podMonitor.relabelings | list | `[]` |  |
 | prometheus.prometheusRule.additionalLabels | object | `{}` |  |
 | prometheus.prometheusRule.addressPoolExhausted.enabled | bool | `true` |  |
+| prometheus.prometheusRule.addressPoolExhausted.excludePools | string | `""` |  |
 | prometheus.prometheusRule.addressPoolExhausted.labels.severity | string | `"critical"` |  |
 | prometheus.prometheusRule.addressPoolUsage.enabled | bool | `true` |  |
+| prometheus.prometheusRule.addressPoolUsage.excludePools | string | `""` |  |
 | prometheus.prometheusRule.addressPoolUsage.thresholds[0].labels.severity | string | `"warning"` |  |
 | prometheus.prometheusRule.addressPoolUsage.thresholds[0].percent | int | `75` |  |
 | prometheus.prometheusRule.addressPoolUsage.thresholds[1].labels.severity | string | `"warning"` |  |

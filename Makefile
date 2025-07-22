@@ -46,18 +46,19 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-OPERATOR_SDK_VERSION ?= v1.38.0
-OLM_VERSION ?= v0.18.3
-OPM_VERSION ?= v1.23.2
+OPERATOR_SDK_VERSION ?= v1.40.0
+OLM_VERSION ?= v0.32.0
+OPM_VERSION ?= v1.55.0
+OPM=$(shell pwd)/_cache/opm
 KUSTOMIZE_VERSION ?= v5.5.0
 KUSTOMIZE=$(shell pwd)/_cache/kustomize
 KIND ?= $(shell pwd)/_cache/kind
-KIND_VERSION=v0.23.0
+KIND_VERSION ?= v0.29.0
+CONTROLLER_GEN=$(shell pwd)/_cache/controller-gen
+CONTROLLER_GEN_VERSION ?= v0.18.0
 CACHE_PATH=$(shell pwd)/_cache
 
 
-
-OPM_TOOL_URL=https://api.github.com/repos/operator-framework/operator-registry/releases
 
 TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
 VALIDATION_TESTS_REPORTS_PATH ?= /tmp/test_validation_logs/
@@ -197,11 +198,9 @@ deploy-prometheus:
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
-ifeq (, $(shell which controller-gen))
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
+	mkdir -p _cache
+ifeq (,$(findstring $(CONTROLLER_GEN_VERSION),$(shell _cache/controller-gen --version)))
+	GOBIN=$(CACHE_PATH) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 endif
 
 # Get the current operator-sdk binary into the _cache dir.
@@ -226,18 +225,15 @@ ifeq (,$(findstring $(OPERATOR_SDK_VERSION),$(shell _cache/operator-sdk version)
 	}
 endif
 
-# Get the current opm binary. If there isn't any, we'll use the
-# GOBIN path
+# Get the current opm binary.
 opm:
-ifeq (, $(shell which opm))
+	mkdir -p _cache
+ifeq (,$(findstring $(OPM_VERSION),$(shell _cache/opm)))
 	@{ \
 	set -e ;\
-	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$(OPM_VERSION)/linux-amd64-opm > $(GOBIN)/opm ;\
-	chmod u+x $(GOBIN)/opm ;\
+	curl -Lk https://github.com/operator-framework/operator-registry/releases/download/$(OPM_VERSION)/linux-amd64-opm > _cache/opm ;\
+	chmod u+x _cache/opm ;\
 	}
-OPM=$(GOBIN)/opm
-else
-OPM=$(shell which opm)
 endif
 
 # Get the current kubectl binary. If there isn't any, we'll use the
