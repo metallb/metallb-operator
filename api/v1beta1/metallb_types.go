@@ -57,9 +57,9 @@ type MetalLBSpec struct {
 	// +optional
 	SpeakerNodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
-	// node selector applied to MetalLB speaker daemonset.
+	// additional values to include in the announcedInterfacesToExclude list
 	// +optional
-	SpeakerAnnouncedInterfacesToExclude []string `json:"spakerAnnouncedInterfacesToExclude,omitempty"`
+	SpeakerAnnouncedInterfacesToExclude []string `json:"speakerAnnouncedInterfacesToExclude,omitempty"`
 
 	// tolerations is a list of tolerations applied to MetalLB speaker
 	// daemonset.
