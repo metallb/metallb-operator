@@ -315,8 +315,10 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 	if crdConfig.Spec.SpeakerNodeSelector != nil {
 		speakerValueMap["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
 	}
-	if crdConfig.Spec.SpeakerTolerations != nil {
-		speakerValueMap["tolerations"] = crdConfig.Spec.SpeakerTolerations
+	if crdConfig.Spec.SpeakerAnnouncedInterfacesToExclude != nil {
+		speakerValueMap["excludeInterfaces"] = map[string]interface{}{
+			"additionalInterfaces": crdConfig.Spec.SpeakerAnnouncedInterfacesToExclude,
+		}
 	}
 	otherConfigs := crdConfig.Spec.SpeakerConfig
 	if otherConfigs != nil {
