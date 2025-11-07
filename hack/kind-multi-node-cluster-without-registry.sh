@@ -4,7 +4,10 @@ set -o errexit
 # desired cluster name; default is "kind"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-kind}"
 
-cat <<EOF | kind create cluster --image kindest/node:v1.27.3 --config=-
+which kind
+kind version
+
+cat <<EOF | kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
