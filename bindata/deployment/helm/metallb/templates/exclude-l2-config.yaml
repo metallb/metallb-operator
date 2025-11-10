@@ -22,4 +22,7 @@ data:
     - ^kube-ipvs.*
     - ^cni.*
     - ^nodelocaldns.*
+    {{- range .Values.speaker.excludeInterfaces.additionalInterfaces }}
+    - {{ . | quote }}
+    {{- end }}
 {{- end }}
