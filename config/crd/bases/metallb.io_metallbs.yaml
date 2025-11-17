@@ -2126,6 +2126,13 @@ spec:
                     description: Define container runtime configuration class
                     type: string
                 type: object
+              speakerAnnouncedInterfacesToExclude:
+                description: |-
+                  An array of regex strings to add to the metallb-excludel2 config map.
+                items:
+                  type: string
+                type: array
+                x-kubernetes-list-type: atomic
               speakerTolerations:
                 description: |-
                   tolerations is a list of tolerations applied to MetalLB speaker
