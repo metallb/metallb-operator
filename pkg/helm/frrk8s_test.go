@@ -106,14 +106,14 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 			g.Expect(frrk8s.Spec.Template.Spec.Tolerations).To(ContainElement(tolerations[0]))
 			isFRRK8SFound = true
 		}
-		if objKind == "Deployment" && objName == frrk8sWebhookDeploymentName {
+		if objKind == "Deployment" && objName == frrk8sStatusCleanerDeploymentName {
 			frrk8sWebhook := appsv1.Deployment{}
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &frrk8sWebhook)
 			g.Expect(err).To(BeNil())
-			g.Expect(frrk8sWebhook.GetName()).To(Equal(frrk8sWebhookDeploymentName))
+			g.Expect(frrk8sWebhook.GetName()).To(Equal(frrk8sStatusCleanerDeploymentName))
 			var webhookContainerFound bool
 			for _, container := range frrk8sWebhook.Spec.Template.Spec.Containers {
-				if container.Name == "frr-k8s-webhook-server" {
+				if container.Name == "frr-k8s-statuscleaner" {
 					g.Expect(container.Image == "frr-k8s:test")
 					webhookContainerFound = true
 				}

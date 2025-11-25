@@ -5,20 +5,20 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "frrk8s.labels" . | nindent 4 }}
-    app.kubernetes.io/component: statuscleaner
+    component: statuscleaner
     {{- range $key, $value := .Values.frrk8s.labels }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/component: statuscleaner
+      component: statuscleaner
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: frr-k8s-statuscleaner
       labels:
-        app.kubernetes.io/component: statuscleaner
+        component: statuscleaner
     spec:
       {{- if .Values.frrk8s.runtimeClassName }}
       runtimeClassName: {{ .Values.frrk8s.runtimeClassName }}

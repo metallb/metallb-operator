@@ -70,8 +70,8 @@ rm -f "$FRRK8S_PATH"/charts/frr-k8s/templates/service-accounts.yaml
 
 yq e --inplace 'del(."dependencies")' "$FRRK8S_PATH"/charts/frr-k8s/Chart.yaml
 
-sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/controller.yaml
 sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/webhooks.yaml
+sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/status-cleaner.yaml
 sed -i -e 's/name: webhook-server/name: frr-k8s-webhook-server/g' "$FRRK8S_PATH"/charts/frr-k8s/templates/webhooks.yaml
 sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/service-monitor.yaml
 

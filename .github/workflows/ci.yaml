@@ -368,14 +368,16 @@ jobs:
           export KUBECONFIG=${HOME}/.kube/config
           make test-validation
           SKIP="FRR-K8s-external" make test-e2e
-          kubectl wait -n metallb-system --for=delete pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
+          kubectl wait -n metallb-system --for=delete pod -l "component in (speaker,controller,statuscleaner)" --timeout=180s
+          kubectl wait -n metallb-system --for=delete pod -l "app.kubernetes.io/component=frr-k8s" --timeout=180s
 
       - name: Deploy MetalLB resource
         run: |
           export KUBECONFIG=${HOME}/.kube/config
           kubectl apply -f config/samples/metallb_frrk8s.yaml
           sleep 20
-          kubectl wait -n metallb-system --for=condition=Ready pod -l "component in (speaker,controller,frr-k8s,frr-k8s-webhook-server)" --timeout=180s
+          kubectl wait -n metallb-system --for=condition=Ready pod -l "component in (speaker,controller,statuscleaner)" --timeout=180s
+          kubectl wait -n metallb-system --for=condition=Ready pod -l "app.kubernetes.io/component=frr-k8s" --timeout=180s
 
       - name: frr-k8s E2E Webhooks tests
         run: |

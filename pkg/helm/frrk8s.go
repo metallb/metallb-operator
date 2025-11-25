@@ -20,11 +20,11 @@ import (
 )
 
 const (
-	frrk8sDaemonsetName         = "frr-k8s"
-	frrk8sWebhookDeploymentName = "frr-k8s-webhook-server"
-	frrk8sWebhookServiceName    = "frr-k8s-webhook-service"
-	frrk8sWebhookSecretName     = "frr-k8s-webhook-server-cert"
-	frrk8sValidatingWebhookName = "frr-k8s-validating-webhook-configuration"
+	frrk8sDaemonsetName               = "frr-k8s"
+	frrk8sStatusCleanerDeploymentName = "statuscleaner"
+	frrk8sWebhookServiceName          = "frr-k8s-webhook-service"
+	frrk8sWebhookSecretName           = "frr-k8s-webhook-server-cert"
+	frrk8sValidatingWebhookName       = "frr-k8s-validating-webhook-configuration"
 )
 
 // FRRK8SChart contains references which helps to retrieve manifest
@@ -276,7 +276,7 @@ func isFRRK8SDaemonset(obj *unstructured.Unstructured) bool {
 }
 
 func isFRRK8SWebhookDeployment(obj *unstructured.Unstructured) bool {
-	return obj.GetKind() == "Deployment" && obj.GetName() == frrk8sWebhookDeploymentName
+	return obj.GetKind() == "Deployment" && obj.GetName() == frrk8sStatusCleanerDeploymentName
 }
 
 func isFRRK8SWebhookService(obj *unstructured.Unstructured) bool {

@@ -269,7 +269,7 @@ var _ = Describe("metallb", func() {
 				}
 
 				pods, err := testclient.Client.Pods(frrk8sNamespace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "component=frr-k8s"})
+					LabelSelector: "app.kubernetes.io/component=frr-k8s"})
 				if err != nil {
 					return err
 				}
@@ -289,24 +289,24 @@ var _ = Describe("metallb", func() {
 
 			By("checking frr-k8s webhook deployment is in running state")
 			Eventually(func() error {
-				deploy, err := testclient.Client.Deployments(frrk8sNamespace).Get(context.Background(), consts.FRRK8SWebhookDeploymentName, metav1.GetOptions{})
+				deploy, err := testclient.Client.Deployments(frrk8sNamespace).Get(context.Background(), consts.FRRK8SStatusCleanerDeploymentName, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
 
 				pods, err := testclient.Client.Pods(frrk8sNamespace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "component=frr-k8s-webhook-server"})
+					LabelSelector: "component=statuscleaner"})
 				if err != nil {
 					return err
 				}
 
 				if len(pods.Items) != int(deploy.Status.Replicas) {
-					return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.FRRK8SWebhookDeploymentName, deploy.Status.Replicas, len(pods.Items))
+					return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.FRRK8SStatusCleanerDeploymentName, deploy.Status.Replicas, len(pods.Items))
 				}
 
 				for _, pod := range pods.Items {
 					if pod.Status.Phase != corev1.PodRunning {
-						return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.FRRK8SWebhookDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+						return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.FRRK8SStatusCleanerDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
 					}
 				}
 
