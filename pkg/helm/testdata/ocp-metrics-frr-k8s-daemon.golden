@@ -4,9 +4,9 @@
     "metadata": {
         "labels": {
             "app": "frr-k8s",
+            "app.kubernetes.io/component": "frr-k8s",
             "app.kubernetes.io/managed-by": "Helm",
             "app.kubernetes.io/version": "v0.0.21",
-            "component": "frr-k8s",
             "helm.sh/chart": "frr-k8s-0.0.21"
         },
         "name": "frr-k8s",
@@ -16,14 +16,14 @@
         "selector": {
             "matchLabels": {
                 "app": "frr-k8s",
-                "component": "frr-k8s"
+                "app.kubernetes.io/component": "frr-k8s"
             }
         },
         "template": {
             "metadata": {
                 "labels": {
                     "app": "frr-k8s",
-                    "component": "frr-k8s"
+                    "app.kubernetes.io/component": "frr-k8s"
                 }
             },
             "spec": {

@@ -4,9 +4,9 @@
     "metadata": {
         "labels": {
             "app": "frr-k8s",
-            "app.kubernetes.io/component": "statuscleaner",
             "app.kubernetes.io/managed-by": "Helm",
             "app.kubernetes.io/version": "v0.0.21",
+            "component": "statuscleaner",
             "helm.sh/chart": "frr-k8s-0.0.21"
         },
         "name": "statuscleaner",
@@ -15,7 +15,7 @@
     "spec": {
         "selector": {
             "matchLabels": {
-                "app.kubernetes.io/component": "statuscleaner"
+                "component": "statuscleaner"
             }
         },
         "template": {
@@ -24,7 +24,7 @@
                     "kubectl.kubernetes.io/default-container": "frr-k8s-statuscleaner"
                 },
                 "labels": {
-                    "app.kubernetes.io/component": "statuscleaner"
+                    "component": "statuscleaner"
                 }
             },
             "spec": {
@@ -96,6 +96,9 @@
                     }
                 ],
                 "hostNetwork": true,
+                "securityContext": {
+                    "runAsNonRoot": true
+                },
                 "serviceAccountName": "frr-k8s-daemon",
                 "terminationGracePeriodSeconds": 10,
                 "tolerations": [
