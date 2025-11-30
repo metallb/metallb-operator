@@ -5131,7 +5131,6 @@ metadata:
   labels:
     app: metallb
   name: metallb-system:kube-rbac-proxy
-  namespace: metallb-system
 rules:
 - apiGroups:
   - authentication.k8s.io
@@ -5522,7 +5521,6 @@ metadata:
   labels:
     app: metallb
   name: kube-rbac-proxy
-  namespace: metallb-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
