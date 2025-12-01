@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2025-07-07T09:53:39Z"
+    createdAt: "2025-12-01T10:02:32Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -466,6 +466,9 @@ spec:
         version: v1beta1
       - kind: Community
         name: communities.metallb.io
+        version: v1beta1
+      - kind: ConfigurationState
+        name: configurationstates.metallb.io
         version: v1beta1
       - kind: FRRConfiguration
         name: frrconfigurations.frrk8s.metallb.io
@@ -577,6 +580,7 @@ spec:
                 - ipaddresspools.metallb.io
                 - l2advertisements.metallb.io
                 - communities.metallb.io
+                - configurationstates.metallb.io
               resources:
                 - customresourcedefinitions
               verbs:
@@ -594,6 +598,26 @@ spec:
               verbs:
                 - list
                 - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - configurationstates
+              verbs:
+                - create
+                - delete
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - configurationstates/status
+              verbs:
+                - get
+                - patch
+                - update
           serviceAccountName: controller
         - rules:
             - apiGroups:
@@ -847,6 +871,8 @@ spec:
               resources:
                 - servicel2statuses
                 - servicel2statuses/status
+                - configurationstates
+                - configurationstates/status
               verbs:
                 - '*'
             - apiGroups:
@@ -919,7 +945,7 @@ spec:
                       - name: DEPLOY_KUBE_RBAC_PROXIES
                         value: "false"
                       - name: FRRK8S_IMAGE
-                        value: quay.io/metallb/frr-k8s:v0.0.20
+                        value: quay.io/metallb/frr-k8s:v0.0.21
                       - name: FRRK8S_EXTERNAL_NAMESPACE
                         value: frr-k8s-system
                       - name: OPERATOR_NAMESPACE
@@ -1145,6 +1171,23 @@ spec:
                 - securitycontextconstraints
               verbs:
                 - use
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - frrk8s.metallb.io
+              resources:
+                - frrnodestates
+              verbs:
+                - get
+                - list
+                - watch
+                - delete
           serviceAccountName: frr-k8s-daemon
         - rules:
             - apiGroups:

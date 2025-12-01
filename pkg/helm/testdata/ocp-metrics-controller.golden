@@ -126,6 +126,10 @@
                                 "memory": "20Mi"
                             }
                         },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "readOnlyRootFilesystem": true
+                        },
                         "terminationMessagePolicy": "FallbackToLogsOnError",
                         "volumeMounts": [
                             {
