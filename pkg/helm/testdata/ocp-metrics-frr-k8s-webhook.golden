@@ -4,27 +4,27 @@
     "metadata": {
         "labels": {
             "app": "frr-k8s",
+            "app.kubernetes.io/component": "statuscleaner",
             "app.kubernetes.io/managed-by": "Helm",
-            "app.kubernetes.io/version": "v0.0.20",
-            "component": "frr-k8s-webhook-server",
-            "helm.sh/chart": "frr-k8s-0.0.20"
+            "app.kubernetes.io/version": "v0.0.21",
+            "helm.sh/chart": "frr-k8s-0.0.21"
         },
-        "name": "frr-k8s-webhook-server",
+        "name": "statuscleaner",
         "namespace": "metallb-test-namespace"
     },
     "spec": {
         "selector": {
             "matchLabels": {
-                "component": "frr-k8s-webhook-server"
+                "app.kubernetes.io/component": "statuscleaner"
             }
         },
         "template": {
             "metadata": {
                 "annotations": {
-                    "kubectl.kubernetes.io/default-container": "frr-k8s-webhook-server"
+                    "kubectl.kubernetes.io/default-container": "frr-k8s-statuscleaner"
                 },
                 "labels": {
-                    "component": "frr-k8s-webhook-server"
+                    "app.kubernetes.io/component": "statuscleaner"
                 }
             },
             "spec": {
@@ -33,12 +33,11 @@
                         "args": [
                             "--webhook-port=19443",
                             "--log-level=info",
-                            "--webhook-mode=onlywebhook",
                             "--disable-cert-rotation=true",
                             "--namespace=$(NAMESPACE)"
                         ],
                         "command": [
-                            "/frr-k8s"
+                            "/statuscleaner"
                         ],
                         "env": [
                             {
@@ -61,7 +60,7 @@
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10
                         },
-                        "name": "frr-k8s-webhook-server",
+                        "name": "frr-k8s-statuscleaner",
                         "ports": [
                             {
                                 "containerPort": 19443,
@@ -97,9 +96,6 @@
                     }
                 ],
                 "hostNetwork": true,
-                "securityContext": {
-                    "runAsNonRoot": true
-                },
                 "serviceAccountName": "frr-k8s-daemon",
                 "terminationGracePeriodSeconds": 10,
                 "tolerations": [

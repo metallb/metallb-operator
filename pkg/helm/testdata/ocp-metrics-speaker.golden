@@ -191,6 +191,7 @@
                         },
                         "name": "frr",
                         "securityContext": {
+                            "allowPrivilegeEscalation": false,
                             "capabilities": {
                                 "add": [
                                     "NET_ADMIN",
@@ -198,7 +199,8 @@
                                     "SYS_ADMIN",
                                     "NET_BIND_SERVICE"
                                 ]
-                            }
+                            },
+                            "readOnlyRootFilesystem": true
                         },
                         "startupProbe": {
                             "failureThreshold": 30,
@@ -217,6 +219,14 @@
                             {
                                 "mountPath": "/etc/frr",
                                 "name": "frr-conf"
+                            },
+                            {
+                                "mountPath": "/var/tmp/frr",
+                                "name": "frr-tmp"
+                            },
+                            {
+                                "mountPath": "/var/lib/frr",
+                                "name": "frr-lib"
                             }
                         ]
                     },
@@ -226,6 +236,10 @@
                         ],
                         "image": "frrouting/frr:v7.5.1",
                         "name": "reloader",
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "readOnlyRootFilesystem": true
+                        },
                         "volumeMounts": [
                             {
                                 "mountPath": "/var/run/frr",
@@ -238,6 +252,10 @@
                             {
                                 "mountPath": "/etc/frr_reloader",
                                 "name": "reloader"
+                            },
+                            {
+                                "mountPath": "/var/log/frr",
+                                "name": "frr-log"
                             }
                         ]
                     },
@@ -260,9 +278,13 @@
                         "ports": [
                             {
                                 "containerPort": 7473,
-                                "name": "monitoring"
+                                "name": "frrmetrics"
                             }
                         ],
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "readOnlyRootFilesystem": true
+                        },
                         "volumeMounts": [
                             {
                                 "mountPath": "/var/run/frr",
@@ -301,6 +323,10 @@
                                 "cpu": "10m",
                                 "memory": "20Mi"
                             }
+                        },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "readOnlyRootFilesystem": true
                         },
                         "terminationMessagePolicy": "FallbackToLogsOnError",
                         "volumeMounts": [
@@ -344,6 +370,10 @@
                                 "cpu": "10m",
                                 "memory": "20Mi"
                             }
+                        },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "readOnlyRootFilesystem": true
                         },
                         "terminationMessagePolicy": "FallbackToLogsOnError",
                         "volumeMounts": [
@@ -471,6 +501,18 @@
                     {
                         "emptyDir": {},
                         "name": "metrics"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "frr-tmp"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "frr-lib"
+                    },
+                    {
+                        "emptyDir": {},
+                        "name": "frr-log"
                     }
                 ]
             }
