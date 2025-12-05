@@ -73,7 +73,6 @@ yq e --inplace 'del(."dependencies")' "$FRRK8S_PATH"/charts/frr-k8s/Chart.yaml
 sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/webhooks.yaml
 sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/status-cleaner.yaml
 sed -i -e 's/name: webhook-server/name: frr-k8s-webhook-server/g' "$FRRK8S_PATH"/charts/frr-k8s/templates/webhooks.yaml
-sed -i -e 's/app.kubernetes.io\///g' "$FRRK8S_PATH"/charts/frr-k8s/templates/service-monitor.yaml
 
 sed -i '/app.kubernetes.io\/instance: {{ .Release.Name }}/d' "$FRRK8S_PATH"/charts/frr-k8s/templates/_helpers.tpl
 sed -i -e 's/app.kubernetes.io\/name/app/g' "$FRRK8S_PATH"/charts/frr-k8s/templates/_helpers.tpl
