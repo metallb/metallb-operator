@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "frrk8s.labels" . | nindent 4 }}
-    component: frr-k8s
+    app.kubernetes.io/component: frr-k8s
     {{- if .Values.prometheus.serviceMonitor.additionalLabels }}
 {{ toYaml .Values.prometheus.serviceMonitor.additionalLabels | indent 4 }}
     {{- end }}
@@ -81,7 +81,7 @@ metadata:
 spec:
   selector:
     {{- include "frrk8s.selectorLabels" . | nindent 4 }}
-    component: frr-k8s
+    app.kubernetes.io/component: frr-k8s
   clusterIP: None
   ports:
     - name: "metricshttps"
