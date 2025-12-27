@@ -168,7 +168,7 @@
                         "command": [
                             "/bin/sh",
                             "-c",
-                            "/sbin/tini -- /usr/lib/frr/docker-start \u0026\nattempts=0\nuntil [[ -f /etc/frr/frr.log || $attempts -eq 60 ]]; do\n  sleep 1\n  attempts=$(( $attempts + 1 ))\ndone\ntail -f /etc/frr/frr.log\n"
+                            "/sbin/tini -- /usr/lib/frr/docker-start"
                         ],
                         "env": [
                             {
