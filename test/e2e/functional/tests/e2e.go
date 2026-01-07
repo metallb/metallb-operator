@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -801,6 +802,125 @@ var _ = Describe("metallb", func() {
 				}
 			})
 			Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
+		})
+	})
+
+	Context("MetalLB Core Components Log Level Feature", func() {
+		BeforeEach(func() {
+			metallbutils.DeleteDefaultMetalLB(OperatorNameSpace, UseMetallbResourcesFromFile)
+
+		})
+
+		AfterEach(func() {
+			metallbutils.DeleteDefaultMetalLB(OperatorNameSpace, UseMetallbResourcesFromFile)
+		})
+
+		It("Verify logLevel default and debug behavior in speaker and controller pods", func() {
+			// Create MetalLB with default log level (info)
+			metallb, err := metallbutils.Get(OperatorNameSpace, UseMetallbResourcesFromFile)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(testclient.Client.Create(context.Background(), metallb)).Should(Succeed())
+
+			By("Waiting for MetalLB controller deployment to be ready")
+			metallbutils.WaitForControllerDeploymentReady(metallb.Namespace, metallbutils.DeployTimeout)
+
+			By("Waiting for MetalLB speaker daemonset to be ready")
+			metallbutils.WaitForSpeakerDaemonSetReady(metallb.Namespace, metallbutils.DeployTimeout)
+
+			By("Fetch controller pods from metallb-system namespace")
+			controllerPods := metallbutils.GetMetalLBControllerPods(OperatorNameSpace)
+
+			By("Verify default loglevel in controller pod logs - should contain info but not debug")
+			for _, controllerPod := range controllerPods.Items {
+				req := testclient.Client.Pods(OperatorNameSpace).GetLogs(controllerPod.Name, &corev1.PodLogOptions{
+					Container: "controller",
+				})
+				logs, err := req.Stream(context.Background())
+				Expect(err).ToNot(HaveOccurred(), "Failed to get controller pod logs")
+				defer logs.Close()
+
+				logContent, err := io.ReadAll(logs)
+				Expect(err).ToNot(HaveOccurred(), "Failed to read controller pod logs")
+				logString := string(logContent)
+
+				Expect(logString).Should(ContainSubstring(`"level":"info"`), "Controller pod logs should contain info level logs by default")
+				Expect(logString).ShouldNot(ContainSubstring(`"level":"debug"`), "Controller pod logs should not contain debug level logs when using default info log level")
+			}
+
+			By("Fetch speaker pods from metallb-system namespace")
+			speakerPods := metallbutils.GetMetalLBSpeakerPods(OperatorNameSpace)
+
+			By("Verify default loglevel in speaker pod logs - should contain info but not debug")
+			for _, speakerPod := range speakerPods.Items {
+				req := testclient.Client.Pods(OperatorNameSpace).GetLogs(speakerPod.Name, &corev1.PodLogOptions{
+					Container: "speaker",
+				})
+				logs, err := req.Stream(context.Background())
+				Expect(err).ToNot(HaveOccurred(), "Failed to get speaker pod logs")
+				defer logs.Close()
+
+				logContent, err := io.ReadAll(logs)
+				Expect(err).ToNot(HaveOccurred(), "Failed to read speaker pod logs")
+				logString := string(logContent)
+
+				Expect(logString).Should(ContainSubstring(`"level":"info"`), "Speaker pod logs should contain info level logs by default")
+				Expect(logString).ShouldNot(ContainSubstring(`"level":"debug"`), "Speaker pod logs should not contain debug level logs when using default info log level")
+			}
+
+			// Update MetalLB CR to set LogLevel to debug
+			By("Updating MetalLB CR to set LogLevel to debug")
+			err = testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, metallb)
+			Expect(err).ToNot(HaveOccurred())
+			metallb.Spec.LogLevel = metallbv1beta1.LogLevelDebug
+			Expect(testclient.Client.Update(context.Background(), metallb)).Should(Succeed())
+
+			By("Waiting for Progressing condition to be True after update")
+			metallbutils.WaitForProgressingConditionTrue(metallb, 30*time.Second)
+
+			By("Waiting for Progressing condition to be False and Available condition to be True")
+			metallbutils.WaitForProgressingFalseAndAvailableTrue(metallb, metallbutils.DeployTimeout)
+
+			By("Fetch controller pods after update")
+			controllerPods = metallbutils.GetMetalLBControllerPods(OperatorNameSpace)
+
+			By("Verify debug loglevel in controller pod logs - should contain both debug and info")
+			for _, controllerPod := range controllerPods.Items {
+				req := testclient.Client.Pods(OperatorNameSpace).GetLogs(controllerPod.Name, &corev1.PodLogOptions{
+					Container: "controller",
+				})
+				logs, err := req.Stream(context.Background())
+				Expect(err).ToNot(HaveOccurred(), "Failed to get controller pod logs")
+				defer logs.Close()
+
+				logContent, err := io.ReadAll(logs)
+				Expect(err).ToNot(HaveOccurred(), "Failed to read controller pod logs")
+				logString := string(logContent)
+
+				// Verify that debug log level is set - logs should contain JSON format "level":"debug"
+				Expect(logString).Should(ContainSubstring(`"level":"debug"`), "Controller pod logs should contain debug level logs when LogLevel is set to debug")
+				Expect(logString).Should(ContainSubstring(`"level":"info"`), "Controller pod logs should also contain info level logs when LogLevel is set to debug")
+			}
+
+			By("Fetch speaker pods after update")
+			speakerPods = metallbutils.GetMetalLBSpeakerPods(OperatorNameSpace)
+
+			By("Verify debug loglevel in speaker pod logs - should contain both debug and info")
+			for _, speakerPod := range speakerPods.Items {
+				req := testclient.Client.Pods(OperatorNameSpace).GetLogs(speakerPod.Name, &corev1.PodLogOptions{
+					Container: "speaker",
+				})
+				logs, err := req.Stream(context.Background())
+				Expect(err).ToNot(HaveOccurred(), "Failed to get speaker pod logs")
+				defer logs.Close()
+
+				logContent, err := io.ReadAll(logs)
+				Expect(err).ToNot(HaveOccurred(), "Failed to read speaker pod logs")
+				logString := string(logContent)
+
+				// Verify that debug log level is set - logs should contain JSON format "level":"debug"
+				Expect(logString).Should(ContainSubstring(`"level":"debug"`), "Speaker pod logs should contain debug level logs when LogLevel is set to debug")
+				Expect(logString).Should(ContainSubstring(`"level":"info"`), "Speaker pod logs should also contain info level logs when LogLevel is set to debug")
+			}
 		})
 	})
 })
