@@ -142,3 +142,83 @@ func DeletePriorityClass(pc *schv1.PriorityClass) {
 	}
 	Expect(err).ToNot(HaveOccurred())
 }
+
+// WaitForControllerDeploymentReady waits for the MetalLB controller deployment to be ready
+func WaitForControllerDeploymentReady(namespace string, timeout time.Duration) {
+	Eventually(func() error {
+		deploy, err := testclient.Client.Deployments(namespace).Get(context.Background(), consts.MetalLBDeploymentName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		if deploy.Status.ReadyReplicas != deploy.Status.Replicas {
+			return fmt.Errorf("deployment %s is not ready, expected %d ready replicas got %d", consts.MetalLBDeploymentName, deploy.Status.Replicas, deploy.Status.ReadyReplicas)
+		}
+
+		return nil
+	}, timeout, Interval).ShouldNot(HaveOccurred())
+}
+
+// WaitForSpeakerDaemonSetReady waits for the MetalLB speaker daemonset to be ready
+func WaitForSpeakerDaemonSetReady(namespace string, timeout time.Duration) {
+	Eventually(func() error {
+		daemonset, err := testclient.Client.DaemonSets(namespace).Get(context.Background(), consts.MetalLBDaemonsetName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		if daemonset.Status.DesiredNumberScheduled == 0 {
+			return fmt.Errorf("daemonset %s has no desired pods scheduled", consts.MetalLBDaemonsetName)
+		}
+		if daemonset.Status.DesiredNumberScheduled != daemonset.Status.NumberReady {
+			return fmt.Errorf("daemonset %s is not ready, expected %d ready pods got %d", consts.MetalLBDaemonsetName, daemonset.Status.DesiredNumberScheduled, daemonset.Status.NumberReady)
+		}
+
+		return nil
+	}, timeout, Interval).ShouldNot(HaveOccurred())
+}
+
+// WaitForProgressingConditionTrue waits for the MetalLB Progressing condition to be True
+func WaitForProgressingConditionTrue(metallb *metallbv1beta1.MetalLB, timeout time.Duration) {
+	Eventually(func() bool {
+		config := &metallbv1beta1.MetalLB{}
+		err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, config)
+		if err != nil {
+			return false
+		}
+		if config.Status.Conditions == nil {
+			return false
+		}
+		for _, condition := range config.Status.Conditions {
+			if condition.Type == status.ConditionProgressing && condition.Status == metav1.ConditionTrue {
+				return true
+			}
+		}
+		return false
+	}, timeout, Interval).Should(BeTrue(), "Progressing condition should be True after update")
+}
+
+// WaitForProgressingFalseAndAvailableTrue waits for the MetalLB Progressing condition to be False and Available condition to be True
+func WaitForProgressingFalseAndAvailableTrue(metallb *metallbv1beta1.MetalLB, timeout time.Duration) {
+	Eventually(func() bool {
+		config := &metallbv1beta1.MetalLB{}
+		err := testclient.Client.Get(context.Background(), goclient.ObjectKey{Namespace: metallb.Namespace, Name: metallb.Name}, config)
+		if err != nil {
+			return false
+		}
+		if config.Status.Conditions == nil {
+			return false
+		}
+		progressingFalse := false
+		availableTrue := false
+		for _, condition := range config.Status.Conditions {
+			if condition.Type == status.ConditionProgressing && condition.Status == metav1.ConditionFalse {
+				progressingFalse = true
+			}
+			if condition.Type == status.ConditionAvailable && condition.Status == metav1.ConditionTrue {
+				availableTrue = true
+			}
+		}
+		return progressingFalse && availableTrue
+	}, timeout, Interval).Should(BeTrue(), "Progressing should be False and Available should be True after update completes")
+}
