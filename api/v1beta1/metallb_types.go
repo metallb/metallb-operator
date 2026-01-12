@@ -142,6 +142,10 @@ type MetalLBStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Available",type=string,JSONPath=".status.conditions[?(@.type=='Available')].status",description="Available condition status"
+// +kubebuilder:printcolumn:name="Degraded",type=string,JSONPath=".status.conditions[?(@.type=='Degraded')].status",description="Degraded condition status"
+// +kubebuilder:printcolumn:name="Progressing",type=string,JSONPath=".status.conditions[?(@.type=='Progressing')].status",description="Progressing condition status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // MetalLB is the Schema for the metallbs API
 type MetalLB struct {
