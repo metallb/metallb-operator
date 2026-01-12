@@ -114,7 +114,7 @@ func (metallb *MetalLB) Validate() error {
 		metallb.Spec.BGPBackend != FRRK8sMode &&
 		metallb.Spec.BGPBackend != FRRK8sExternalMode &&
 		metallb.Spec.BGPBackend != FRRMode {
-		return errors.New("Invalid BGP Backend, must be one of native, frr, frr-k8s")
+		return errors.New("Invalid BGP Backend, must be one of native, frr, frr-k8s, frr-k8s-external")
 	}
 
 	if err := validateFRRK8sConfig(metallb.Spec); err != nil {
