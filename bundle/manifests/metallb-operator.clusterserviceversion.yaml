@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2026-02-08T05:33:06Z"
+    createdAt: "2026-02-09T10:48:42Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
