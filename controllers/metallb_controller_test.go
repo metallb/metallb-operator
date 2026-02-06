@@ -25,10 +25,6 @@ var _ = Describe("MetalLB Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		BeforeEach(func() {
-			reconciler.EnvConfig = defaultEnvConfig
-		})
-
 		DescribeTable("Should create manifests with images and namespace overriden", func(bgpType metallbv1beta1.BGPType) {
 
 			metallb := &metallbv1beta1.MetalLB{
