@@ -49,10 +49,14 @@ const (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var reconciler *MetalLBReconciler
+var (
+	cfg        *rest.Config
+	k8sClient  client.Client
+	testEnv    *envtest.Environment
+	reconciler *MetalLBReconciler
+	ctx        context.Context
+	cancel     context.CancelFunc
+)
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -93,6 +97,7 @@ var defaultEnvConfig = params.EnvConfig{
 }
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+	ctx, cancel = context.WithCancel(context.TODO())
 
 	By("Setting MetalLBReconcilier environment variables")
 
@@ -134,7 +139,7 @@ var _ = BeforeSuite(func() {
 		},
 	}
 
-	err = k8sClient.Create(context.Background(), testNamespace)
+	err = k8sClient.Create(ctx, testNamespace)
 	Expect(err).ToNot(HaveOccurred())
 
 	MetalLBChartPath = MetalLBHelmChartPathControllerTest // This is needed as the tests need to reference a directory backward
@@ -151,13 +156,14 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
-		err = k8sManager.Start(ctrl.SetupSignalHandler())
+		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 	}()
 })
 
 var _ = AfterSuite(func() {
-	By("tearing down the test environment")
+	By("tearing down the test enpvironment")
+	cancel()
 	// restore Manifestpaths for both controller to their original value
 	MetalLBChartPath = MetalLBChartPathController
 	FRRK8SChartPath = FRRK8SChartPathController
