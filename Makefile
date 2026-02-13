@@ -58,16 +58,42 @@ CONTROLLER_GEN=$(shell pwd)/_cache/controller-gen
 CONTROLLER_GEN_VERSION ?= v0.18.0
 CACHE_PATH=$(shell pwd)/_cache
 
-
-
 TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
 VALIDATION_TESTS_REPORTS_PATH ?= /tmp/test_validation_logs/
 
-ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: generate fmt vet manifests ## Run unit and integration tests
-	mkdir -p ${ENVTEST_ASSETS_DIR}
-	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race ./... -coverprofile cover.out
+# NOTE | TODO: switch to dynamic detection after bump to controller-runtime version >= release-0.19. Earlier versions
+# cannot be downloaded.
+#ENVTEST_VERSION is the version of controller-runtime release branch to fetch the envtest setup script (i.e. release-0.20)
+# ENVTEST_VERSION ?= $(shell go list -m -f "{{ .Version }}" sigs.k8s.io/controller-runtime | awk -F'[v.]' '{printf "release-%d.%d", $$2, $$3}')
+ENVTEST_VERSION ?= release-0.19
+# NOTE | TODO: switch to dynamic detection after bump to k8s version >= 1.31.0. With version 1.30, we currently see
+# ` undeclared reference to 'isCIDR'` due to templates using newer CEL rules.
+#ENVTEST_K8S_VERSION is the version of Kubernetes to use for setting up ENVTEST binaries (i.e. 1.31)
+# ENVTEST_K8S_VERSION ?= $(shell go list -m -f "{{ .Version }}" k8s.io/api | awk -F'[v.]' '{printf "1.%d", $$3}')
+ENVTEST_K8S_VERSION ?= 1.31
+
+ENVTEST_ASSETS_DIR ?= $(shell pwd)/testbin
+ENVTEST ?= $(ENVTEST_ASSETS_DIR)/setup-envtest
+
+$(ENVTEST_ASSETS_DIR):
+	mkdir -p $(ENVTEST_ASSETS_DIR)
+
+.PHONY: envtest
+envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+$(ENVTEST): $(ENVTEST_ASSETS_DIR)
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,$(ENVTEST_VERSION))
+
+.PHONY: setup-envtest
+setup-envtest: setup-envtest ## Download the binaries required for ENVTEST in the local bin directory.
+	@echo "Setting up envtest binaries for Kubernetes version $(ENVTEST_K8S_VERSION)..."
+	@$(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path || { \
+		echo "Error: Failed to set up envtest binaries for version $(ENVTEST_K8S_VERSION)."; \
+		exit 1; \
+	}
+
+test: generate fmt vet manifests envtest ## Run unit and integration tests
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(ENVTEST_ASSETS_DIR) -p path)" \
+		go test -race ./... -coverprofile cover.out
 
 all: manager ## Default make target if no options specified
 
@@ -289,3 +315,19 @@ check_generated: ## Checks if there are any different with the current checkout
 help:  ## Show this help
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -F -v grep | sed -e 's/\\$$//' \
 		| awk -F'[:#]' '{print $$1 = sprintf("%-30s", $$1), $$4}'
+
+# go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
+# $1 - target path with name of binary
+# $2 - package url which can be installed
+# $3 - specific version of package
+define go-install-tool
+@[ -f "$(1)-$(3)" ] || { \
+set -e; \
+package=$(2)@$(3) ;\
+echo "Downloading $${package}" ;\
+rm -f $(1) || true ;\
+GOBIN=$(ENVTEST_ASSETS_DIR) go install $${package} ;\
+mv $(1) $(1)-$(3) ;\
+} ;\
+ln -sf $(1)-$(3) $(1)
+endef
