@@ -310,18 +310,10 @@ jobs:
         shell: bash
         working-directory: metallboperator
     steps:
-      - name: Free Disk Space
-        working-directory: ${{ github.workspace }}
-        run: |
-          echo "Disk space before cleanup:"
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo apt-get clean
-          echo "Disk space after cleanup:"
-          df -h
+      - name: Free up disk space
+        uses: palmsoftware/quick-cleanup@v0
+        with:
+          cleanup-mode: aggressive
 
       - name: Checkout
         uses: actions/checkout@v4
