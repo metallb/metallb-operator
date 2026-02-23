@@ -293,7 +293,11 @@ bump_versions: ## Updates the versions of the metallb-operator / metallb image w
 	@echo "Updating the operator version"
 	hack/bump_versions.sh
 
-
+.PHONY: bump_k8s
+bump_k8s: ## Updates the go.mod and Dockerfile k8s and go versions. Parameters K8S_VERSION (e.g. 34.3), GO_VERSION (e.g. 1.24.11)
+	hack/bump-k8s.py \
+	  --k8s-version $(K8S_VERSION) \
+	  --go-version $(GO_VERSION)
 
 bump_metallb: ## Bumps metallb commit ID and creates manifests. It also validates the changes.
 	@echo "Updating the metallb version"
