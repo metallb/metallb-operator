@@ -61,16 +61,10 @@ CACHE_PATH=$(shell pwd)/_cache
 TESTS_REPORTS_PATH ?= /tmp/test_e2e_logs/
 VALIDATION_TESTS_REPORTS_PATH ?= /tmp/test_validation_logs/
 
-# NOTE | TODO: switch to dynamic detection after bump to controller-runtime version >= release-0.19. Earlier versions
-# cannot be downloaded.
 #ENVTEST_VERSION is the version of controller-runtime release branch to fetch the envtest setup script (i.e. release-0.20)
-# ENVTEST_VERSION ?= $(shell go list -m -f "{{ .Version }}" sigs.k8s.io/controller-runtime | awk -F'[v.]' '{printf "release-%d.%d", $$2, $$3}')
-ENVTEST_VERSION ?= release-0.19
-# NOTE | TODO: switch to dynamic detection after bump to k8s version >= 1.31.0. With version 1.30, we currently see
-# ` undeclared reference to 'isCIDR'` due to templates using newer CEL rules.
+ENVTEST_VERSION ?= $(shell go list -m -f "{{ .Version }}" sigs.k8s.io/controller-runtime | awk -F'[v.]' '{printf "release-%d.%d", $$2, $$3}')
 #ENVTEST_K8S_VERSION is the version of Kubernetes to use for setting up ENVTEST binaries (i.e. 1.31)
-# ENVTEST_K8S_VERSION ?= $(shell go list -m -f "{{ .Version }}" k8s.io/api | awk -F'[v.]' '{printf "1.%d", $$3}')
-ENVTEST_K8S_VERSION ?= 1.31
+ENVTEST_K8S_VERSION ?= $(shell go list -m -f "{{ .Version }}" k8s.io/api | awk -F'[v.]' '{printf "1.%d", $$3}')
 
 ENVTEST_ASSETS_DIR ?= $(shell pwd)/testbin
 ENVTEST ?= $(ENVTEST_ASSETS_DIR)/setup-envtest
@@ -299,7 +293,11 @@ bump_versions: ## Updates the versions of the metallb-operator / metallb image w
 	@echo "Updating the operator version"
 	hack/bump_versions.sh
 
-
+.PHONY: bump_k8s
+bump_k8s: ## Updates the go.mod and Dockerfile k8s and go versions. Parameters K8S_VERSION (e.g. 34.3), GO_VERSION (e.g. 1.24.11)
+	hack/bump-k8s.py \
+	  --k8s-version $(K8S_VERSION) \
+	  --go-version $(GO_VERSION)
 
 bump_metallb: ## Bumps metallb commit ID and creates manifests. It also validates the changes.
 	@echo "Updating the metallb version"
