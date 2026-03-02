@@ -3207,8 +3207,9 @@ spec:
                     type: string
                 type: object
               image:
-                description: Foo is an example field of MetalLB. Edit MetalLB_types.go
-                  to remove/update
+                description: |-
+                  image sets the metallb image.
+                  Deprecated: The image property has no effect and will be removed in a future version.
                 type: string
               loadBalancerClass:
                 description: |-
