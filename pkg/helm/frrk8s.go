@@ -45,7 +45,7 @@ func NewFRRK8SChart(path, name, namespace string) (*FRRK8SChart, error) {
 	chart.client.DryRun = true
 	chart.client.ClientOnly = true
 	chart.client.Namespace = namespace
-	chartPath, err := chart.client.ChartPathOptions.LocateChart(path, chart.envSettings)
+	chartPath, err := chart.client.LocateChart(path, chart.envSettings)
 	if err != nil {
 		return nil, err
 	}

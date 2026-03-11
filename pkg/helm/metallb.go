@@ -107,7 +107,7 @@ func NewMetalLBChart(chartPath, chartName, namespace string,
 	chart.client.DryRun = true
 	chart.client.ClientOnly = true
 	chart.client.Namespace = namespace
-	chartPath, err := chart.client.ChartPathOptions.LocateChart(chartPath, chart.envSettings)
+	chartPath, err := chart.client.LocateChart(chartPath, chart.envSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -282,10 +282,7 @@ func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 }
 
 func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
-	frrEnabled := false
-	if params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRMode {
-		frrEnabled = true
-	}
+	frrEnabled := params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRMode
 
 	speakerValueMap := map[string]interface{}{
 		"image": map[string]interface{}{
@@ -341,20 +338,14 @@ func netpolValues(envConfig params.EnvConfig) map[string]any {
 }
 
 func metalLBFrrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
-	enabled := false
-	if params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRK8sMode {
-		enabled = true
-	}
+	enabled := params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRK8sMode
 
 	frrK8sNamespace := envConfig.FRRK8sExternalNamespace
 	if crdConfig.Spec.FRRK8SConfig != nil && crdConfig.Spec.FRRK8SConfig.Namespace != "" {
 		frrK8sNamespace = crdConfig.Spec.FRRK8SConfig.Namespace
 	}
 
-	external := false
-	if params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRK8sExternalMode {
-		external = true
-	}
+	external := params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRK8sExternalMode
 	frrk8sValuesMap := map[string]interface{}{
 		"enabled":   enabled,
 		"external":  external,

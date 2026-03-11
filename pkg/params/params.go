@@ -197,7 +197,7 @@ func intValueWithDefault(name string, def int) (int, error) {
 	if val != "" {
 		res, err := strconv.Atoi(val)
 		if err != nil {
-			return 0, fmt.Errorf("Failed to convert %s from %s to int: %w", val, name, err)
+			return 0, fmt.Errorf("failed to convert %s from %s to int: %w", val, name, err)
 		}
 		return res, nil
 	}

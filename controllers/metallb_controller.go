@@ -137,7 +137,7 @@ func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return ctrl.Result{}, status.ConditionDegraded, errors.Wrapf(err, "FailedToSyncMetalLBResources")
 	}
-	err = status.IsMetalLBAvailable(context.TODO(), r.Client, req.NamespacedName.Namespace)
+	err = status.IsMetalLBAvailable(context.TODO(), r.Client, req.Namespace)
 	if err != nil {
 		if _, ok := err.(status.MetalLBResourcesNotReadyError); ok {
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, status.ConditionProgressing, nil
@@ -218,7 +218,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(ctx context.Context, config *me
 	objs = append(objs, mlbObjs...)
 
 	for _, obj := range toDel {
-		err := r.Client.Delete(context.Background(), obj)
+		err := r.Delete(context.Background(), obj)
 		if err != nil && !apierrors.IsNotFound(err) {
 			return errors.Wrapf(err, "could not delete (%s) %s/%s", obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
 		}

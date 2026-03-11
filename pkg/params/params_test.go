@@ -55,17 +55,17 @@ func TestFromEnvironment(t *testing.T) {
 			desc: "override ports",
 			setup: func() {
 				setBasics()
-				os.Setenv("DEPLOY_SERVICEMONITORS", "true")
+				_ = os.Setenv("DEPLOY_SERVICEMONITORS", "true")
 
-				os.Setenv("MEMBER_LIST_BIND_PORT", "1111")
-				os.Setenv("FRR_METRICS_PORT", "2222")
-				os.Setenv("FRR_HTTPS_METRICS_PORT", "3333")
-				os.Setenv("METRICS_PORT", "4444")
-				os.Setenv("HTTPS_METRICS_PORT", "5555")
-				os.Setenv("FRRK8S_FRR_METRICS_PORT", "6666")
-				os.Setenv("FRRK8S_HTTPS_METRICS_PORT", "7777")
-				os.Setenv("FRRK8S_FRR_HTTPS_METRICS_PORT", "8888")
-				os.Setenv("FRRK8S_METRICS_PORT", "9999")
+				_ = os.Setenv("MEMBER_LIST_BIND_PORT", "1111")
+				_ = os.Setenv("FRR_METRICS_PORT", "2222")
+				_ = os.Setenv("FRR_HTTPS_METRICS_PORT", "3333")
+				_ = os.Setenv("METRICS_PORT", "4444")
+				_ = os.Setenv("HTTPS_METRICS_PORT", "5555")
+				_ = os.Setenv("FRRK8S_FRR_METRICS_PORT", "6666")
+				_ = os.Setenv("FRRK8S_HTTPS_METRICS_PORT", "7777")
+				_ = os.Setenv("FRRK8S_FRR_HTTPS_METRICS_PORT", "8888")
+				_ = os.Setenv("FRRK8S_METRICS_PORT", "9999")
 			},
 			expected: EnvConfig{
 				Namespace: "test-namespace",
@@ -105,7 +105,7 @@ func TestFromEnvironment(t *testing.T) {
 			desc: "with network policies enabled",
 			setup: func() {
 				setBasics()
-				os.Setenv("DISABLE_NETWORK_POLICIES", "true")
+				_ = os.Setenv("DISABLE_NETWORK_POLICIES", "true")
 			},
 			expected: EnvConfig{
 				Namespace: "test-namespace",
@@ -161,31 +161,31 @@ func TestFromEnvironment(t *testing.T) {
 }
 
 func unset() {
-	os.Unsetenv("OPERATOR_NAMESPACE")
-	os.Unsetenv("CONTROLLER_IMAGE")
-	os.Unsetenv("SPEAKER_IMAGE")
-	os.Unsetenv("FRR_IMAGE")
-	os.Unsetenv("KUBE_RBAC_PROXY_IMAGE")
-	os.Unsetenv("MEMBER_LIST_BIND_PORT")
-	os.Unsetenv("FRR_METRICS_PORT")
-	os.Unsetenv("FRR_HTTPS_METRICS_PORT")
-	os.Unsetenv("METRICS_PORT")
-	os.Unsetenv("HTTPS_METRICS_PORT")
-	os.Unsetenv("FRRK8S_FRR_METRICS_PORT")
-	os.Unsetenv("FRRK8S_HTTPS_METRICS_PORT")
-	os.Unsetenv("FRRK8S_FRR_HTTPS_METRICS_PORT")
-	os.Unsetenv("FRRK8S_METRICS_PORT")
-	os.Unsetenv("DEPLOY_PODMONITORS")
-	os.Unsetenv("DEPLOY_SERVICEMONITORS")
-	os.Unsetenv("DISABLE_NETWORK_POLICIES")
-	os.Unsetenv("KUBE_RBAC_PROXY_IMAGE")
+	_ = os.Unsetenv("OPERATOR_NAMESPACE")
+	_ = os.Unsetenv("CONTROLLER_IMAGE")
+	_ = os.Unsetenv("SPEAKER_IMAGE")
+	_ = os.Unsetenv("FRR_IMAGE")
+	_ = os.Unsetenv("KUBE_RBAC_PROXY_IMAGE")
+	_ = os.Unsetenv("MEMBER_LIST_BIND_PORT")
+	_ = os.Unsetenv("FRR_METRICS_PORT")
+	_ = os.Unsetenv("FRR_HTTPS_METRICS_PORT")
+	_ = os.Unsetenv("METRICS_PORT")
+	_ = os.Unsetenv("HTTPS_METRICS_PORT")
+	_ = os.Unsetenv("FRRK8S_FRR_METRICS_PORT")
+	_ = os.Unsetenv("FRRK8S_HTTPS_METRICS_PORT")
+	_ = os.Unsetenv("FRRK8S_FRR_HTTPS_METRICS_PORT")
+	_ = os.Unsetenv("FRRK8S_METRICS_PORT")
+	_ = os.Unsetenv("DEPLOY_PODMONITORS")
+	_ = os.Unsetenv("DEPLOY_SERVICEMONITORS")
+	_ = os.Unsetenv("DISABLE_NETWORK_POLICIES")
+	_ = os.Unsetenv("KUBE_RBAC_PROXY_IMAGE")
 }
 
 func setBasics() {
-	os.Setenv("OPERATOR_NAMESPACE", "test-namespace")
-	os.Setenv("CONTROLLER_IMAGE", "test-controller-image:1")
-	os.Setenv("SPEAKER_IMAGE", "test-speaker-image:2")
-	os.Setenv("FRR_IMAGE", "test-frr-image:3")
-	os.Setenv("KUBE_RBAC_PROXY_IMAGE", "test-kube-rbac-proxy-image:4")
-	os.Setenv("FRRK8S_IMAGE", "test-frrk8s-image:5")
+	_ = os.Setenv("OPERATOR_NAMESPACE", "test-namespace")
+	_ = os.Setenv("CONTROLLER_IMAGE", "test-controller-image:1")
+	_ = os.Setenv("SPEAKER_IMAGE", "test-speaker-image:2")
+	_ = os.Setenv("FRR_IMAGE", "test-frr-image:3")
+	_ = os.Setenv("KUBE_RBAC_PROXY_IMAGE", "test-kube-rbac-proxy-image:4")
+	_ = os.Setenv("FRRK8S_IMAGE", "test-frrk8s-image:5")
 }
