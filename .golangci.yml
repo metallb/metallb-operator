@@ -1,0 +1,8 @@
+version: "2"
+
+linters:
+  settings:
+    staticcheck:
+      dot-import-whitelist:
+        - "github.com/onsi/ginkgo/v2"
+        - "github.com/onsi/gomega"

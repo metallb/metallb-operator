@@ -28,10 +28,10 @@ func New(kubeconfig, path, namespace string) *k8sreporter.KubernetesReporter {
 
 	// The namespaces we want to dump resources for (including pods and pod logs)
 	dumpNamespace := func(ns string) bool {
-		switch {
-		case ns == namespace:
+		switch ns {
+		case namespace:
 			return true
-		case ns == MetalLBTestNameSpace:
+		case MetalLBTestNameSpace:
 			return true
 		}
 		return false

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	k8sv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -22,7 +21,7 @@ import (
 func WaitForDeletion(cs *testclient.ClientSet, nsName string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(context.Background(), time.Second, timeout, true, func(c context.Context) (bool, error) {
 		_, err := cs.Namespaces().Get(context.Background(), nsName, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return true, nil
 		}
 		return false, nil
@@ -67,7 +66,7 @@ func CleanPods(namespace string, cs *testclient.ClientSet) error {
 		GracePeriodSeconds: ptr.To(int64(0)),
 	}, metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("Failed to delete pods %v", err)
+		return fmt.Errorf("failed to delete pods %v", err)
 	}
 	return err
 }

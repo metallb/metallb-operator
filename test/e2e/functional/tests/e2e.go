@@ -14,11 +14,9 @@ import (
 	"github.com/metallb/metallb-operator/pkg/status"
 	"github.com/metallb/metallb-operator/test/consts"
 	testclient "github.com/metallb/metallb-operator/test/e2e/client"
-	"github.com/metallb/metallb-operator/test/e2e/metallb"
 	metallbutils "github.com/metallb/metallb-operator/test/e2e/metallb"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	schv1 "k8s.io/api/scheduling/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -387,7 +385,7 @@ var _ = Describe("metallb", func() {
 					err := testclient.Client.Get(context.TODO(), goclient.ObjectKey{Namespace: correct_metallb.Namespace, Name: correct_metallb.Name}, instance)
 					Expect(err).ToNot(HaveOccurred())
 					return metallbutils.CheckConditionStatus(instance) == status.ConditionAvailable
-				}, metallb.DeployTimeout, 5*time.Second).Should(BeTrue())
+				}, metallbutils.DeployTimeout, 5*time.Second).Should(BeTrue())
 
 				// Delete incorrectly named resource
 				err := testclient.Client.Delete(context.Background(), incorrect_metallb)
@@ -432,13 +430,13 @@ var _ = Describe("metallb", func() {
 				m.Spec.SpeakerConfig = &metallbv1beta1.Config{
 					PriorityClassName: priorityClass.GetName(),
 					Annotations:       map[string]string{"test": "e2e"},
-					Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
+					Resources:         &corev1.ResourceRequirements{Limits: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
 				}
 				m.Spec.ControllerConfig = &metallbv1beta1.Config{
 					PriorityClassName: priorityClass.GetName(),
 					Annotations:       map[string]string{"test": "e2e"},
-					Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
-					Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
+					Resources:         &corev1.ResourceRequirements{Limits: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
+					Affinity: &corev1.Affinity{PodAffinity: &corev1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"component": "controller",
 						}},
@@ -649,8 +647,8 @@ var _ = Describe("metallb", func() {
 			instance.Spec.ControllerConfig = &metallbv1beta1.Config{
 				PriorityClassName: priorityClass.GetName(),
 				Annotations:       map[string]string{"test": "e2e"},
-				Resources:         &v1.ResourceRequirements{Limits: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
-				Affinity: &v1.Affinity{PodAffinity: &v1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
+				Resources:         &corev1.ResourceRequirements{Limits: map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *resource.NewMilliQuantity(100, resource.DecimalSI)}},
+				Affinity: &corev1.Affinity{PodAffinity: &corev1.PodAffinity{RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						"component": "controller",
 					}},
@@ -767,27 +765,27 @@ var _ = Describe("metallb", func() {
 		It("validate incorrect affinity", func() {
 			metallb := metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
 				m.Spec.ControllerConfig = &metallbv1beta1.Config{
-					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
-						{Weight: 0, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
-							Operator: v1.NodeSelectorOpIn, Values: []string{"east"}}}}},
+					Affinity: &corev1.Affinity{NodeAffinity: &corev1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+						{Weight: 0, Preference: corev1.NodeSelectorTerm{MatchExpressions: []corev1.NodeSelectorRequirement{{Key: "zone",
+							Operator: corev1.NodeSelectorOpIn, Values: []string{"east"}}}}},
 					}}},
 				}
 			})
 			Expect(testclient.Client.Create(context.Background(), metallb)).ShouldNot(Succeed())
 			metallb = metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
 				m.Spec.SpeakerConfig = &metallbv1beta1.Config{
-					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
-						{Weight: 101, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
-							Operator: v1.NodeSelectorOpIn, Values: []string{"west"}}}}},
+					Affinity: &corev1.Affinity{NodeAffinity: &corev1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+						{Weight: 101, Preference: corev1.NodeSelectorTerm{MatchExpressions: []corev1.NodeSelectorRequirement{{Key: "zone",
+							Operator: corev1.NodeSelectorOpIn, Values: []string{"west"}}}}},
 					}}},
 				}
 			})
 			Expect(testclient.Client.Create(context.Background(), metallb)).ShouldNot(Succeed())
 			metallb = metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
 				m.Spec.ControllerConfig = &metallbv1beta1.Config{
-					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
-						{Weight: 10, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
-							Operator: v1.NodeSelectorOpIn, Values: []string{"east"}}}}},
+					Affinity: &corev1.Affinity{NodeAffinity: &corev1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+						{Weight: 10, Preference: corev1.NodeSelectorTerm{MatchExpressions: []corev1.NodeSelectorRequirement{{Key: "zone",
+							Operator: corev1.NodeSelectorOpIn, Values: []string{"east"}}}}},
 					}}},
 				}
 			})
@@ -795,9 +793,9 @@ var _ = Describe("metallb", func() {
 			metallbutils.DeleteAndCheck(metallb)
 			metallb = metallbutils.New(OperatorNameSpace, func(m *metallbv1beta1.MetalLB) {
 				m.Spec.SpeakerConfig = &metallbv1beta1.Config{
-					Affinity: &v1.Affinity{NodeAffinity: &v1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{
-						{Weight: 100, Preference: v1.NodeSelectorTerm{MatchExpressions: []v1.NodeSelectorRequirement{{Key: "zone",
-							Operator: v1.NodeSelectorOpIn, Values: []string{"west"}}}}},
+					Affinity: &corev1.Affinity{NodeAffinity: &corev1.NodeAffinity{PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+						{Weight: 100, Preference: corev1.NodeSelectorTerm{MatchExpressions: []corev1.NodeSelectorRequirement{{Key: "zone",
+							Operator: corev1.NodeSelectorOpIn, Values: []string{"west"}}}}},
 					}}},
 				}
 			})
@@ -837,7 +835,9 @@ var _ = Describe("metallb", func() {
 				})
 				logs, err := req.Stream(context.Background())
 				Expect(err).ToNot(HaveOccurred(), "Failed to get controller pod logs")
-				defer logs.Close()
+				defer func() {
+					_ = logs.Close()
+				}()
 
 				logContent, err := io.ReadAll(logs)
 				Expect(err).ToNot(HaveOccurred(), "Failed to read controller pod logs")
@@ -857,7 +857,9 @@ var _ = Describe("metallb", func() {
 				})
 				logs, err := req.Stream(context.Background())
 				Expect(err).ToNot(HaveOccurred(), "Failed to get speaker pod logs")
-				defer logs.Close()
+				defer func() {
+					_ = logs.Close()
+				}()
 
 				logContent, err := io.ReadAll(logs)
 				Expect(err).ToNot(HaveOccurred(), "Failed to read speaker pod logs")
@@ -890,7 +892,9 @@ var _ = Describe("metallb", func() {
 				})
 				logs, err := req.Stream(context.Background())
 				Expect(err).ToNot(HaveOccurred(), "Failed to get controller pod logs")
-				defer logs.Close()
+				defer func() {
+					_ = logs.Close()
+				}()
 
 				logContent, err := io.ReadAll(logs)
 				Expect(err).ToNot(HaveOccurred(), "Failed to read controller pod logs")
@@ -911,7 +915,9 @@ var _ = Describe("metallb", func() {
 				})
 				logs, err := req.Stream(context.Background())
 				Expect(err).ToNot(HaveOccurred(), "Failed to get speaker pod logs")
-				defer logs.Close()
+				defer func() {
+					_ = logs.Close()
+				}()
 
 				logContent, err := io.ReadAll(logs)
 				Expect(err).ToNot(HaveOccurred(), "Failed to read speaker pod logs")
@@ -925,6 +931,6 @@ var _ = Describe("metallb", func() {
 	})
 })
 
-// Gomega transformation functions for v1.Container
-func envGetter(c v1.Container) []v1.EnvVar { return c.Env }
-func nameGetter(c v1.Container) string     { return c.Name }
+// Gomega transformation functions for corev1.Container
+func envGetter(c corev1.Container) []corev1.EnvVar { return c.Env }
+func nameGetter(c corev1.Container) string         { return c.Name }
