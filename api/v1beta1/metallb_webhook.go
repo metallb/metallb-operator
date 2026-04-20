@@ -17,15 +17,14 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -33,35 +32,33 @@ var ExternalFRRK8sNamespace string
 
 func (metallb *MetalLB) SetupWebhookWithManager(mgr ctrl.Manager, externalFRRK8sNamespace string) error {
 	ExternalFRRK8sNamespace = externalFRRK8sNamespace
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(metallb).
+	return ctrl.NewWebhookManagedBy(mgr, metallb).
+		WithValidator(metallb).
 		Complete()
 }
 
 //+kubebuilder:webhook:verbs=create;update,path=/validate-metallb-io-v1beta1-metallb,mutating=false,failurePolicy=fail,groups=metallb.io,resources=metallbs,versions=v1beta1,name=metallbvalidationwebhook.metallb.io,sideEffects=None,admissionReviewVersions=v1
 
-var _ webhook.Validator = &MetalLB{}
+var _ admission.Validator[*MetalLB] = &MetalLB{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for MetalLB.
-func (metallb *MetalLB) ValidateCreate() (admission.Warnings, error) {
-	if err := metallb.Validate(); err != nil {
+func (metallb *MetalLB) ValidateCreate(_ context.Context, obj *MetalLB) (admission.Warnings, error) {
+	if err := obj.Validate(); err != nil {
 		return admission.Warnings{}, err
 	}
-
 	return admission.Warnings{}, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for MetalLB.
-func (metallb *MetalLB) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	if err := metallb.Validate(); err != nil {
+func (metallb *MetalLB) ValidateUpdate(_ context.Context, _ *MetalLB, obj *MetalLB) (admission.Warnings, error) {
+	if err := obj.Validate(); err != nil {
 		return admission.Warnings{}, err
 	}
-
 	return admission.Warnings{}, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for MetalLB.
-func (metallb *MetalLB) ValidateDelete() (admission.Warnings, error) {
+func (metallb *MetalLB) ValidateDelete(_ context.Context, _ *MetalLB) (admission.Warnings, error) {
 	return admission.Warnings{}, nil
 }
 
