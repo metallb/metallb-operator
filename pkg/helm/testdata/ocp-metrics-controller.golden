@@ -35,8 +35,7 @@
                         "args": [
                             "--port=7472",
                             "--log-level=info",
-                            "--webhook-mode=disabled",
-                            "--tls-min-version=VersionTLS12"
+                            "--webhook-mode=disabled"
                         ],
                         "command": [
                             "/controller"
@@ -59,8 +58,9 @@
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "path": "/metrics",
-                                "port": "monitoring"
+                                "host": "127.0.0.1",
+                                "path": "/healthz",
+                                "port": 17472
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10,
@@ -71,14 +71,15 @@
                         "ports": [
                             {
                                 "containerPort": 7472,
-                                "name": "monitoring"
+                                "name": "metricshttps"
                             }
                         ],
                         "readinessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "path": "/metrics",
-                                "port": "monitoring"
+                                "host": "127.0.0.1",
+                                "path": "/readyz",
+                                "port": 17472
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10,
@@ -101,43 +102,6 @@
                                 "readOnly": true
                             }
                         ]
-                    },
-                    {
-                        "args": [
-                            "--logtostderr",
-                            "--secure-listen-address=:9998",
-                            "--upstream=http://127.0.0.1:7472/",
-                            "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
-                            "--tls-private-key-file=/etc/metrics/tls.key",
-                            "--tls-cert-file=/etc/metrics/tls.crt"
-                        ],
-                        "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
-                        "imagePullPolicy": null,
-                        "name": "kube-rbac-proxy",
-                        "ports": [
-                            {
-                                "containerPort": 9998,
-                                "name": "metricshttps"
-                            }
-                        ],
-                        "resources": {
-                            "requests": {
-                                "cpu": "10m",
-                                "memory": "20Mi"
-                            }
-                        },
-                        "securityContext": {
-                            "allowPrivilegeEscalation": false,
-                            "readOnlyRootFilesystem": true
-                        },
-                        "terminationMessagePolicy": "FallbackToLogsOnError",
-                        "volumeMounts": [
-                            {
-                                "mountPath": "/etc/metrics",
-                                "name": "metrics-certs",
-                                "readOnly": true
-                            }
-                        ]
                     }
                 ],
                 "nodeSelector": {
@@ -154,12 +118,6 @@
                         "secret": {
                             "defaultMode": 420,
                             "secretName": "metallb-webhook-cert"
-                        }
-                    },
-                    {
-                        "name": "metrics-certs",
-                        "secret": {
-                            "secretName": "controller-certs-secret"
                         }
                     }
                 ]
