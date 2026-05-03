@@ -635,14 +635,14 @@ spec:
                 type: string
               ebgpMultiHop:
                 description: To set if the BGPPeer is multi-hops away. Needed for
-                  FRR mode only.
+                  FRR-based modes (FRR-K8s, FRR) only.
                 type: boolean
               enableGracefulRestart:
                 description: |-
                   EnableGracefulRestart allows BGP peer to continue to forward data packets
                   along known routes while the routing protocol information is being
                   restored. This field is immutable because it requires restart of the BGP
-                  session. Supported for FRR mode only.
+                  session. Supported for FRR-based modes (FRR-K8s, FRR) only.
                 type: boolean
                 x-kubernetes-validations:
                 - message: EnableGracefulRestart cannot be changed after creation
@@ -786,7 +786,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.17.3
   name: bgpsessionstates.frrk8s.metallb.io
 spec:
   group: frrk8s.metallb.io
@@ -1062,7 +1062,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.17.3
   name: frrconfigurations.frrk8s.metallb.io
 spec:
   group: frrk8s.metallb.io
@@ -1244,8 +1244,9 @@ spec:
                               disableMP:
                                 default: false
                                 description: |-
-                                  To set if we want to disable MP BGP that will separate IPv4 and IPv6 route exchanges into distinct BGP sessions.
-                                  Deprecated: DisableMP is deprecated in favor of dualStackAddressFamily.
+                                  DisableMP is no longer used and has no effect.
+                                  Use DualStackAddressFamily instead to enable the neighbor for both IPv4 and IPv6 address families.
+                                  Deprecated: This field is ignored. Use DualStackAddressFamily instead.
                                 type: boolean
                               dualStackAddressFamily:
                                 default: false
@@ -1549,7 +1550,72 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.17.3
+  name: frrk8sconfigurations.frrk8s.metallb.io
+spec:
+  group: frrk8s.metallb.io
+  names:
+    kind: FRRK8sConfiguration
+    listKind: FRRK8sConfigurationList
+    plural: frrk8sconfigurations
+    singular: frrk8sconfiguration
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          FRRK8sConfiguration holds the FRR Operator configuration with global
+          settings for the K8s and FRR.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FRRK8sConfigurationSpec defines the desired state of FRRK8sConfiguration.
+            properties:
+              logLevel:
+                description: |-
+                  LogLevel sets the logging verbosity for the FRR-K8s components at runtime.
+                  When configured, this value overrides the defaults established by the --log-level CLI flag.
+                  Valid values are: all, debug, info, warn, error, none.
+                enum:
+                - all
+                - debug
+                - info
+                - warn
+                - error
+                - none
+                type: string
+            type: object
+          status:
+            description: FRRK8sConfigurationStatus defines the observed state of FRRK8sConfiguration.
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.3
   name: frrnodestates.frrk8s.metallb.io
 spec:
   group: frrk8s.metallb.io
@@ -3171,9 +3237,10 @@ spec:
                     operator:
                       description: |-
                         Operator represents a key's relationship to the value.
-                        Valid operators are Exists and Equal. Defaults to Equal.
+                        Valid operators are Exists, Equal, Lt, and Gt. Defaults to Equal.
                         Exists is equivalent to wildcard for value, so that a pod can
                         tolerate all taints of a particular category.
+                        Lt and Gt perform numeric comparisons (requires feature gate TaintTolerationComparisonOperators).
                       type: string
                     tolerationSeconds:
                       description: |-
@@ -4251,9 +4318,10 @@ spec:
                     operator:
                       description: |-
                         Operator represents a key's relationship to the value.
-                        Valid operators are Exists and Equal. Defaults to Equal.
+                        Valid operators are Exists, Equal, Lt, and Gt. Defaults to Equal.
                         Exists is equivalent to wildcard for value, so that a pod can
                         tolerate all taints of a particular category.
+                        Lt and Gt perform numeric comparisons (requires feature gate TaintTolerationComparisonOperators).
                       type: string
                     tolerationSeconds:
                       description: |-
@@ -4803,7 +4871,7 @@ spec:
         - name: DEPLOY_KUBE_RBAC_PROXIES
           value: "false"
         - name: FRRK8S_IMAGE
-          value: quay.io/metallb/frr-k8s:v0.0.22
+          value: quay.io/metallb/frr-k8s:v0.0.23
         - name: FRRK8S_EXTERNAL_NAMESPACE
           value: frr-k8s-system
         - name: OPERATOR_NAMESPACE
@@ -4857,9 +4925,6 @@ spec:
       component: webhook-server
   template:
     metadata:
-      annotations:
-        prometheus.io/port: "7472"
-        prometheus.io/scrape: "true"
       labels:
         app: metallb
         component: webhook-server
@@ -4867,36 +4932,38 @@ spec:
       containers:
       - args:
         - --webhook-mode=onlywebhook
-        - --port=7472
+        - --port=9120
         - --log-level=info
         env:
+        - name: METALLB_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: METALLB_BGP_TYPE
           value: native
         image: quay.io/metallb/controller:main
         livenessProbe:
           failureThreshold: 3
-          httpGet:
-            path: /metrics
-            port: monitoring
           initialDelaySeconds: 10
           periodSeconds: 10
           successThreshold: 1
+          tcpSocket:
+            port: 9443
           timeoutSeconds: 1
         name: webhook-server
         ports:
-        - containerPort: 7472
-          name: monitoring
+        - containerPort: 9120
+          name: metricshttps
         - containerPort: 9443
           name: webhook-server
           protocol: TCP
         readinessProbe:
           failureThreshold: 3
-          httpGet:
-            path: /metrics
-            port: monitoring
           initialDelaySeconds: 10
           periodSeconds: 10
           successThreshold: 1
+          tcpSocket:
+            port: 9443
           timeoutSeconds: 1
         securityContext:
           allowPrivilegeEscalation: false
@@ -5475,51 +5542,7 @@ rules:
   - frrk8s.metallb.io
   resources:
   - bgpsessionstates
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - frrk8s.metallb.io
-  resources:
-  - bgpsessionstates/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - frrk8s.metallb.io
-  resources:
   - frrconfigurations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - frrk8s.metallb.io
-  resources:
-  - frrconfigurations/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - frrk8s.metallb.io
-  resources:
-  - frrconfigurations/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - frrk8s.metallb.io
-  resources:
   - frrnodestates
   verbs:
   - create
@@ -5532,17 +5555,33 @@ rules:
 - apiGroups:
   - frrk8s.metallb.io
   resources:
+  - bgpsessionstates/status
+  - frrconfigurations/status
   - frrnodestates/status
   verbs:
   - get
   - patch
   - update
+- apiGroups:
+  - frrk8s.metallb.io
+  resources:
+  - frrconfigurations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - frrk8s.metallb.io
+  resources:
+  - frrk8sconfigurations
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/component: frr-k8s
     app.kubernetes.io/created-by: frr-k8s
     app.kubernetes.io/instance: metrics-reader
     app.kubernetes.io/managed-by: kustomize
@@ -5559,7 +5598,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/component: frr-k8s
     app.kubernetes.io/created-by: frr-k8s
     app.kubernetes.io/instance: proxy-role
     app.kubernetes.io/managed-by: kustomize
@@ -5839,6 +5878,9 @@ roleRef:
   name: pod-lister
 subjects:
 - kind: ServiceAccount
+  name: controller
+  namespace: metallb-system
+- kind: ServiceAccount
   name: speaker
   namespace: metallb-system
 ---
@@ -5899,7 +5941,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/component: frr-k8s
     app.kubernetes.io/created-by: frr-k8s
     app.kubernetes.io/instance: proxy-rolebinding
     app.kubernetes.io/managed-by: kustomize
