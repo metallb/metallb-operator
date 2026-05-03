@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2026-03-16T12:12:01Z"
+    createdAt: "2026-05-05T11:44:52Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -472,6 +472,9 @@ spec:
         version: v1beta1
       - kind: FRRConfiguration
         name: frrconfigurations.frrk8s.metallb.io
+        version: v1beta1
+      - kind: FRRK8sConfiguration
+        name: frrk8sconfigurations.frrk8s.metallb.io
         version: v1beta1
       - kind: FRRNodeState
         name: frrnodestates.frrk8s.metallb.io
@@ -648,51 +651,7 @@ spec:
                 - frrk8s.metallb.io
               resources:
                 - bgpsessionstates
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - frrk8s.metallb.io
-              resources:
-                - bgpsessionstates/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - frrk8s.metallb.io
-              resources:
                 - frrconfigurations
-              verbs:
-                - create
-                - delete
-                - get
-                - list
-                - patch
-                - update
-                - watch
-            - apiGroups:
-                - frrk8s.metallb.io
-              resources:
-                - frrconfigurations/finalizers
-              verbs:
-                - update
-            - apiGroups:
-                - frrk8s.metallb.io
-              resources:
-                - frrconfigurations/status
-              verbs:
-                - get
-                - patch
-                - update
-            - apiGroups:
-                - frrk8s.metallb.io
-              resources:
                 - frrnodestates
               verbs:
                 - create
@@ -705,11 +664,27 @@ spec:
             - apiGroups:
                 - frrk8s.metallb.io
               resources:
+                - bgpsessionstates/status
+                - frrconfigurations/status
                 - frrnodestates/status
               verbs:
                 - get
                 - patch
                 - update
+            - apiGroups:
+                - frrk8s.metallb.io
+              resources:
+                - frrconfigurations/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - frrk8s.metallb.io
+              resources:
+                - frrk8sconfigurations
+              verbs:
+                - get
+                - list
+                - watch
             - apiGroups:
                 - authentication.k8s.io
               resources:
@@ -945,7 +920,7 @@ spec:
                       - name: DEPLOY_KUBE_RBAC_PROXIES
                         value: "false"
                       - name: FRRK8S_IMAGE
-                        value: quay.io/metallb/frr-k8s:v0.0.22
+                        value: quay.io/metallb/frr-k8s:v0.0.23
                       - name: FRRK8S_EXTERNAL_NAMESPACE
                         value: frr-k8s-system
                       - name: OPERATOR_NAMESPACE
@@ -995,9 +970,6 @@ spec:
             strategy: {}
             template:
               metadata:
-                annotations:
-                  prometheus.io/port: "7472"
-                  prometheus.io/scrape: "true"
                 labels:
                   app: metallb
                   component: webhook-server
@@ -1005,37 +977,39 @@ spec:
                 containers:
                   - args:
                       - --disable-cert-rotation=true
-                      - --port=7472
+                      - --port=9120
                       - --log-level=info
                       - --webhook-mode=onlywebhook
                     env:
+                      - name: METALLB_POD_NAME
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.name
                       - name: METALLB_BGP_TYPE
                         value: native
                     image: quay.io/metallb/controller:main
                     livenessProbe:
                       failureThreshold: 3
-                      httpGet:
-                        path: /metrics
-                        port: monitoring
                       initialDelaySeconds: 10
                       periodSeconds: 10
                       successThreshold: 1
+                      tcpSocket:
+                        port: 9443
                       timeoutSeconds: 1
                     name: webhook-server
                     ports:
-                      - containerPort: 7472
-                        name: monitoring
+                      - containerPort: 9120
+                        name: metricshttps
                       - containerPort: 9443
                         name: webhook-server
                         protocol: TCP
                     readinessProbe:
                       failureThreshold: 3
-                      httpGet:
-                        path: /metrics
-                        port: monitoring
                       initialDelaySeconds: 10
                       periodSeconds: 10
                       successThreshold: 1
+                      tcpSocket:
+                        port: 9443
                       timeoutSeconds: 1
                     resources: {}
                     securityContext:
@@ -1144,6 +1118,84 @@ spec:
                 - get
                 - list
                 - watch
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - list
+                - get
+            - apiGroups:
+                - ""
+              resources:
+                - secrets
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - configmaps
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bfdprofiles
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgppeers
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - l2advertisements
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - bgpadvertisements
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - ipaddresspools
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - communities
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - metallb.io
+              resources:
+                - servicebgpstatuses
+                - servicebgpstatuses/status
+              verbs:
+                - '*'
           serviceAccountName: controller
         - rules:
             - apiGroups:

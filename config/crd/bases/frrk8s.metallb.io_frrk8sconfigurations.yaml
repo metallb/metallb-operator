@@ -3,22 +3,22 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.3
-  creationTimestamp: null
-  name: frrnodestates.frrk8s.metallb.io
+  name: frrk8sconfigurations.frrk8s.metallb.io
 spec:
   group: frrk8s.metallb.io
   names:
-    kind: FRRNodeState
-    listKind: FRRNodeStateList
-    plural: frrnodestates
-    singular: frrnodestate
-  scope: Cluster
+    kind: FRRK8sConfiguration
+    listKind: FRRK8sConfigurationList
+    plural: frrk8sconfigurations
+    singular: frrk8sconfiguration
+  scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: FRRNodeState exposes the status of the FRR instance running on
-          each node.
+        description: |-
+          FRRK8sConfiguration holds the FRR Operator configuration with global
+          settings for the K8s and FRR.
         properties:
           apiVersion:
             description: |-
@@ -38,34 +38,27 @@ spec:
           metadata:
             type: object
           spec:
-            description: FRRNodeStateSpec defines the desired state of FRRNodeState.
+            description: FRRK8sConfigurationSpec defines the desired state of FRRK8sConfiguration.
+            properties:
+              logLevel:
+                description: |-
+                  LogLevel sets the logging verbosity for the FRR-K8s components at runtime.
+                  When configured, this value overrides the defaults established by the --log-level CLI flag.
+                  Valid values are: all, debug, info, warn, error, none.
+                enum:
+                - all
+                - debug
+                - info
+                - warn
+                - error
+                - none
+                type: string
             type: object
           status:
-            description: FRRNodeStateStatus defines the observed state of FRRNodeState.
-            properties:
-              lastConversionResult:
-                description: LastConversionResult is the status of the last translation
-                  between the `FRRConfiguration`s resources and FRR's configuration,
-                  contains "success" or an error.
-                type: string
-              lastReloadResult:
-                description: LastReloadResult represents the status of the last configuration
-                  update operation by FRR, contains "success" or an error.
-                type: string
-              runningConfig:
-                description: RunningConfig represents the current FRR running config,
-                  which is the configuration the FRR instance is currently running
-                  with.
-                type: string
+            description: FRRK8sConfigurationStatus defines the observed state of FRRK8sConfiguration.
             type: object
         type: object
     served: true
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: null
-  storedVersions: null

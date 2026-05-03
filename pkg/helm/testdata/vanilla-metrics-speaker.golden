@@ -31,8 +31,7 @@
                     {
                         "args": [
                             "--port=7472",
-                            "--log-level=info",
-                            "--host=localhost"
+                            "--log-level=info"
                         ],
                         "command": [
                             "/speaker"
@@ -99,9 +98,9 @@
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "host": "localhost",
-                                "path": "/metrics",
-                                "port": "monitoring"
+                                "host": "127.0.0.1",
+                                "path": "/healthz",
+                                "port": 17472
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10,
@@ -112,7 +111,7 @@
                         "ports": [
                             {
                                 "containerPort": 7472,
-                                "name": "monitoring"
+                                "name": "metricshttps"
                             },
                             {
                                 "containerPort": 7946,
@@ -128,9 +127,9 @@
                         "readinessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "host": "localhost",
-                                "path": "/metrics",
-                                "port": "monitoring"
+                                "host": "127.0.0.1",
+                                "path": "/readyz",
+                                "port": 17472
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10,
@@ -180,9 +179,9 @@
                         "livenessProbe": {
                             "failureThreshold": 3,
                             "httpGet": {
-                                "host": "localhost",
-                                "path": "livez",
-                                "port": 7473
+                                "path": "/livez",
+                                "port": 7473,
+                                "scheme": "HTTPS"
                             },
                             "initialDelaySeconds": 10,
                             "periodSeconds": 10,
@@ -205,9 +204,9 @@
                         "startupProbe": {
                             "failureThreshold": 30,
                             "httpGet": {
-                                "host": "localhost",
                                 "path": "/livez",
-                                "port": 7473
+                                "port": 7473,
+                                "scheme": "HTTPS"
                             },
                             "periodSeconds": 5
                         },
@@ -262,7 +261,7 @@
                     {
                         "args": [
                             "--metrics-port=7473",
-                            "--host=localhost"
+                            "--metrics-bind-address=0.0.0.0"
                         ],
                         "command": [
                             "/etc/frr_metrics/frr-metrics"
@@ -278,7 +277,7 @@
                         "ports": [
                             {
                                 "containerPort": 7473,
-                                "name": "frrmetrics"
+                                "name": "frrmetricshttps"
                             }
                         ],
                         "securityContext": {
@@ -299,72 +298,6 @@
                                 "name": "metrics"
                             }
                         ]
-                    },
-                    {
-                        "args": [
-                            "--logtostderr",
-                            "--secure-listen-address=:9998",
-                            "--upstream=http://localhost:7472/",
-                            "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
-                        ],
-                        "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
-                        "imagePullPolicy": null,
-                        "name": "kube-rbac-proxy",
-                        "ports": [
-                            {
-                                "containerPort": 9998,
-                                "name": "metricshttps"
-                            }
-                        ],
-                        "resources": {
-                            "requests": {
-                                "cpu": "10m",
-                                "memory": "20Mi"
-                            }
-                        },
-                        "securityContext": {
-                            "allowPrivilegeEscalation": false,
-                            "readOnlyRootFilesystem": true
-                        },
-                        "terminationMessagePolicy": "FallbackToLogsOnError"
-                    },
-                    {
-                        "args": [
-                            "--logtostderr",
-                            "--secure-listen-address=:9999",
-                            "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
-                            "--upstream=http://localhost:7473/"
-                        ],
-                        "env": [
-                            {
-                                "name": "METALLB_HOST",
-                                "valueFrom": {
-                                    "fieldRef": {
-                                        "fieldPath": "status.hostIP"
-                                    }
-                                }
-                            }
-                        ],
-                        "image": "gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0",
-                        "imagePullPolicy": null,
-                        "name": "kube-rbac-proxy-frr",
-                        "ports": [
-                            {
-                                "containerPort": 9999,
-                                "name": "frrmetricshttps"
-                            }
-                        ],
-                        "resources": {
-                            "requests": {
-                                "cpu": "10m",
-                                "memory": "20Mi"
-                            }
-                        },
-                        "securityContext": {
-                            "allowPrivilegeEscalation": false,
-                            "readOnlyRootFilesystem": true
-                        },
-                        "terminationMessagePolicy": "FallbackToLogsOnError"
                     }
                 ],
                 "hostNetwork": true,
