@@ -180,6 +180,11 @@ func isServiceMonitor(obj *unstructured.Unstructured) bool {
 	return obj.GetKind() == "ServiceMonitor"
 }
 
+const (
+	controllerCertsSecret = "controller-certs-secret"
+	speakerCertsSecret    = "speaker-certs-secret"
+)
+
 func patchMetalLBChartValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB, valuesMap map[string]interface{}) {
 	valuesMap["loadBalancerClass"] = loadBalancerClassValue(crdConfig)
 	valuesMap["prometheus"] = metalLBprometheusValues(envConfig)
@@ -187,6 +192,20 @@ func patchMetalLBChartValues(envConfig params.EnvConfig, crdConfig *metallbv1bet
 	valuesMap["speaker"] = speakerValues(envConfig, crdConfig)
 	valuesMap["frrk8s"] = metalLBFrrk8sValues(envConfig, crdConfig)
 	valuesMap["networkpolicies"] = netpolValues(envConfig)
+	valuesMap["tls"] = metallbTLSHelmValues(envConfig)
+}
+
+func metallbTLSHelmValues(envConfig params.EnvConfig) map[string]interface{} {
+	res := map[string]interface{}{
+		"cipherSuites":     envConfig.TLSCipherSuites,
+		"curvePreferences": envConfig.TLSCurvePreferences,
+		"minVersion":       envConfig.TLSMinVersion,
+	}
+	if envConfig.IsOpenshift {
+		res["controllerMetricsTLSSecret"] = controllerCertsSecret
+		res["speakerMetricsTLSSecret"] = speakerCertsSecret
+	}
+	return res
 }
 
 func loadBalancerClassValue(crdConfig *metallbv1beta1.MetalLB) string {
@@ -203,17 +222,15 @@ func metalLBprometheusValues(envConfig params.EnvConfig) map[string]interface{} 
 	speakerAnnotations := map[string]interface{}{}
 	controllerAnnotations := map[string]interface{}{}
 
-	speakerTLSSecret := ""
-	controllerTLSSecret := ""
-
 	if envConfig.IsOpenshift {
-		speakerTLSConfig, speakerAnnotations, speakerTLSSecret = ocpPromConfigFor("speaker", envConfig.Namespace)
-		controllerTLSConfig, controllerAnnotations, controllerTLSSecret = ocpPromConfigFor("controller", envConfig.Namespace)
+		speakerTLSConfig = ocpServiceMonitorTLSConfig("speaker", envConfig.Namespace)
+		controllerTLSConfig = ocpServiceMonitorTLSConfig("controller", envConfig.Namespace)
+		speakerAnnotations = ocpServingCertAnnotationFor(speakerCertsSecret)
+		controllerAnnotations = ocpServingCertAnnotationFor(controllerCertsSecret)
 	}
 
 	return map[string]interface{}{
-		"metricsPort":       envConfig.MetricsPort,
-		"secureMetricsPort": envConfig.SecureMetricsPort,
+		"metricsPort": envConfig.MetricsPort,
 		"podMonitor": map[string]interface{}{
 			"enabled": envConfig.DeployPodMonitors,
 		},
@@ -228,14 +245,8 @@ func metalLBprometheusValues(envConfig params.EnvConfig) map[string]interface{} 
 				"tlsConfig":   controllerTLSConfig,
 			},
 		},
-		"rbacProxy": map[string]interface{}{
-			"repository": envConfig.KubeRBacImage.Repo,
-			"tag":        envConfig.KubeRBacImage.Tag,
-		},
-		"serviceAccount":             "foo", // required by the chart, we won't render roles or rolebindings anyway
-		"namespace":                  "bar",
-		"speakerMetricsTLSSecret":    speakerTLSSecret,
-		"controllerMetricsTLSSecret": controllerTLSSecret,
+		"serviceAccount": "foo", // required by the chart, we won't render roles or rolebindings anyway
+		"namespace":      "bar",
 	}
 }
 
@@ -299,8 +310,7 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 				"repository": envConfig.FRRImage.Repo,
 				"tag":        envConfig.FRRImage.Tag,
 			},
-			"metricsPort":       envConfig.FRRMetricsPort,
-			"secureMetricsPort": envConfig.SecureFRRMetricsPort,
+			"metricsPort": envConfig.FRRMetricsPort,
 		},
 		"memberlist": map[string]interface{}{
 			"enabled":    true,

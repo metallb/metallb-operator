@@ -25,6 +25,7 @@ const (
 	frrk8sWebhookServiceName          = "frr-k8s-webhook-service"
 	frrk8sWebhookSecretName           = "frr-k8s-webhook-server-cert"
 	frrk8sValidatingWebhookName       = "frr-k8s-validating-webhook-configuration"
+	frrk8sCertsSecret                 = "frr-k8s-certs-secret"
 )
 
 // FRRK8SChart contains references which helps to retrieve manifest
@@ -144,7 +145,20 @@ func patchChartValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 		return err
 	}
 	valuesMap["prometheus"] = prometheusValues(envConfig)
+	valuesMap["tls"] = frrk8sTLSHelmValues(envConfig)
 	return nil
+}
+
+func frrk8sTLSHelmValues(envConfig params.EnvConfig) map[string]interface{} {
+	res := map[string]interface{}{
+		"cipherSuites":     envConfig.TLSCipherSuites,
+		"curvePreferences": envConfig.TLSCurvePreferences,
+		"minVersion":       envConfig.TLSMinVersion,
+	}
+	if envConfig.IsOpenshift {
+		res["metricsTLSSecret"] = frrk8sCertsSecret
+	}
+	return res
 }
 
 func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) (map[string]interface{}, error) {
@@ -205,10 +219,10 @@ func prometheusValues(envConfig params.EnvConfig) map[string]interface{} {
 		"insecureSkipVerify": true,
 	}
 	annotations := map[string]interface{}{}
-	tlsSecret := ""
 
 	if envConfig.IsOpenshift {
-		tlsConfig, annotations, tlsSecret = ocpPromConfigFor("frr-k8s", envConfig.Namespace)
+		tlsConfig = ocpServiceMonitorTLSConfig("frr-k8s", envConfig.Namespace)
+		annotations = ocpServingCertAnnotationFor(frrk8sCertsSecret)
 	}
 
 	serviceMonitor := map[string]interface{}{
@@ -236,16 +250,10 @@ func prometheusValues(envConfig params.EnvConfig) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"metricsPort":       envConfig.FRRK8sMetricsPort,
 		"secureMetricsPort": envConfig.SecureFRRK8sMetricsPort,
 		"serviceMonitor":    serviceMonitor,
-		"rbacProxy": map[string]interface{}{
-			"repository": envConfig.KubeRBacImage.Repo,
-			"tag":        envConfig.KubeRBacImage.Tag,
-		},
-		"serviceAccount":   "foo", // required by the chart, we won't render roles or rolebindings anyway
-		"namespace":        "bar",
-		"metricsTLSSecret": tlsSecret,
+		"serviceAccount":    "foo", // required by the chart, we won't render roles or rolebindings anyway
+		"namespace":         "bar",
 	}
 }
 

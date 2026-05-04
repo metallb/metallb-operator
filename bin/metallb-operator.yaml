@@ -4866,10 +4866,12 @@ spec:
           value: native
         - name: FRR_IMAGE
           value: quay.io/frrouting/frr:9.1.0
-        - name: KUBE_RBAC_PROXY_IMAGE
-          value: quay.io/brancz/kube-rbac-proxy:v0.11.0
-        - name: DEPLOY_KUBE_RBAC_PROXIES
-          value: "false"
+        - name: TLS_CIPHER_SUITES
+          value: ""
+        - name: TLS_CURVE_PREFERENCES
+          value: ""
+        - name: TLS_MIN_VERSION
+          value: ""
         - name: FRRK8S_IMAGE
           value: quay.io/metallb/frr-k8s:v0.0.23
         - name: FRRK8S_EXTERNAL_NAMESPACE

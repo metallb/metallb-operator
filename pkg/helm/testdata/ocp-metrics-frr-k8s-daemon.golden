@@ -33,7 +33,8 @@
                             "--node-name=$(NODE_NAME)",
                             "--namespace=$(NAMESPACE)",
                             "--metrics-bind-address=0.0.0.0:9998",
-                            "--log-level=info"
+                            "--log-level=info",
+                            "--metrics-cert-dir=/etc/metrics"
                         ],
                         "command": [
                             "/frr-k8s"
@@ -112,6 +113,11 @@
                             {
                                 "mountPath": "/etc/frr_reloader",
                                 "name": "reloader"
+                            },
+                            {
+                                "mountPath": "/etc/metrics",
+                                "name": "metrics-certs",
+                                "readOnly": true
                             }
                         ]
                     },
@@ -202,7 +208,9 @@
                     {
                         "args": [
                             "--metrics-port=9999",
-                            "--metrics-bind-address=0.0.0.0"
+                            "--metrics-bind-address=0.0.0.0",
+                            "--tls-cert-file=/etc/metrics/tls.crt",
+                            "--tls-private-key-file=/etc/metrics/tls.key"
                         ],
                         "command": [
                             "/etc/frr_metrics/frr-metrics"
@@ -227,6 +235,11 @@
                             {
                                 "mountPath": "/etc/frr_metrics",
                                 "name": "metrics"
+                            },
+                            {
+                                "mountPath": "/etc/metrics",
+                                "name": "metrics-certs",
+                                "readOnly": true
                             }
                         ]
                     },
@@ -408,6 +421,12 @@
                     {
                         "emptyDir": {},
                         "name": "frr-tmp"
+                    },
+                    {
+                        "name": "metrics-certs",
+                        "secret": {
+                            "secretName": "frr-k8s-certs-secret"
+                        }
                     }
                 ]
             }

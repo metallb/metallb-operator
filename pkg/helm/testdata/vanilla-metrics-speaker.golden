@@ -30,7 +30,7 @@
                 "containers": [
                     {
                         "args": [
-                            "--port=7472",
+                            "--port=9120",
                             "--log-level=info"
                         ],
                         "command": [
@@ -110,7 +110,7 @@
                         "name": "speaker",
                         "ports": [
                             {
-                                "containerPort": 7472,
+                                "containerPort": 9120,
                                 "name": "metricshttps"
                             },
                             {
@@ -180,7 +180,7 @@
                             "failureThreshold": 3,
                             "httpGet": {
                                 "path": "/livez",
-                                "port": 7473,
+                                "port": 9121,
                                 "scheme": "HTTPS"
                             },
                             "initialDelaySeconds": 10,
@@ -205,7 +205,7 @@
                             "failureThreshold": 30,
                             "httpGet": {
                                 "path": "/livez",
-                                "port": 7473,
+                                "port": 9121,
                                 "scheme": "HTTPS"
                             },
                             "periodSeconds": 5
@@ -260,7 +260,7 @@
                     },
                     {
                         "args": [
-                            "--metrics-port=7473",
+                            "--metrics-port=9121",
                             "--metrics-bind-address=0.0.0.0"
                         ],
                         "command": [
@@ -276,7 +276,7 @@
                         "name": "frr-metrics",
                         "ports": [
                             {
-                                "containerPort": 7473,
+                                "containerPort": 9121,
                                 "name": "frrmetricshttps"
                             }
                         ],
