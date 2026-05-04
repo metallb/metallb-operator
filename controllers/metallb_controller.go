@@ -81,7 +81,7 @@ var EmbeddedFRRK8sSupportNotAvailable = errors.New("current CNO version does not
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations,verbs=create;delete;get;update;patch;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=create;delete;get;update;patch;list;watch
 // +kubebuilder:rbac:groups=operator.openshift.io,resources=networks,verbs=get;list;watch;update;
-// +kubebuilder:rbac:groups=config.openshift.io,resources=clusteroperators,verbs=get;list;watch;
+// +kubebuilder:rbac:groups=config.openshift.io,resources=apiservers;clusteroperators,verbs=get;list;watch;
 
 func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
