@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
@@ -46,6 +47,7 @@ import (
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/controllers"
+	"github.com/metallb/metallb-operator/pkg/openshift"
 	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/platform"
 	"github.com/metallb/metallb-operator/pkg/tlsconfig"
@@ -116,6 +118,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx, cancel := context.WithCancel(ctrl.SetupSignalHandler())
+	defer cancel()
+
+	var ocpTLS *openshift.TLSConfig
+	if platformInfo.IsOpenShift() {
+		ocpTLS, err = openshift.FetchTLSConfig(ctx, scheme, setupLog)
+		if err != nil {
+			setupLog.Error(err, "failed to fetch OpenShift TLS profile")
+			os.Exit(1)
+		}
+		envParams.TLSCipherSuites = ocpTLS.CipherSuites
+		envParams.TLSCurvePreferences = ocpTLS.CurvePreferences
+		envParams.TLSMinVersion = ocpTLS.MinVersion
+	}
+
 	tlsOpt, err := tlsconfig.OptFor(envParams.TLSCipherSuites, envParams.TLSCurvePreferences, envParams.TLSMinVersion)
 	if err != nil {
 		setupLog.Error(err, "failed to parse TLS configuration")
@@ -152,6 +169,13 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
+	}
+
+	if platformInfo.IsOpenShift() {
+		if err := ocpTLS.SetupProfileWatcher(mgr, cancel, setupLog); err != nil {
+			setupLog.Error(err, "unable to setup TLS security profile watcher")
+			os.Exit(1)
+		}
 	}
 
 	if err = (&controllers.MetalLBReconciler{
@@ -220,7 +244,7 @@ func main() {
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
