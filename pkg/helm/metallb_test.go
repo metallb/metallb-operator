@@ -60,16 +60,12 @@ var defaultEnvConfig = params.EnvConfig{
 		Repo: "frrouting/frr",
 		Tag:  "v7.5.1",
 	},
-	KubeRBacImage: params.ImageInfo{
-		Repo: "gcr.io/kubebuilder/kube-rbac-proxy",
-		Tag:  "v0.12.0",
-	},
 	FRRK8sImage: params.ImageInfo{
 		Repo: "quay.io/metallb/frr-k8s",
 		Tag:  "v0.0.8",
 	},
-	MetricsPort:                7472,
-	FRRMetricsPort:             7473,
+	MetricsPort:                9120,
+	FRRMetricsPort:             9121,
 	MLBindPort:                 7946,
 	FRRK8sMetricsPort:          7572,
 	FRRK8sFRRMetricsPort:       7573,
@@ -245,9 +241,9 @@ func TestParseOCPSecureMetrics(t *testing.T) {
 
 	envConfig := defaultEnvConfig
 	envConfig.DeployServiceMonitors = true
-	envConfig.SecureMetricsPort = 9998
-	envConfig.SecureFRRMetricsPort = 9999
 	envConfig.IsOpenshift = true
+	envConfig.MetricsPort = 9998
+	envConfig.FRRMetricsPort = 9999
 
 	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())
@@ -291,8 +287,6 @@ func TestParseSecureMetrics(t *testing.T) {
 
 	envConfig := defaultEnvConfig
 	envConfig.DeployServiceMonitors = true
-	envConfig.SecureMetricsPort = 9998
-	envConfig.SecureFRRMetricsPort = 9999
 
 	objs, err := chart.Objects(envConfig, metallb)
 	g.Expect(err).To(BeNil())

@@ -101,22 +101,20 @@ func getImageNameTag(envValue string) (string, string) {
 	return repoPath + img[0], img[1]
 }
 
-func ocpPromConfigFor(component, namespace string) (map[string]interface{}, map[string]interface{}, string) {
-	secretName := fmt.Sprintf("%s-certs-secret", component)
-
-	annotations := map[string]interface{}{
+func ocpServingCertAnnotationFor(secretName string) map[string]interface{} {
+	return map[string]interface{}{
 		"service.beta.openshift.io/serving-cert-secret-name": secretName,
 	}
+}
 
-	tlsConfig := map[string]interface{}{
+func ocpServiceMonitorTLSConfig(component, namespace string) map[string]interface{} {
+	return map[string]interface{}{
 		"caFile":             "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
 		"serverName":         fmt.Sprintf("%s-monitor-service.%s.svc", component, namespace),
 		"certFile":           "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
 		"keyFile":            "/etc/prometheus/secrets/metrics-client-certs/tls.key",
 		"insecureSkipVerify": false,
 	}
-
-	return tlsConfig, annotations, secretName
 }
 
 func updateAnnotations(obj *unstructured.Unstructured, annotations map[string]string) error {

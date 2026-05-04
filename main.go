@@ -48,6 +48,7 @@ import (
 	"github.com/metallb/metallb-operator/controllers"
 	"github.com/metallb/metallb-operator/pkg/params"
 	"github.com/metallb/metallb-operator/pkg/platform"
+	"github.com/metallb/metallb-operator/pkg/tlsconfig"
 	"github.com/open-policy-agent/cert-controller/pkg/rotator"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	openshiftapiv1 "github.com/openshift/api/operator/v1"
@@ -114,6 +115,13 @@ func main() {
 		setupLog.Error(err, "failed to parse env params")
 		os.Exit(1)
 	}
+
+	tlsOpt, err := tlsconfig.OptFor(envParams.TLSCipherSuites, envParams.TLSCurvePreferences, envParams.TLSMinVersion)
+	if err != nil {
+		setupLog.Error(err, "failed to parse TLS configuration")
+		os.Exit(1)
+	}
+
 	jsonEnv, err := json.Marshal(envParams)
 	if err != nil {
 		setupLog.Error(err, "failed to marshal env params")
@@ -139,7 +147,7 @@ func main() {
 				&metallbv1beta1.MetalLB{}: namespaceSelector,
 			},
 		},
-		WebhookServer: webhookServer(9443, *withWebhookHTTP2),
+		WebhookServer: webhookServer(9443, *withWebhookHTTP2, tlsOpt),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -218,7 +226,7 @@ func main() {
 	}
 }
 
-func webhookServer(port int, withHTTP2 bool) webhook.Server {
+func webhookServer(port int, withHTTP2 bool, tlsOpt func(*tls.Config)) webhook.Server {
 	disableHTTP2 := func(c *tls.Config) {
 		if withHTTP2 {
 			return
@@ -227,7 +235,7 @@ func webhookServer(port int, withHTTP2 bool) webhook.Server {
 	}
 
 	webhookServerOptions := webhook.Options{
-		TLSOpts: []func(config *tls.Config){disableHTTP2},
+		TLSOpts: []func(config *tls.Config){disableHTTP2, tlsOpt},
 		Port:    port,
 	}
 

@@ -33,9 +33,10 @@
                 "containers": [
                     {
                         "args": [
-                            "--port=7472",
+                            "--port=9998",
                             "--log-level=info",
-                            "--webhook-mode=disabled"
+                            "--webhook-mode=disabled",
+                            "--metrics-cert-dir=/etc/metrics"
                         ],
                         "command": [
                             "/controller"
@@ -78,7 +79,7 @@
                         "name": "controller",
                         "ports": [
                             {
-                                "containerPort": 7472,
+                                "containerPort": 9998,
                                 "name": "metricshttps"
                             }
                         ],
@@ -108,6 +109,11 @@
                                 "mountPath": "/tmp/k8s-webhook-server/serving-certs",
                                 "name": "cert",
                                 "readOnly": true
+                            },
+                            {
+                                "mountPath": "/etc/metrics",
+                                "name": "metrics-certs",
+                                "readOnly": true
                             }
                         ]
                     }
@@ -126,6 +132,12 @@
                         "secret": {
                             "defaultMode": 420,
                             "secretName": "metallb-webhook-cert"
+                        }
+                    },
+                    {
+                        "name": "metrics-certs",
+                        "secret": {
+                            "secretName": "controller-certs-secret"
                         }
                     }
                 ]

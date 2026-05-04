@@ -30,8 +30,9 @@
                 "containers": [
                     {
                         "args": [
-                            "--port=7472",
-                            "--log-level=info"
+                            "--port=9998",
+                            "--log-level=info",
+                            "--metrics-cert-dir=/etc/metrics"
                         ],
                         "command": [
                             "/speaker"
@@ -110,7 +111,7 @@
                         "name": "speaker",
                         "ports": [
                             {
-                                "containerPort": 7472,
+                                "containerPort": 9998,
                                 "name": "metricshttps"
                             },
                             {
@@ -160,6 +161,11 @@
                             {
                                 "mountPath": "/etc/metallb",
                                 "name": "metallb-excludel2"
+                            },
+                            {
+                                "mountPath": "/etc/metrics",
+                                "name": "metrics-certs",
+                                "readOnly": true
                             }
                         ]
                     },
@@ -180,7 +186,7 @@
                             "failureThreshold": 3,
                             "httpGet": {
                                 "path": "/livez",
-                                "port": 7473,
+                                "port": 9999,
                                 "scheme": "HTTPS"
                             },
                             "initialDelaySeconds": 10,
@@ -205,7 +211,7 @@
                             "failureThreshold": 30,
                             "httpGet": {
                                 "path": "/livez",
-                                "port": 7473,
+                                "port": 9999,
                                 "scheme": "HTTPS"
                             },
                             "periodSeconds": 5
@@ -260,8 +266,10 @@
                     },
                     {
                         "args": [
-                            "--metrics-port=7473",
-                            "--metrics-bind-address=0.0.0.0"
+                            "--metrics-port=9999",
+                            "--metrics-bind-address=0.0.0.0",
+                            "--tls-cert-file=/etc/metrics/tls.crt",
+                            "--tls-private-key-file=/etc/metrics/tls.key"
                         ],
                         "command": [
                             "/etc/frr_metrics/frr-metrics"
@@ -276,7 +284,7 @@
                         "name": "frr-metrics",
                         "ports": [
                             {
-                                "containerPort": 7473,
+                                "containerPort": 9999,
                                 "name": "frrmetricshttps"
                             }
                         ],
@@ -296,6 +304,11 @@
                             {
                                 "mountPath": "/etc/frr_metrics",
                                 "name": "metrics"
+                            },
+                            {
+                                "mountPath": "/etc/metrics",
+                                "name": "metrics-certs",
+                                "readOnly": true
                             }
                         ]
                     }
@@ -375,6 +388,12 @@
                     }
                 ],
                 "volumes": [
+                    {
+                        "name": "metrics-certs",
+                        "secret": {
+                            "secretName": "speaker-certs-secret"
+                        }
+                    },
                     {
                         "name": "memberlist",
                         "secret": {

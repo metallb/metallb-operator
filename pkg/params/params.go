@@ -36,17 +36,17 @@ type EnvConfig struct {
 	SpeakerImage               ImageInfo
 	FRRImage                   ImageInfo
 	FRRK8sImage                ImageInfo
-	KubeRBacImage              ImageInfo
 	CNOMinFRRK8sVersion        string
 	MLBindPort                 int
 	FRRMetricsPort             int
-	SecureFRRMetricsPort       int
 	FRRK8sMetricsPort          int
 	FRRK8sFRRMetricsPort       int
 	SecureFRRK8sMetricsPort    int
 	SecureFRRK8sFRRMetricsPort int
 	MetricsPort                int
-	SecureMetricsPort          int
+	TLSCipherSuites            string
+	TLSCurvePreferences        string
+	TLSMinVersion              string
 	DeployPodMonitors          bool
 	DeployServiceMonitors      bool
 	DisableNetworkPolicies     bool
@@ -78,28 +78,15 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 		return EnvConfig{}, fmt.Errorf("FRRImage is mandatory for frr mode, %w", err)
 	}
 
-	res.KubeRBacImage, err = imageFromEnv("KUBE_RBAC_PROXY_IMAGE")
-	if err != nil {
-		return EnvConfig{}, err
-	}
-
 	res.MLBindPort, err = intValueWithDefault("MEMBER_LIST_BIND_PORT", 7946)
 	if err != nil {
 		return EnvConfig{}, err
 	}
-	res.FRRMetricsPort, err = intValueWithDefault("FRR_METRICS_PORT", 7473)
+	res.FRRMetricsPort, err = intValueWithDefault("FRR_METRICS_PORT", 9121)
 	if err != nil {
 		return EnvConfig{}, err
 	}
-	res.SecureFRRMetricsPort, err = intValueWithDefault("FRR_HTTPS_METRICS_PORT", 0)
-	if err != nil {
-		return EnvConfig{}, err
-	}
-	res.MetricsPort, err = intValueWithDefault("METRICS_PORT", 7472)
-	if err != nil {
-		return EnvConfig{}, err
-	}
-	res.SecureMetricsPort, err = intValueWithDefault("HTTPS_METRICS_PORT", 0)
+	res.MetricsPort, err = intValueWithDefault("METRICS_PORT", 9120)
 	if err != nil {
 		return EnvConfig{}, err
 	}
@@ -141,6 +128,10 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 	res.FRRK8sImage, _ = imageFromEnv("FRRK8S_IMAGE")
 	res.CNOMinFRRK8sVersion = os.Getenv("CNO_MIN_FRRK8S_VERSION")
 
+	res.TLSCipherSuites = os.Getenv("TLS_CIPHER_SUITES")
+	res.TLSCurvePreferences = os.Getenv("TLS_CURVE_PREFERENCES")
+	res.TLSMinVersion = os.Getenv("TLS_MIN_VERSION")
+
 	err = validate(res)
 	if err != nil {
 		return EnvConfig{}, err
@@ -152,12 +143,6 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 func validate(config EnvConfig) error {
 	if config.DeployPodMonitors && config.DeployServiceMonitors {
 		return fmt.Errorf("pod monitors and service monitors are mutually exclusive, only one can be enabled")
-	}
-	if config.SecureMetricsPort != 0 && !config.DeployServiceMonitors {
-		return fmt.Errorf("secureMetricsPort is available only if service monitors are enabled")
-	}
-	if config.SecureFRRMetricsPort != 0 && !config.DeployServiceMonitors {
-		return fmt.Errorf("secureFRRMetricsPort is available only if service monitors are enabled")
 	}
 	if config.CNOMinFRRK8sVersion != "" {
 		_, err := semver.NewVersion(config.CNOMinFRRK8sVersion)
