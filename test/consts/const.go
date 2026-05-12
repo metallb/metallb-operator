@@ -25,6 +25,10 @@ const (
 	FRRK8SDaemonsetName = "frr-k8s"
 	// FRRK8SStatusCleanerDeploymentName contains the name of the frr-k8s statuscleaner deployment
 	FRRK8SStatusCleanerDeploymentName = "statuscleaner"
+	// FRRK8SDaemonsetLabelSelector contains the label selector of the frr-k8s daemonset
+	FRRK8SDaemonsetLabelSelector = "app.kubernetes.io/component=frr-k8s"
+	// FRRK8SStatusCleanerLabelSelector contains the label selector of the frr-k8s statuscleaner deployment
+	FRRK8SStatusCleanerLabelSelector = "component=statuscleaner"
 	// DefaultOperatorNameSpace is the default operator namespace
 	DefaultOperatorNameSpace = "metallb-system"
 	// LogsExtractDuration represents how much in the past to fetch the logs from
