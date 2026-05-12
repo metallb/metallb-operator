@@ -26,10 +26,13 @@ import (
 )
 
 var (
-	UseMetallbResourcesFromFile = false
-	OperatorNameSpace           = consts.DefaultOperatorNameSpace
-	isOpenshift                 = false
-	frrk8sNamespace             = OperatorNameSpace
+	UseMetallbResourcesFromFile       = false
+	OperatorNameSpace                 = consts.DefaultOperatorNameSpace
+	isOpenshift                       = false
+	frrk8sNamespace                   = OperatorNameSpace
+	frrk8sDaemonsetLabelSelector      = consts.FRRK8SDaemonsetLabelSelector
+	frrk8sStatusCleanerDeploymentName = consts.FRRK8SStatusCleanerDeploymentName
+	frrk8sStatusCleanerLabelSelector  = consts.FRRK8SStatusCleanerLabelSelector
 )
 
 func init() {
@@ -42,6 +45,15 @@ func init() {
 	}
 	if os.Getenv("IS_OPENSHIFT") != "" {
 		isOpenshift = true
+	}
+	if ls := os.Getenv("FRRK8S_DAEMONSET_LABEL_SELECTOR"); ls != "" {
+		frrk8sDaemonsetLabelSelector = ls
+	}
+	if name := os.Getenv("FRRK8S_STATUSCLEANER_DEPLOYMENT_NAME"); name != "" {
+		frrk8sStatusCleanerDeploymentName = name
+	}
+	if ls := os.Getenv("FRRK8S_STATUSCLEANER_LABEL_SELECTOR"); ls != "" {
+		frrk8sStatusCleanerLabelSelector = ls
 	}
 	if ns := os.Getenv("FRRK8S_EXTERNAL_NAMESPACE"); ns != "" {
 		frrk8sNamespace = ns
@@ -268,7 +280,7 @@ var _ = Describe("metallb", func() {
 				}
 
 				pods, err := testclient.Client.Pods(frrk8sNamespace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "app.kubernetes.io/component=frr-k8s"})
+					LabelSelector: frrk8sDaemonsetLabelSelector})
 				if err != nil {
 					return err
 				}
@@ -288,24 +300,24 @@ var _ = Describe("metallb", func() {
 
 			By("checking frr-k8s webhook deployment is in running state")
 			Eventually(func() error {
-				deploy, err := testclient.Client.Deployments(frrk8sNamespace).Get(context.Background(), consts.FRRK8SStatusCleanerDeploymentName, metav1.GetOptions{})
+				deploy, err := testclient.Client.Deployments(frrk8sNamespace).Get(context.Background(), frrk8sStatusCleanerDeploymentName, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
 
 				pods, err := testclient.Client.Pods(frrk8sNamespace).List(context.Background(), metav1.ListOptions{
-					LabelSelector: "component=statuscleaner"})
+					LabelSelector: frrk8sStatusCleanerLabelSelector})
 				if err != nil {
 					return err
 				}
 
 				if len(pods.Items) != int(deploy.Status.Replicas) {
-					return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", consts.FRRK8SStatusCleanerDeploymentName, deploy.Status.Replicas, len(pods.Items))
+					return fmt.Errorf("deployment %s pods are not ready, expected %d replicas got %d pods", frrk8sStatusCleanerDeploymentName, deploy.Status.Replicas, len(pods.Items))
 				}
 
 				for _, pod := range pods.Items {
 					if pod.Status.Phase != corev1.PodRunning {
-						return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", consts.FRRK8SStatusCleanerDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
+						return fmt.Errorf("deployment %s pod %s is not running, expected status %s got %s", frrk8sStatusCleanerDeploymentName, pod.Name, corev1.PodRunning, pod.Status.Phase)
 					}
 				}
 
