@@ -101,7 +101,10 @@ func IsMetalLBAvailable(ctx context.Context, client k8sclient.Client, namespace 
 	if err != nil {
 		return err
 	}
-	if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled || ds.Status.DesiredNumberScheduled != ds.Status.NumberReady {
+	if ds.Generation != ds.Status.ObservedGeneration {
+		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset status is out of date"}
+	}
+	if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled || ds.Status.DesiredNumberScheduled != ds.Status.NumberReady || ds.Status.DesiredNumberScheduled != ds.Status.UpdatedNumberScheduled {
 		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset not ready"}
 	}
 	deployment := &appsv1.Deployment{}
@@ -109,7 +112,14 @@ func IsMetalLBAvailable(ctx context.Context, client k8sclient.Client, namespace 
 	if err != nil {
 		return err
 	}
-	if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
+	if deployment.Generation != deployment.Status.ObservedGeneration {
+		return MetalLBResourcesNotReadyError{Message: "MetalLB controller deployment status is out of date"}
+	}
+	replicas := int32(1)
+	if deployment.Spec.Replicas != nil {
+		replicas = *deployment.Spec.Replicas
+	}
+	if deployment.Status.ReadyReplicas != replicas || deployment.Status.UpdatedReplicas != replicas {
 		return MetalLBResourcesNotReadyError{Message: "MetalLB controller deployment not ready"}
 	}
 	return nil
