@@ -223,8 +223,8 @@ func metalLBprometheusValues(envConfig params.EnvConfig) map[string]interface{} 
 	controllerAnnotations := map[string]interface{}{}
 
 	if envConfig.IsOpenshift {
-		speakerTLSConfig = ocpServiceMonitorTLSConfig("speaker", envConfig.Namespace)
-		controllerTLSConfig = ocpServiceMonitorTLSConfig("controller", envConfig.Namespace)
+		speakerTLSConfig = ocpServiceMonitorTLSConfig("speaker", envConfig.Namespace, speakerCertsSecret)
+		controllerTLSConfig = ocpServiceMonitorTLSConfig("controller", envConfig.Namespace, controllerCertsSecret)
 		speakerAnnotations = ocpServingCertAnnotationFor(speakerCertsSecret)
 		controllerAnnotations = ocpServingCertAnnotationFor(controllerCertsSecret)
 	}

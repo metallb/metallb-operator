@@ -221,7 +221,7 @@ func prometheusValues(envConfig params.EnvConfig) map[string]interface{} {
 	annotations := map[string]interface{}{}
 
 	if envConfig.IsOpenshift {
-		tlsConfig = ocpServiceMonitorTLSConfig("frr-k8s", envConfig.Namespace)
+		tlsConfig = ocpServiceMonitorTLSConfig("frr-k8s", envConfig.Namespace, frrk8sCertsSecret)
 		annotations = ocpServingCertAnnotationFor(frrk8sCertsSecret)
 	}
 
