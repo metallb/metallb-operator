@@ -145,6 +145,7 @@ spec:
         {{- if .Values.prometheus.scrapeAnnotations }}
         prometheus.io/scrape: "true"
         {{- if not .Values.speaker.frr.enabled }}
+        prometheus.io/scheme: "https"
         prometheus.io/port: "{{ .Values.prometheus.metricsPort }}"
         {{- end }}
         {{- end }}
@@ -191,6 +192,10 @@ spec:
             defaultMode: 256
             name: metallb-excludel2
       {{- end }}
+        - name: memberlist-config
+          configMap:
+            name: metallb-memberlist-config
+            optional: true
       {{- if .Values.speaker.frr.enabled }}
         - name: frr-sockets
           emptyDir: {}
@@ -349,7 +354,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 17472
+            port: {{ .Values.speaker.livenessProbe.port }}
             host: 127.0.0.1
           initialDelaySeconds: {{ .Values.speaker.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.speaker.livenessProbe.periodSeconds }}
@@ -361,7 +366,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /readyz
-            port: 17472
+            port: {{ .Values.speaker.readinessProbe.port }}
             host: 127.0.0.1
           initialDelaySeconds: {{ .Values.speaker.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.speaker.readinessProbe.periodSeconds }}
@@ -383,6 +388,9 @@ spec:
             - NET_RAW
         {{- if or .Values.speaker.frr.enabled .Values.speaker.memberlist.enabled .Values.speaker.excludeInterfaces.enabled .Values.tls.speakerMetricsTLSSecret }}
         volumeMounts:
+          - name: memberlist-config
+            mountPath: /etc/metallb/memberlist
+            readOnly: true
           {{- if .Values.speaker.memberlist.enabled }}
           - name: memberlist
             mountPath: {{ .Values.speaker.memberlist.mlSecretKeyPath }}

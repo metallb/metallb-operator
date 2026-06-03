@@ -151,6 +151,11 @@
                         },
                         "volumeMounts": [
                             {
+                                "mountPath": "/etc/metallb/memberlist",
+                                "name": "memberlist-config",
+                                "readOnly": true
+                            },
+                            {
                                 "mountPath": "/etc/ml_secret_key",
                                 "name": "memberlist"
                             },
@@ -407,6 +412,13 @@
                             "name": "metallb-excludel2"
                         },
                         "name": "metallb-excludel2"
+                    },
+                    {
+                        "configMap": {
+                            "name": "metallb-memberlist-config",
+                            "optional": true
+                        },
+                        "name": "memberlist-config"
                     },
                     {
                         "emptyDir": {},

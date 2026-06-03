@@ -486,7 +486,7 @@ spec:
                 type: string
               myASN:
                 description: AS number to use for the local end of the session.
-                format: int32
+                format: int64
                 maximum: 4294967295
                 minimum: 0
                 type: integer
@@ -526,7 +526,7 @@ spec:
                 type: string
               peerASN:
                 description: AS number to expect from the remote end of the session.
-                format: int32
+                format: int64
                 maximum: 4294967295
                 minimum: 0
                 type: integer
@@ -661,9 +661,20 @@ spec:
               keepaliveTime:
                 description: Requested BGP keepalive time, per RFC4271.
                 type: string
+              localASN:
+                description: |-
+                  LocalASN allows advertising a different AS number to the peer using BGP's
+                  local-as feature. When set, MetalLB will advertise this ASN to the peer
+                  via "neighbor <peer> local-as <ASN> no-prepend replace-as", overriding
+                  the router-level MyASN for this specific session.
+                  Not supported in native BGP mode.
+                format: int64
+                maximum: 4294967295
+                minimum: 1
+                type: integer
               myASN:
                 description: AS number to use for the local end of the session.
-                format: int32
+                format: int64
                 maximum: 4294967295
                 minimum: 0
                 type: integer
@@ -746,7 +757,7 @@ spec:
                 description: |-
                   AS number to expect from the remote end of the session.
                   ASN and DynamicASN are mutually exclusive and one of them must be specified.
-                format: int32
+                format: int64
                 maximum: 4294967295
                 minimum: 0
                 type: integer
@@ -1184,7 +1195,7 @@ spec:
                         asn:
                           description: ASN is the AS number to use for the local end
                             of the session.
-                          format: int32
+                          format: int64
                           maximum: 4294967295
                           minimum: 0
                           type: integer
@@ -1218,7 +1229,7 @@ spec:
                                 description: |-
                                   ASN is the AS number to use for the local end of the session.
                                   ASN and DynamicASN are mutually exclusive and one of them must be specified.
-                                format: int32
+                                format: int64
                                 maximum: 4294967295
                                 minimum: 0
                                 type: integer
@@ -1296,6 +1307,18 @@ spec:
                                   KeepaliveTime is the requested BGP keepalive time, per RFC4271.
                                   Defaults to 60s.
                                 type: string
+                              localASN:
+                                description: |-
+                                  LocalASN allows advertising a different AS number to the peer using BGP's
+                                  local-as feature. When set, FRR will advertise this ASN to the peer
+                                  via "neighbor <peer> local-as <ASN> no-prepend replace-as", overriding
+                                  the router-level ASN for this specific session.
+                                  Note: this field is only applicable to eBGP sessions (where the peer ASN differs
+                                  from the router ASN). Setting it on an iBGP session is rejected.
+                                format: int64
+                                maximum: 4294967295
+                                minimum: 1
+                                type: integer
                               password:
                                 description: |-
                                   Password to be used for establishing the BGP session.
@@ -2090,6 +2113,83 @@ spec:
                       type: object
                   type: object
                   x-kubernetes-map-type: atomic
+                type: array
+              preferredNodeSelectors:
+                description: |-
+                  PreferredNodeSelectors allows specifying soft node preferences for L2
+                  leader election. Nodes matching these selectors receive a higher score
+                  and are preferred as the announcing node. If no preferred node is
+                  available, any eligible node (per NodeSelectors) can announce.
+                  Modeled after Kubernetes PreferredSchedulingTerm.
+                items:
+                  description: |-
+                    PreferredNodeSelector expresses a weighted soft preference for nodes.
+                    This follows the Kubernetes PreferredSchedulingTerm pattern where Weight
+                    controls relative priority and Preference selects matching nodes.
+                  properties:
+                    preference:
+                      description: |-
+                        Preference selects the nodes that receive this weight. An empty
+                        selector matches every node. Preferences only apply to nodes
+                        already eligible under the advertisement's NodeSelectors.
+                      properties:
+                        matchExpressions:
+                          description: matchExpressions is a list of label selector
+                            requirements. The requirements are ANDed.
+                          items:
+                            description: |-
+                              A label selector requirement is a selector that contains values, a key, and an operator that
+                              relates the key and values.
+                            properties:
+                              key:
+                                description: key is the label key that the selector
+                                  applies to.
+                                type: string
+                              operator:
+                                description: |-
+                                  operator represents a key's relationship to a set of values.
+                                  Valid operators are In, NotIn, Exists and DoesNotExist.
+                                type: string
+                              values:
+                                description: |-
+                                  values is an array of string values. If the operator is In or NotIn,
+                                  the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                  the values array must be empty. This array is replaced during a strategic
+                                  merge patch.
+                                items:
+                                  type: string
+                                type: array
+                                x-kubernetes-list-type: atomic
+                            required:
+                            - key
+                            - operator
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        matchLabels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                            map is equivalent to an element of matchExpressions, whose key field is "key", the
+                            operator is "In", and the values array contains only "value". The requirements are ANDed.
+                          type: object
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    weight:
+                      description: |-
+                        Weight associated with matching the corresponding preference,
+                        in the range 1-100. Higher weights rank the node higher in the
+                        L2 leader election. Weights from selectors that both match a
+                        node sum together.
+                      format: int32
+                      maximum: 100
+                      minimum: 1
+                      type: integer
+                  required:
+                  - preference
+                  - weight
+                  type: object
                 type: array
               serviceSelectors:
                 description: |-
@@ -4881,7 +4981,7 @@ spec:
         - name: TLS_MIN_VERSION
           value: ""
         - name: FRRK8S_IMAGE
-          value: quay.io/metallb/frr-k8s:v0.0.23
+          value: quay.io/metallb/frr-k8s:v0.0.25
         - name: FRRK8S_EXTERNAL_NAMESPACE
           value: frr-k8s-system
         - name: OPERATOR_NAMESPACE
