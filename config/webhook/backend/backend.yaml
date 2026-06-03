@@ -35,16 +35,18 @@ spec:
           name: webhook-server
           protocol: TCP
         livenessProbe:
-          tcpSocket:
-            port: 9443
+          httpGet:
+            path: /healthz
+            port: 17472
           initialDelaySeconds: 10
           periodSeconds: 10
           failureThreshold: 3
           timeoutSeconds: 1
           successThreshold: 1
         readinessProbe:
-          tcpSocket:
-            port: 9443
+          httpGet:
+            path: /readyz
+            port: 17472
           initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 1

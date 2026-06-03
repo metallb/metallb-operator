@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2026-06-03T12:33:04Z"
+    createdAt: "2026-06-03T12:35:42Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -1012,11 +1012,12 @@ spec:
                     image: quay.io/metallb/controller:main
                     livenessProbe:
                       failureThreshold: 3
+                      httpGet:
+                        path: /healthz
+                        port: 17472
                       initialDelaySeconds: 10
                       periodSeconds: 10
                       successThreshold: 1
-                      tcpSocket:
-                        port: 9443
                       timeoutSeconds: 1
                     name: webhook-server
                     ports:
@@ -1027,11 +1028,12 @@ spec:
                         protocol: TCP
                     readinessProbe:
                       failureThreshold: 3
+                      httpGet:
+                        path: /readyz
+                        port: 17472
                       initialDelaySeconds: 10
                       periodSeconds: 10
                       successThreshold: 1
-                      tcpSocket:
-                        port: 9443
                       timeoutSeconds: 1
                     resources: {}
                     securityContext:
