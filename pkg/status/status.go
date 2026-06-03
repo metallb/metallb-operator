@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -95,21 +96,44 @@ func getBaseConditions() []metav1.Condition {
 }
 
 func IsMetalLBAvailable(ctx context.Context, client k8sclient.Client, namespace string) error {
-
 	ds := &appsv1.DaemonSet{}
 	err := client.Get(ctx, types.NamespacedName{Name: "speaker", Namespace: namespace}, ds)
 	if err != nil {
 		return err
 	}
-	if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled || ds.Status.DesiredNumberScheduled != ds.Status.NumberReady {
-		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset not ready"}
+	if err := isDaemonSetReady(ds); err != nil {
+		return err
 	}
 	deployment := &appsv1.Deployment{}
 	err = client.Get(ctx, types.NamespacedName{Name: "controller", Namespace: namespace}, deployment)
 	if err != nil {
 		return err
 	}
-	if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
+	if err := isDeploymentReady(deployment); err != nil {
+		return err
+	}
+	return nil
+}
+
+func isDaemonSetReady(ds *appsv1.DaemonSet) error {
+	if ds.Generation != ds.Status.ObservedGeneration {
+		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset status is out of date"}
+	}
+	if ds.Status.DesiredNumberScheduled != ds.Status.CurrentNumberScheduled || ds.Status.DesiredNumberScheduled != ds.Status.NumberReady {
+		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset not ready"}
+	}
+	if ds.Status.DesiredNumberScheduled != ds.Status.UpdatedNumberScheduled {
+		return MetalLBResourcesNotReadyError{Message: "MetalLB speaker daemonset not ready"}
+	}
+	return nil
+}
+
+func isDeploymentReady(deployment *appsv1.Deployment) error {
+	if deployment.Generation != deployment.Status.ObservedGeneration {
+		return MetalLBResourcesNotReadyError{Message: "MetalLB controller deployment status is out of date"}
+	}
+	replicas := ptr.Deref(deployment.Spec.Replicas, 1)
+	if deployment.Status.ReadyReplicas != replicas || deployment.Status.UpdatedReplicas != replicas {
 		return MetalLBResourcesNotReadyError{Message: "MetalLB controller deployment not ready"}
 	}
 	return nil
