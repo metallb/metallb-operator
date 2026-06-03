@@ -13,6 +13,9 @@ spec:
         - --port=9120
         - --log-level=info
         - --webhook-mode=onlywebhook
+        - --tls-cipher-suites=$(TLS_CIPHER_SUITES)
+        - --tls-min-version=$(TLS_MIN_VERSION)
+        - --tls-curve-preferences=$(TLS_CURVE_PREFERENCES)
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -27,3 +30,4 @@ spec:
         args:
         - --enable-leader-election
         - --disable-cert-rotation=true
+        - --external-metallb-webhook-server

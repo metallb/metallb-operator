@@ -29,6 +29,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,6 +43,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -58,8 +60,9 @@ import (
 )
 
 const (
-	caName         = "cert"
-	caOrganization = "metallb"
+	caName           = "cert"
+	caOrganization   = "metallb"
+	tlsConfigMapName = "metallb-tls-config"
 )
 
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs="*"
@@ -94,11 +97,12 @@ func main() {
 		metricsAddr          = flag.String("metrics-addr", ":0", "The address the metric endpoint binds to.")
 		enableLeaderElection = flag.Bool("enable-leader-election", false, "Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-		disableCertRotation = flag.Bool("disable-cert-rotation", false, "disable automatic generation and rotation of webhook TLS certificates/keys")
-		certDir             = flag.String("cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The directory where certs are stored")
-		certServiceName     = flag.String("cert-service-name", "metallb-operator-webhook-service", "The service name used to generate the TLS cert's hostname")
-		port                = flag.Int("port", 8080, "HTTP listening port to check operator readiness")
-		withWebhookHTTP2    = flag.Bool("webhook-http2", false, "enables http2 for the webhook endpoint")
+		disableCertRotation   = flag.Bool("disable-cert-rotation", false, "disable automatic generation and rotation of webhook TLS certificates/keys")
+		certDir               = flag.String("cert-dir", "/tmp/k8s-webhook-server/serving-certs", "The directory where certs are stored")
+		certServiceName       = flag.String("cert-service-name", "metallb-operator-webhook-service", "The service name used to generate the TLS cert's hostname")
+		port                  = flag.Int("port", 8080, "HTTP listening port to check operator readiness")
+		withWebhookHTTP2      = flag.Bool("webhook-http2", false, "enables http2 for the webhook endpoint")
+		externalWebhookServer = flag.Bool("external-metallb-webhook-server", false, "whether a separate metallb webhook server deployment exists")
 	)
 	flag.Parse()
 
@@ -137,6 +141,23 @@ func main() {
 	if err != nil {
 		setupLog.Error(err, "failed to parse TLS configuration")
 		os.Exit(1)
+	}
+
+	cl, err := client.New(cfg, client.Options{Scheme: scheme})
+	if err != nil {
+		setupLog.Error(err, "failed to create client")
+		os.Exit(1)
+	}
+	if err := syncTLSConfigMap(ctx, cl, envParams); err != nil {
+		setupLog.Error(err, "failed to sync TLS ConfigMap")
+		os.Exit(1)
+	}
+	if *externalWebhookServer {
+		// We delete the metallb webhook server pods to pick up the new TLS config from the ConfigMap.
+		if err := deleteWebhookServerPods(ctx, cl, envParams.Namespace); err != nil {
+			setupLog.Error(err, "failed to restart webhook server pods")
+			os.Exit(1)
+		}
 	}
 
 	jsonEnv, err := json.Marshal(envParams)
@@ -248,6 +269,50 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func syncTLSConfigMap(ctx context.Context, cl client.Client, envConfig params.EnvConfig) error {
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      tlsConfigMapName,
+			Namespace: envConfig.Namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, cl, cm, func() error {
+		cm.Data = map[string]string{
+			"TLS_CIPHER_SUITES":     envConfig.TLSCipherSuites,
+			"TLS_MIN_VERSION":       envConfig.TLSMinVersion,
+			"TLS_CURVE_PREFERENCES": envConfig.TLSCurvePreferences,
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	setupLog.Info("synced TLS ConfigMap", "name", tlsConfigMapName)
+	return nil
+}
+
+// +kubebuilder:rbac:groups="",namespace=metallb-system,resources=pods,verbs=list;delete
+
+func deleteWebhookServerPods(ctx context.Context, cl client.Client, namespace string) error {
+	podList := &corev1.PodList{}
+	if err := cl.List(ctx, podList,
+		client.InNamespace(namespace),
+		client.MatchingLabels{
+			"app":       "metallb",
+			"component": "webhook-server",
+		},
+	); err != nil {
+		return err
+	}
+	for i := range podList.Items {
+		setupLog.Info("deleting webhook server pod", "pod", podList.Items[i].Name)
+		if err := cl.Delete(ctx, &podList.Items[i]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func webhookServer(port int, withHTTP2 bool, tlsOpt func(*tls.Config)) webhook.Server {

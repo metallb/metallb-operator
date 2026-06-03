@@ -23,6 +23,9 @@ spec:
         - --webhook-mode=onlywebhook
         - --port=9120
         - --log-level=info
+        - --tls-cipher-suites=$(TLS_CIPHER_SUITES)
+        - --tls-min-version=$(TLS_MIN_VERSION)
+        - --tls-curve-preferences=$(TLS_CURVE_PREFERENCES)
         image: controller
         name: webhook-server
         ports:
@@ -64,6 +67,24 @@ spec:
                 fieldPath: metadata.name
           - name: METALLB_BGP_TYPE
             value: "native"
+          - name: TLS_CIPHER_SUITES
+            valueFrom:
+              configMapKeyRef:
+                name: metallb-tls-config
+                key: TLS_CIPHER_SUITES
+                optional: false
+          - name: TLS_MIN_VERSION
+            valueFrom:
+              configMapKeyRef:
+                name: metallb-tls-config
+                key: TLS_MIN_VERSION
+                optional: false
+          - name: TLS_CURVE_PREFERENCES
+            valueFrom:
+              configMapKeyRef:
+                name: metallb-tls-config
+                key: TLS_CURVE_PREFERENCES
+                optional: false
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
