@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2026-05-10T10:48:05Z"
+    createdAt: "2026-06-03T08:10:25Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -905,6 +905,7 @@ spec:
                   - args:
                       - --enable-leader-election
                       - --disable-cert-rotation=true
+                      - --external-metallb-webhook-server
                     command:
                       - /manager
                     env:
@@ -980,6 +981,9 @@ spec:
                       - --port=9120
                       - --log-level=info
                       - --webhook-mode=onlywebhook
+                      - --tls-cipher-suites=$(TLS_CIPHER_SUITES)
+                      - --tls-min-version=$(TLS_MIN_VERSION)
+                      - --tls-curve-preferences=$(TLS_CURVE_PREFERENCES)
                     env:
                       - name: METALLB_POD_NAME
                         valueFrom:
@@ -987,6 +991,24 @@ spec:
                             fieldPath: metadata.name
                       - name: METALLB_BGP_TYPE
                         value: native
+                      - name: TLS_CIPHER_SUITES
+                        valueFrom:
+                          configMapKeyRef:
+                            key: TLS_CIPHER_SUITES
+                            name: metallb-tls-config
+                            optional: false
+                      - name: TLS_MIN_VERSION
+                        valueFrom:
+                          configMapKeyRef:
+                            key: TLS_MIN_VERSION
+                            name: metallb-tls-config
+                            optional: false
+                      - name: TLS_CURVE_PREFERENCES
+                        valueFrom:
+                          configMapKeyRef:
+                            key: TLS_CURVE_PREFERENCES
+                            name: metallb-tls-config
+                            optional: false
                     image: quay.io/metallb/controller:main
                     livenessProbe:
                       failureThreshold: 3
@@ -1261,6 +1283,13 @@ spec:
               verbs:
                 - create
                 - patch
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - delete
+                - list
             - apiGroups:
                 - ""
               resources:
