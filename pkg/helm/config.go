@@ -60,10 +60,15 @@ func setOcpMonitorFields(obj *unstructured.Unstructured) error {
 		return err
 	}
 	for _, ep := range eps {
-		err := unstructured.SetNestedField(ep.(map[string]interface{}), false, "tlsConfig", "insecureSkipVerify")
+		epMap := ep.(map[string]interface{})
+		err := unstructured.SetNestedField(epMap, false, "tlsConfig", "insecureSkipVerify")
 		if err != nil {
 			return err
 		}
+		unstructured.RemoveNestedField(epMap, "bearerTokenFile")
+		unstructured.RemoveNestedField(epMap, "tlsConfig", "caFile")
+		unstructured.RemoveNestedField(epMap, "tlsConfig", "certFile")
+		unstructured.RemoveNestedField(epMap, "tlsConfig", "keyFile")
 	}
 	err = unstructured.SetNestedSlice(obj.Object, eps, "spec", "endpoints")
 	if err != nil {
@@ -107,12 +112,25 @@ func ocpServingCertAnnotationFor(secretName string) map[string]interface{} {
 	}
 }
 
-func ocpServiceMonitorTLSConfig(component, namespace string) map[string]interface{} {
+func ocpServiceMonitorTLSConfig(component, namespace, certSecret string) map[string]interface{} {
 	return map[string]interface{}{
-		"caFile":             "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+		"ca": map[string]interface{}{
+			"configMap": map[string]interface{}{
+				"name": "openshift-service-ca.crt",
+				"key":  "service-ca.crt",
+			},
+		},
+		"cert": map[string]interface{}{
+			"secret": map[string]interface{}{
+				"name": certSecret,
+				"key":  "tls.crt",
+			},
+		},
+		"keySecret": map[string]interface{}{
+			"name": certSecret,
+			"key":  "tls.key",
+		},
 		"serverName":         fmt.Sprintf("%s-monitor-service.%s.svc", component, namespace),
-		"certFile":           "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
-		"keyFile":            "/etc/prometheus/secrets/metrics-client-certs/tls.key",
 		"insecureSkipVerify": false,
 	}
 }
