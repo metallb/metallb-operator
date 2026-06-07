@@ -84,6 +84,7 @@ var defaultEnvConfig = params.EnvConfig{
 	},
 	Namespace:                  MetalLBTestNameSpace,
 	MetricsPort:                9120,
+	LivenessPort:               17472,
 	FRRMetricsPort:             9121,
 	MLBindPort:                 7946,
 	FRRK8sMetricsPort:          7572,

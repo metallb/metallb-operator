@@ -262,6 +262,14 @@ func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 		},
 		"webhookMode": "disabled",
 	}
+	controllerValueMap["livenessProbe"] = map[string]interface{}{
+		"enabled": true,
+		"port":    envConfig.LivenessPort,
+	}
+	controllerValueMap["readinessProbe"] = map[string]interface{}{
+		"enabled": true,
+		"port":    envConfig.LivenessPort,
+	}
 	controllerValueMap["logLevel"] = logLevelValue(crdConfig)
 	if envConfig.IsOpenshift {
 		controllerValueMap["securityContext"] = map[string]interface{}{
@@ -315,6 +323,14 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 		"memberlist": map[string]interface{}{
 			"enabled":    true,
 			"mlBindPort": envConfig.MLBindPort,
+		},
+		"livenessProbe": map[string]interface{}{
+			"enabled": true,
+			"port":    envConfig.LivenessPort,
+		},
+		"readinessProbe": map[string]interface{}{
+			"enabled": true,
+			"port":    envConfig.LivenessPort,
 		},
 		"command": "/speaker",
 	}

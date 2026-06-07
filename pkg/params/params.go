@@ -44,6 +44,7 @@ type EnvConfig struct {
 	SecureFRRK8sMetricsPort    int
 	SecureFRRK8sFRRMetricsPort int
 	MetricsPort                int
+	LivenessPort               int
 	TLSCipherSuites            string
 	TLSCurvePreferences        string
 	TLSMinVersion              string
@@ -87,6 +88,10 @@ func FromEnvironment(isOpenshift bool) (EnvConfig, error) {
 		return EnvConfig{}, err
 	}
 	res.MetricsPort, err = intValueWithDefault("METRICS_PORT", 9120)
+	if err != nil {
+		return EnvConfig{}, err
+	}
+	res.LivenessPort, err = intValueWithDefault("OPERAND_LIVENESS_PORT", 17472)
 	if err != nil {
 		return EnvConfig{}, err
 	}
