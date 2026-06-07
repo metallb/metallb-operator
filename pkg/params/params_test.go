@@ -40,6 +40,7 @@ func TestFromEnvironment(t *testing.T) {
 				},
 				MLBindPort:                 7946,
 				MetricsPort:                9120,
+				LivenessPort:               17472,
 				FRRMetricsPort:             9121,
 				FRRK8sMetricsPort:          7572,
 				FRRK8sFRRMetricsPort:       7573,
@@ -56,6 +57,7 @@ func TestFromEnvironment(t *testing.T) {
 				_ = os.Setenv("MEMBER_LIST_BIND_PORT", "1111")
 				_ = os.Setenv("FRR_METRICS_PORT", "2222")
 				_ = os.Setenv("METRICS_PORT", "4444")
+				_ = os.Setenv("OPERAND_LIVENESS_PORT", "5555")
 				_ = os.Setenv("FRRK8S_FRR_METRICS_PORT", "6666")
 				_ = os.Setenv("FRRK8S_HTTPS_METRICS_PORT", "7777")
 				_ = os.Setenv("FRRK8S_FRR_HTTPS_METRICS_PORT", "8888")
@@ -81,6 +83,7 @@ func TestFromEnvironment(t *testing.T) {
 				},
 				MLBindPort:                 1111,
 				MetricsPort:                4444,
+				LivenessPort:               5555,
 				FRRMetricsPort:             2222,
 				FRRK8sMetricsPort:          9999,
 				FRRK8sFRRMetricsPort:       6666,
@@ -115,6 +118,7 @@ func TestFromEnvironment(t *testing.T) {
 				},
 				MLBindPort:                 7946,
 				MetricsPort:                9120,
+				LivenessPort:               17472,
 				FRRMetricsPort:             9121,
 				FRRK8sMetricsPort:          7572,
 				FRRK8sFRRMetricsPort:       7573,
@@ -152,6 +156,7 @@ func unset() {
 	_ = os.Unsetenv("MEMBER_LIST_BIND_PORT")
 	_ = os.Unsetenv("FRR_METRICS_PORT")
 	_ = os.Unsetenv("METRICS_PORT")
+	_ = os.Unsetenv("OPERAND_LIVENESS_PORT")
 	_ = os.Unsetenv("FRRK8S_FRR_METRICS_PORT")
 	_ = os.Unsetenv("FRRK8S_HTTPS_METRICS_PORT")
 	_ = os.Unsetenv("FRRK8S_FRR_HTTPS_METRICS_PORT")
