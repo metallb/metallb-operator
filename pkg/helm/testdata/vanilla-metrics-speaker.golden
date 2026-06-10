@@ -31,6 +31,7 @@
                     {
                         "args": [
                             "--port=9120",
+                            "--health-probe-port=17472",
                             "--log-level=info"
                         ],
                         "command": [
