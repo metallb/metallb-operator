@@ -4,12 +4,12 @@ resources:
   - ../../_cache/metallb/config/frr
   - rbac.yaml
 
-patchesStrategicMerge:
-  - controller-webhook-patch.yaml
-  - webhookcainjection-patch.yaml
-  - crd-conversion-patch.yaml
-  - crdcainjection-patch.yaml
-  - webhookservicecainjection_patch.yaml
-  - permission-patch.yaml
 
 namespace: metallb-system
+patches:
+  - path: controller-webhook-patch.yaml
+  - path: webhookcainjection-patch.yaml
+  - path: crd-conversion-patch.yaml
+  - path: crdcainjection-patch.yaml
+  - path: webhookservicecainjection_patch.yaml
+  - path: permission-patch.yaml
