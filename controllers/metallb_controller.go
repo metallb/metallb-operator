@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/metallb/metallb-operator/pkg/apply"
 	"github.com/metallb/metallb-operator/pkg/helm"
 	"github.com/metallb/metallb-operator/pkg/openshift"
 	"github.com/metallb/metallb-operator/pkg/params"
@@ -41,6 +40,7 @@ import (
 )
 
 const (
+	fieldManager               = "metallb-operator"
 	defaultMetalLBCrName       = "metallb"
 	MetalLBChartPathController = "./bindata/deployment/helm/metallb"
 	FRRK8SChartPathController  = "./bindata/deployment/helm/frr-k8s"
@@ -171,7 +171,7 @@ func (r *MetalLBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *MetalLBReconciler) syncMetalLBResources(ctx context.Context, config *metallbv1beta1.MetalLB) error {
 	logger := r.Log.WithName("syncMetalLBResources")
-	logger.Info("Start")
+	logger.Info("Start Reconciling")
 
 	bgpType := params.BGPType(config, r.EnvConfig)
 	if r.EnvConfig.MustDeployFRRK8sFromCNO && r.EnvConfig.IsOpenshift && (bgpType == metallbv1beta1.FRRK8sExternalMode) {
@@ -237,7 +237,8 @@ func (r *MetalLBReconciler) syncMetalLBResources(ctx context.Context, config *me
 				return errors.Wrapf(err, "Failed to set controller reference to %s %s", objNS, obj.GetName())
 			}
 		}
-		if err := apply.ApplyObject(context.TODO(), r.Client, obj); err != nil {
+		applyConfig := client.ApplyConfigurationFromUnstructured(obj)
+		if err := r.Apply(ctx, applyConfig, client.FieldOwner(fieldManager), client.ForceOwnership); err != nil {
 			return errors.Wrapf(err, "could not apply (%s) %s/%s", obj.GroupVersionKind(), objNS, obj.GetName())
 		}
 	}
