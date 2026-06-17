@@ -2,8 +2,6 @@ package consts
 
 import (
 	"time"
-
-	"github.com/metallb/metallb-operator/pkg/apply"
 )
 
 const (
@@ -20,7 +18,7 @@ const (
 	// MetalLBDaemonsetName contains the name of the MetalLB daemonset
 	MetalLBDaemonsetName = "speaker"
 	// MetalLBConfigMapName contains created configmap
-	MetalLBConfigMapName = apply.MetalLBConfigMap
+	MetalLBConfigMapName = "config"
 	// FRRK8SDaemonsetName contains the name of the frr-k8s daemonset
 	FRRK8SDaemonsetName = "frr-k8s"
 	// FRRK8SStatusCleanerDeploymentName contains the name of the frr-k8s statuscleaner deployment
