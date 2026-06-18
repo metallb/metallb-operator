@@ -94,7 +94,7 @@ var build = "develop"
 
 func main() {
 	var (
-		metricsAddr          = flag.String("metrics-addr", ":0", "The address the metric endpoint binds to.")
+		metricsAddr          = flag.String("metrics-addr", "0", "The address the metric endpoint binds to.")
 		enableLeaderElection = flag.Bool("enable-leader-election", false, "Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 		disableCertRotation   = flag.Bool("disable-cert-rotation", false, "disable automatic generation and rotation of webhook TLS certificates/keys")
