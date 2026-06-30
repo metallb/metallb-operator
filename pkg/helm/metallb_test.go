@@ -225,6 +225,61 @@ func TestParseMetalLBChartWithCustomValues(t *testing.T) {
 	g.Expect(isControllerFound).To(BeTrue())
 }
 
+func TestSecretPassthrough(t *testing.T) {
+	tests := []struct {
+		name              string
+		secretPassthrough bool
+		expectFlag        bool
+	}{
+		{"enabled", true, true},
+		{"disabled", false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+			chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
+			g.Expect(err).To(BeNil())
+
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					BGPBackend: metallbv1beta1.FRRK8sExternalMode,
+					FRRK8SConfig: &metallbv1beta1.FRRK8SConfig{
+						Namespace:         "frr-k8s-external-namespace",
+						SecretPassthrough: tt.secretPassthrough,
+					},
+				},
+			}
+
+			objs, err := chart.Objects(defaultEnvConfig, metallb)
+			g.Expect(err).To(BeNil())
+			var speakerFound bool
+			for _, obj := range objs {
+				if obj.GetKind() == "DaemonSet" && obj.GetName() == speakerDaemonSet {
+					speaker := appsv1.DaemonSet{}
+					err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &speaker)
+					g.Expect(err).To(BeNil())
+					for _, container := range speaker.Spec.Template.Spec.Containers {
+						if container.Name == "speaker" {
+							if tt.expectFlag {
+								g.Expect(container.Args).To(ContainElement("--frrk8s-secret-passthrough"))
+							} else {
+								g.Expect(container.Args).NotTo(ContainElement("--frrk8s-secret-passthrough"))
+							}
+							g.Expect(container.Args).To(ContainElement("--frrk8s-namespace=frr-k8s-external-namespace"))
+							speakerFound = true
+						}
+					}
+				}
+			}
+			g.Expect(speakerFound).To(BeTrue())
+		})
+	}
+}
+
 func TestParseOCPSecureMetrics(t *testing.T) {
 	g := NewGomegaWithT(t)
 
