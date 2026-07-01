@@ -107,6 +107,11 @@ type FRRK8SConfig struct {
 	AlwaysBlock []string `json:"alwaysBlock,omitempty"`
 	// The namespace frr-k8s is running on in case of frr-k8s external mode
 	Namespace string `json:"namespace,omitempty"`
+	// When set, BGP secret references are passed to frr-k8s without resolving them.
+	// The secret must exist in the frr-k8s namespace.
+	// Only valid when frr-k8s runs in external mode.
+	// +optional
+	SecretPassthrough bool `json:"secretPassthrough,omitempty"`
 }
 
 type Config struct {
