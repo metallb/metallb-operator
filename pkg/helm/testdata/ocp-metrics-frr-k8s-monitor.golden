@@ -18,6 +18,7 @@
     "spec": {
         "endpoints": [
             {
+                "bearerTokenFile": "/var/run/secrets/kubernetes.io/serviceaccount/token",
                 "honorLabels": true,
                 "metricRelabelings": [
                     {
@@ -40,27 +41,15 @@
                 "port": "metricshttps",
                 "scheme": "https",
                 "tlsConfig": {
-                    "ca": {
-                        "configMap": {
-                            "key": "service-ca.crt",
-                            "name": "openshift-service-ca.crt"
-                        }
-                    },
-                    "cert": {
-                        "secret": {
-                            "key": "tls.crt",
-                            "name": "frr-k8s-certs-secret"
-                        }
-                    },
+                    "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+                    "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
                     "insecureSkipVerify": false,
-                    "keySecret": {
-                        "key": "tls.key",
-                        "name": "frr-k8s-certs-secret"
-                    },
+                    "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
                     "serverName": "frr-k8s-monitor-service.metallb-test-namespace.svc"
                 }
             },
             {
+                "bearerTokenFile": "/var/run/secrets/kubernetes.io/serviceaccount/token",
                 "honorLabels": true,
                 "metricRelabelings": [
                     {
@@ -83,23 +72,10 @@
                 "port": "frrmetricshttps",
                 "scheme": "https",
                 "tlsConfig": {
-                    "ca": {
-                        "configMap": {
-                            "key": "service-ca.crt",
-                            "name": "openshift-service-ca.crt"
-                        }
-                    },
-                    "cert": {
-                        "secret": {
-                            "key": "tls.crt",
-                            "name": "frr-k8s-certs-secret"
-                        }
-                    },
+                    "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+                    "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
                     "insecureSkipVerify": false,
-                    "keySecret": {
-                        "key": "tls.key",
-                        "name": "frr-k8s-certs-secret"
-                    },
+                    "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
                     "serverName": "frr-k8s-monitor-service.metallb-test-namespace.svc"
                 }
             }

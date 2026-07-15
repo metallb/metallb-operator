@@ -18,52 +18,28 @@
     "spec": {
         "endpoints": [
             {
+                "bearerTokenFile": "/var/run/secrets/kubernetes.io/serviceaccount/token",
                 "honorLabels": true,
                 "port": "metricshttps",
                 "scheme": "https",
                 "tlsConfig": {
-                    "ca": {
-                        "configMap": {
-                            "key": "service-ca.crt",
-                            "name": "openshift-service-ca.crt"
-                        }
-                    },
-                    "cert": {
-                        "secret": {
-                            "key": "tls.crt",
-                            "name": "speaker-certs-secret"
-                        }
-                    },
+                    "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+                    "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
                     "insecureSkipVerify": false,
-                    "keySecret": {
-                        "key": "tls.key",
-                        "name": "speaker-certs-secret"
-                    },
+                    "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
                     "serverName": "speaker-monitor-service.metallb-test-namespace.svc"
                 }
             },
             {
+                "bearerTokenFile": "/var/run/secrets/kubernetes.io/serviceaccount/token",
                 "honorLabels": true,
                 "port": "frrmetricshttps",
                 "scheme": "https",
                 "tlsConfig": {
-                    "ca": {
-                        "configMap": {
-                            "key": "service-ca.crt",
-                            "name": "openshift-service-ca.crt"
-                        }
-                    },
-                    "cert": {
-                        "secret": {
-                            "key": "tls.crt",
-                            "name": "speaker-certs-secret"
-                        }
-                    },
+                    "caFile": "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt",
+                    "certFile": "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
                     "insecureSkipVerify": false,
-                    "keySecret": {
-                        "key": "tls.key",
-                        "name": "speaker-certs-secret"
-                    },
+                    "keyFile": "/etc/prometheus/secrets/metrics-client-certs/tls.key",
                     "serverName": "speaker-monitor-service.metallb-test-namespace.svc"
                 }
             }
