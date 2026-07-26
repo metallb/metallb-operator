@@ -7,7 +7,7 @@ rules:
   - apiGroups:
       - security.openshift.io
     resourceNames:
-      - privileged
+      - metallb-speaker
     resources:
       - securitycontextconstraints
     verbs:

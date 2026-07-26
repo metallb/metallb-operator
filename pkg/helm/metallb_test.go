@@ -411,6 +411,64 @@ func TestNetworkPolicies(t *testing.T) {
 	g.Expect(networkPolicyFound).To(BeFalse())
 }
 
+func TestSpeakerSCCOnOpenShift(t *testing.T) {
+	tests := []struct {
+		name        string
+		isOpenshift bool
+		expectSCC   bool
+	}{
+		{"OCP includes SCC and annotation", true, true},
+		{"non-OCP excludes SCC and annotation", false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+			chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
+			g.Expect(err).To(BeNil())
+
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+			}
+
+			envConfig := defaultEnvConfig
+			envConfig.IsOpenshift = tt.isOpenshift
+
+			objs, err := chart.Objects(envConfig, metallb)
+			g.Expect(err).To(BeNil())
+
+			var sccFound, annotationFound bool
+			for _, obj := range objs {
+				if obj.GetKind() == "SecurityContextConstraints" && obj.GetName() == "metallb-speaker" {
+					sccFound = true
+					hostNet, _, _ := unstructured.NestedBool(obj.Object, "allowHostNetwork")
+					g.Expect(hostNet).To(BeTrue())
+					hostPorts, _, _ := unstructured.NestedBool(obj.Object, "allowHostPorts")
+					g.Expect(hostPorts).To(BeTrue())
+					privEsc, _, _ := unstructured.NestedBool(obj.Object, "allowPrivilegeEscalation")
+					g.Expect(privEsc).To(BeFalse())
+					privContainer, _, _ := unstructured.NestedBool(obj.Object, "allowPrivilegedContainer")
+					g.Expect(privContainer).To(BeFalse())
+					caps, _, _ := unstructured.NestedStringSlice(obj.Object, "allowedCapabilities")
+					g.Expect(caps).To(ConsistOf("NET_RAW"))
+					dropCaps, _, _ := unstructured.NestedStringSlice(obj.Object, "requiredDropCapabilities")
+					g.Expect(dropCaps).To(ConsistOf("ALL"))
+				}
+				if obj.GetKind() == "DaemonSet" && obj.GetName() == "speaker" {
+					ann, _, _ := unstructured.NestedStringMap(obj.Object, "spec", "template", "metadata", "annotations")
+					if ann["openshift.io/required-scc"] == "metallb-speaker" {
+						annotationFound = true
+					}
+				}
+			}
+			g.Expect(sccFound).To(Equal(tt.expectSCC))
+			g.Expect(annotationFound).To(Equal(tt.expectSCC))
+		})
+	}
+}
+
 func validateObject(testcase, name string, obj *unstructured.Unstructured) error {
 	goldenFile := filepath.Join("testdata", testcase+"-"+name+".golden")
 	j, err := json.MarshalIndent(obj, "", "    ")

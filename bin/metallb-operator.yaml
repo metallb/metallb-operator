@@ -4886,6 +4886,15 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - metallb-speaker
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - create
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -5622,7 +5631,7 @@ rules:
 - apiGroups:
   - security.openshift.io
   resourceNames:
-  - privileged
+  - metallb-speaker
   resources:
   - securitycontextconstraints
   verbs:

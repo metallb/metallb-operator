@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/pkg/openshift"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -115,6 +116,18 @@ func ocpServiceMonitorTLSConfig(component, namespace string) map[string]interfac
 		"keyFile":            "/etc/prometheus/secrets/metrics-client-certs/tls.key",
 		"insecureSkipVerify": false,
 	}
+}
+
+func setRequiredSCCAnnotationForSpeaker(obj *unstructured.Unstructured) error {
+	annotations, _, err := unstructured.NestedStringMap(obj.Object, "spec", "template", "metadata", "annotations")
+	if err != nil {
+		return err
+	}
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations["openshift.io/required-scc"] = openshift.SpeakerSCCName
+	return unstructured.SetNestedStringMap(obj.Object, annotations, "spec", "template", "metadata", "annotations")
 }
 
 func updateAnnotations(obj *unstructured.Unstructured, annotations map[string]string) error {
