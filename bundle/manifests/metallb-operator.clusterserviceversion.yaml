@@ -432,7 +432,7 @@ metadata:
     categories: Networking
     certified: "false"
     containerImage: quay.io/metallb/metallb-operator
-    createdAt: "2026-06-30T06:37:39Z"
+    createdAt: "2026-07-28T06:35:36Z"
     description: An operator for deploying MetalLB on a kubernetes cluster.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -817,6 +817,15 @@ spec:
                 - patch
                 - update
                 - watch
+            - apiGroups:
+                - security.openshift.io
+              resourceNames:
+                - metallb-speaker
+              resources:
+                - securitycontextconstraints
+              verbs:
+                - create
+                - patch
           serviceAccountName: manager-account
         - rules:
             - apiGroups:
@@ -1410,7 +1419,7 @@ spec:
             - apiGroups:
                 - security.openshift.io
               resourceNames:
-                - privileged
+                - metallb-speaker
               resources:
                 - securitycontextconstraints
               verbs:

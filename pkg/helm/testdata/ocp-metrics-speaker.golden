@@ -21,6 +21,9 @@
         },
         "template": {
             "metadata": {
+                "annotations": {
+                    "openshift.io/required-scc": "metallb-speaker"
+                },
                 "labels": {
                     "app": "metallb",
                     "component": "speaker"

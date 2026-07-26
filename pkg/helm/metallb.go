@@ -18,6 +18,7 @@ package helm
 
 import (
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/metallb/metallb-operator/pkg/openshift"
 	"github.com/metallb/metallb-operator/pkg/params"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -86,12 +87,20 @@ func (h *MetalLBChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1b
 				return nil, err
 			}
 		}
+		if isSpeakerDaemonSet(obj) && envConfig.IsOpenshift {
+			if err := setRequiredSCCAnnotationForSpeaker(obj); err != nil {
+				return nil, err
+			}
+		}
 		if isServiceMonitor(obj) && envConfig.IsOpenshift {
 			err := setOcpMonitorFields(obj)
 			if err != nil {
 				return nil, err
 			}
 		}
+	}
+	if envConfig.IsOpenshift {
+		objs = append(objs, openshift.SpeakerSCC())
 	}
 	return objs, nil
 }
