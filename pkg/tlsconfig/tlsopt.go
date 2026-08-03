@@ -16,9 +16,6 @@ import (
 // Cipher suites are IANA names (comma-separated).
 // Curve preferences are numeric CurveID values (comma-separated).
 // Min version is a Go TLS version string (e.g. "VersionTLS12").
-//
-// Returns an error if cipher suites are specified with TLS 1.3 minimum,
-// since Go's TLS 1.3 does not allow configuring cipher suites.
 func OptFor(cipherSuites, curvePreferences, minVersion string) (func(*tls.Config), error) {
 	ciphers, err := parseCipherSuites(cipherSuites)
 	if err != nil {
@@ -31,9 +28,6 @@ func OptFor(cipherSuites, curvePreferences, minVersion string) (func(*tls.Config
 	minVer, err := parseTLSVersion(minVersion)
 	if err != nil {
 		return nil, fmt.Errorf("parsing tls-min-version: %w", err)
-	}
-	if ciphers != nil && minVer == tls.VersionTLS13 {
-		return nil, fmt.Errorf("cipher suites cannot be configured with TLS 1.3")
 	}
 	return func(cfg *tls.Config) {
 		if ciphers != nil {
