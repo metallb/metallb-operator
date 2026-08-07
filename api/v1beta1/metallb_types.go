@@ -171,6 +171,3 @@ type MetalLBList struct {
 	Items           []MetalLB `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&MetalLB{}, &MetalLBList{})
-}
