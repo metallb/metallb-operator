@@ -13,6 +13,7 @@
         "namespace": "metallb-test-namespace"
     },
     "spec": {
+        "revisionHistoryLimit": 10,
         "selector": {
             "matchLabels": {
                 "app": "metallb",
@@ -171,9 +172,9 @@
                     },
                     {
                         "command": [
-                            "/bin/sh",
-                            "-c",
-                            "/sbin/tini -- /usr/lib/frr/docker-start"
+                            "/sbin/tini",
+                            "--",
+                            "/usr/lib/frr/docker-start"
                         ],
                         "env": [
                             {
