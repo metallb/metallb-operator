@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
@@ -270,6 +271,59 @@ func TestSecretPassthrough(t *testing.T) {
 								g.Expect(container.Args).NotTo(ContainElement("--frrk8s-secret-passthrough"))
 							}
 							g.Expect(container.Args).To(ContainElement("--frrk8s-namespace=frr-k8s-external-namespace"))
+							speakerFound = true
+						}
+					}
+				}
+			}
+			g.Expect(speakerFound).To(BeTrue())
+		})
+	}
+}
+
+func TestSpeakerGratuitousARPInterval(t *testing.T) {
+	tests := []struct {
+		name      string
+		interval  *metav1.Duration
+		expectArg string
+		expectSet bool
+	}{
+		{"unset", nil, "", false},
+		{"set", &metav1.Duration{Duration: 5 * time.Second}, "--gratuitous-arp-interval=5s", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewGomegaWithT(t)
+			chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
+			g.Expect(err).To(BeNil())
+
+			metallb := &metallbv1beta1.MetalLB{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "metallb",
+					Namespace: MetalLBTestNameSpace,
+				},
+				Spec: metallbv1beta1.MetalLBSpec{
+					SpeakerGratuitousARPInterval: tt.interval,
+				},
+			}
+
+			objs, err := chart.Objects(defaultEnvConfig, metallb)
+			g.Expect(err).To(BeNil())
+			var speakerFound bool
+			for _, obj := range objs {
+				if obj.GetKind() == "DaemonSet" && obj.GetName() == speakerDaemonSet {
+					speaker := appsv1.DaemonSet{}
+					err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), &speaker)
+					g.Expect(err).To(BeNil())
+					for _, container := range speaker.Spec.Template.Spec.Containers {
+						if container.Name == "speaker" {
+							if tt.expectSet {
+								g.Expect(container.Args).To(ContainElement(tt.expectArg))
+							} else {
+								for _, a := range container.Args {
+									g.Expect(a).NotTo(HavePrefix("--gratuitous-arp-interval"))
+								}
+							}
 							speakerFound = true
 						}
 					}

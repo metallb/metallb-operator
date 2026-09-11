@@ -2146,6 +2146,19 @@ spec:
                     description: Define container runtime configuration class
                     type: string
                 type: object
+              speakerGratuitousARPInterval:
+                description: |-
+                  SpeakerGratuitousARPInterval is the interval at which the MetalLB speaker
+                  sends periodic gratuitous ARP / unsolicited NDP announcements for
+                  L2-advertised services. When unset or set to 0, periodic announcements
+                  are disabled and only the announcements triggered by service events are
+                  sent. The value must be a valid Go duration string (e.g. "30s", "1m")
+                  and, when non-zero, must be at least 1s to avoid flooding the network
+                  with announcements.
+                type: string
+                x-kubernetes-validations:
+                - message: speakerGratuitousARPInterval must be 0 or at least 1s
+                  rule: duration(self) == duration('0s') || duration(self) >= duration('1s')
               speakerTolerations:
                 description: |-
                   tolerations is a list of tolerations applied to MetalLB speaker
