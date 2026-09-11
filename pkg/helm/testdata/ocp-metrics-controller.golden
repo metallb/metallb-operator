@@ -13,6 +13,7 @@
         "namespace": "metallb-test-namespace"
     },
     "spec": {
+        "revisionHistoryLimit": 10,
         "selector": {
             "matchLabels": {
                 "app": "metallb",
