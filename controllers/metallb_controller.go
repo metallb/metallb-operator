@@ -40,10 +40,11 @@ import (
 )
 
 const (
-	fieldManager               = "metallb-operator"
-	defaultMetalLBCrName       = "metallb"
-	MetalLBChartPathController = "./bindata/deployment/helm/metallb"
-	FRRK8SChartPathController  = "./bindata/deployment/helm/frr-k8s"
+	fieldManager                     = "metallb-operator"
+	defaultMetalLBCrName             = "metallb"
+	MetalLBChartPathController       = "./bindata/deployment/helm/metallb"
+	FRRK8SChartPathController        = "./bindata/deployment/helm/frr-k8s"
+	CNOHandoffRequeueAfterController = 2 * time.Minute
 )
 
 // MetalLBReconciler reconciles a MetalLB object
@@ -59,8 +60,7 @@ type MetalLBReconciler struct {
 
 var MetalLBChartPath = MetalLBChartPathController
 var FRRK8SChartPath = FRRK8SChartPathController
-
-var EmbeddedFRRK8sSupportNotAvailable = errors.New("current CNO version does not support deploying frr-k8s")
+var CNOHandoffRequeueAfter = CNOHandoffRequeueAfterController
 
 // Namespace Scoped
 // +kubebuilder:rbac:groups=apps,namespace=metallb-system,resources=deployments;daemonsets,verbs=get;list;watch;create;update;patch;delete
@@ -132,8 +132,11 @@ func (r *MetalLBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 func (r *MetalLBReconciler) reconcileResource(ctx context.Context, req ctrl.Request, instance *metallbv1beta1.MetalLB) (ctrl.Result, string, error) {
 	err := r.syncMetalLBResources(ctx, instance)
-	if errors.Is(err, EmbeddedFRRK8sSupportNotAvailable) {
-		return ctrl.Result{RequeueAfter: 2 * time.Minute}, "", nil
+	if errors.Is(err, openshift.ErrEmbeddedFRRK8sUnsupported) {
+		// The handoff of frr-k8s to CNO can't be performed yet, keep retrying until
+		// the cluster catches up instead of degrading and tearing down the existing pods.
+		r.Log.Info("waiting for CNO to support deploying frr-k8s, requeueing", "reason", err.Error())
+		return ctrl.Result{RequeueAfter: CNOHandoffRequeueAfter}, status.ConditionProgressing, nil
 	}
 	if err != nil {
 		return ctrl.Result{}, status.ConditionDegraded, errors.Wrapf(err, "FailedToSyncMetalLBResources")
@@ -181,7 +184,7 @@ func (r *MetalLBReconciler) syncMetalLBResources(ctx context.Context, config *me
 			return err
 		}
 		if !supportsFRRK8s {
-			return EmbeddedFRRK8sSupportNotAvailable
+			return openshift.ErrEmbeddedFRRK8sUnsupported
 		}
 
 		if err := openshift.DeployFRRK8s(ctx, r.Client); err != nil {
