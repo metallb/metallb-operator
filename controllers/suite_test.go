@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/params"
@@ -127,6 +128,9 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
+		// Avoid binding the default metrics port, it collides with the openshift mode suite
+		// when go test runs the two packages in parallel.
+		Metrics: metricsserver.Options{BindAddress: "0"},
 	})
 	Expect(err).ToNot(HaveOccurred())
 
