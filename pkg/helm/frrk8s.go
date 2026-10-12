@@ -8,12 +8,11 @@ import (
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/params"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/cli/values"
-	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/chart"
+	"helm.sh/helm/v4/pkg/chart/loader"
+	"helm.sh/helm/v4/pkg/cli"
+	"helm.sh/helm/v4/pkg/release"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +32,7 @@ const (
 type FRRK8SChart struct {
 	client      *action.Install
 	envSettings *cli.EnvSettings
-	chart       *chart.Chart
+	chart       chart.Charter
 }
 
 // NewFRRK8SChart initializes frr-k8s helm chart after loading it from given
@@ -43,8 +42,7 @@ func NewFRRK8SChart(path, name, namespace string) (*FRRK8SChart, error) {
 	chart.envSettings = cli.New()
 	chart.client = action.NewInstall(new(action.Configuration))
 	chart.client.ReleaseName = name
-	chart.client.DryRun = true
-	chart.client.ClientOnly = true
+	chart.client.DryRunStrategy = action.DryRunClient
 	chart.client.Namespace = namespace
 	chartPath, err := chart.client.LocateChart(path, chart.envSettings)
 	if err != nil {
@@ -60,22 +58,21 @@ func NewFRRK8SChart(path, name, namespace string) (*FRRK8SChart, error) {
 // Objects retrieves manifests from chart after patching custom values passed in crdConfig
 // and environment variables.
 func (h *FRRK8SChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) ([]*unstructured.Unstructured, error) {
-	chartValueOpts := &values.Options{}
-	chartValues, err := chartValueOpts.MergeValues(getter.All(h.envSettings))
+	chartValues := map[string]interface{}{}
+	err := patchChartValues(envConfig, crdConfig, chartValues)
 	if err != nil {
 		return nil, err
 	}
 
-	err = patchChartValues(envConfig, crdConfig, chartValues)
+	rel, err := h.client.Run(h.chart, chartValues)
 	if err != nil {
 		return nil, err
 	}
-
-	release, err := h.client.Run(h.chart, chartValues)
+	relAccessor, err := release.NewAccessor(rel)
 	if err != nil {
 		return nil, err
 	}
-	objs, err := parseManifest(release.Manifest)
+	objs, err := parseManifest(relAccessor.Manifest())
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +194,11 @@ func frrk8sValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB)
 		frrk8sValueMap["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
 	}
 	if crdConfig.Spec.SpeakerTolerations != nil {
-		frrk8sValueMap["tolerations"] = crdConfig.Spec.SpeakerTolerations
+		v, err := toJSONValue(crdConfig.Spec.SpeakerTolerations)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert frr-k8s tolerations to helm value: %w", err)
+		}
+		frrk8sValueMap["tolerations"] = v
 	}
 	if crdConfig.Spec.SpeakerConfig != nil {
 		frrk8sValueMap["priorityClassName"] = crdConfig.Spec.SpeakerConfig.PriorityClassName
@@ -233,17 +234,17 @@ func prometheusValues(envConfig params.EnvConfig) map[string]interface{} {
 
 	if envConfig.DeployServiceMonitors {
 		serviceMonitor["enabled"] = true
-		serviceMonitor["metricRelabelings"] = []map[string]interface{}{
-			{
+		serviceMonitor["metricRelabelings"] = []any{
+			map[string]any{
 				"regex":        "frrk8s_bgp_(.*)",
 				"replacement":  "metallb_bgp_$1",
-				"sourceLabels": []string{"__name__"},
+				"sourceLabels": []any{"__name__"},
 				"targetLabel":  "__name__",
 			},
-			{
+			map[string]any{
 				"regex":        "frrk8s_bfd_(.*)",
 				"replacement":  "metallb_bfd_$1",
-				"sourceLabels": []string{"__name__"},
+				"sourceLabels": []any{"__name__"},
 				"targetLabel":  "__name__",
 			},
 		}

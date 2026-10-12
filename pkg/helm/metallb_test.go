@@ -29,6 +29,7 @@ import (
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/params"
 	. "github.com/onsi/gomega"
+	helmchart "helm.sh/helm/v4/pkg/chart"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -82,7 +83,9 @@ func TestLoadMetalLBChart(t *testing.T) {
 	chart, err := NewMetalLBChart(metalLBChartPath, metalLBChartName, MetalLBTestNameSpace, nil)
 	g.Expect(err).To(BeNil())
 	g.Expect(chart.chart).NotTo(BeNil())
-	g.Expect(chart.chart.Name()).To(Equal(metalLBChartName))
+	chartAccessor, err := helmchart.NewAccessor(chart.chart)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(chartAccessor.Name()).To(Equal(metalLBChartName))
 }
 
 func TestParseMetalLBChartWithCustomValues(t *testing.T) {
