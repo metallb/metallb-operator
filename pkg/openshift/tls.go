@@ -2,6 +2,8 @@ package openshift
 
 import (
 	"context"
+	"crypto/tls"
+	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -42,9 +44,12 @@ func FetchTLSConfig(ctx context.Context, scheme *runtime.Scheme, logger logr.Log
 		return nil, err
 	}
 
-	cipherSuites, curvePreferences, minVersion := tlsStringsFromProfile(profileSpec)
+	cipherSuites, curvePreferences, minVersion, unsupported := tlsStringsFromProfile(profileSpec)
+	if len(unsupported) > 0 {
+		logger.Info("ignoring unsupported TLS profile entries", "entries", unsupported)
+	}
 	logger.Info("resolved OpenShift TLS profile",
-		"ciphers", cipherSuites, "minVersion", minVersion)
+		"ciphers", cipherSuites, "curvePreferences", curvePreferences, "minVersion", minVersion)
 
 	return &TLSConfig{
 		CipherSuites:     cipherSuites,
@@ -75,14 +80,20 @@ func (tc *TLSConfig) SetupProfileWatcher(mgr ctrl.Manager, cancel context.Cancel
 	return watcher.SetupWithManager(mgr)
 }
 
-func tlsStringsFromProfile(spec configv1.TLSProfileSpec) (string, string, string) {
-	var cipherSuites string
-	if len(spec.Ciphers) > 0 {
-		cipherSuites = strings.Join(libgocrypto.OpenSSLToIANACipherSuites(spec.Ciphers), ",")
+func tlsStringsFromProfile(spec configv1.TLSProfileSpec) (string, string, string, []string) {
+	configureTLS, unsupported := crctls.NewTLSConfigFromProfile(spec)
+	cfg := &tls.Config{}
+	configureTLS(cfg)
+	ciphers := make([]string, len(cfg.CipherSuites))
+	for i, id := range cfg.CipherSuites {
+		ciphers[i] = tls.CipherSuiteName(id)
 	}
-	// TODO(curves): once openshift/api#2583 merges and TLSProfileSpec.Curves is available,
-	// convert curve names to numeric CurveIDs.
-	curvePreferences := ""
-	minVersion := string(spec.MinTLSVersion)
-	return cipherSuites, curvePreferences, minVersion
+	cipherSuites := strings.Join(ciphers, ",")
+	curves := make([]string, len(cfg.CurvePreferences))
+	for i, id := range cfg.CurvePreferences {
+		curves[i] = strconv.FormatInt(int64(id), 10)
+	}
+	curvePreferences := strings.Join(curves, ",")
+	minVersion := libgocrypto.TLSVersionToNameOrDie(cfg.MinVersion)
+	return cipherSuites, curvePreferences, minVersion, unsupported
 }
