@@ -17,17 +17,17 @@ limitations under the License.
 package helm
 
 import (
+	"fmt"
 	"time"
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/metallb/metallb-operator/pkg/openshift"
 	"github.com/metallb/metallb-operator/pkg/params"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/cli/values"
-	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/chart"
+	"helm.sh/helm/v4/pkg/chart/loader"
+	"helm.sh/helm/v4/pkg/cli"
+	"helm.sh/helm/v4/pkg/release"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,24 +39,25 @@ import (
 type MetalLBChart struct {
 	client      *action.Install
 	envSettings *cli.EnvSettings
-	chart       *chart.Chart
+	chart       chart.Charter
 }
 
 // Objects retrieves manifests from chart after patching custom values passed in crdConfig
 // and environment variables.
 func (h *MetalLBChart) Objects(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) ([]*unstructured.Unstructured, error) {
-	chartValueOpts := &values.Options{}
-	chartValues, err := chartValueOpts.MergeValues(getter.All(h.envSettings))
+	chartValues := map[string]interface{}{}
+	if err := patchMetalLBChartValues(envConfig, crdConfig, chartValues); err != nil {
+		return nil, err
+	}
+	rel, err := h.client.Run(h.chart, chartValues)
 	if err != nil {
 		return nil, err
 	}
-
-	patchMetalLBChartValues(envConfig, crdConfig, chartValues)
-	release, err := h.client.Run(h.chart, chartValues)
+	relAccessor, err := release.NewAccessor(rel)
 	if err != nil {
 		return nil, err
 	}
-	objs, err := parseManifest(release.Manifest)
+	objs, err := parseManifest(relAccessor.Manifest())
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +116,7 @@ func NewMetalLBChart(chartPath, chartName, namespace string,
 	chart.envSettings = cli.New()
 	chart.client = action.NewInstall(new(action.Configuration))
 	chart.client.ReleaseName = chartName
-	chart.client.DryRun = true
-	chart.client.ClientOnly = true
+	chart.client.DryRunStrategy = action.DryRunClient
 	chart.client.Namespace = namespace
 	chartPath, err := chart.client.LocateChart(chartPath, chart.envSettings)
 	if err != nil {
@@ -196,14 +196,22 @@ const (
 	speakerCertsSecret    = "speaker-certs-secret"
 )
 
-func patchMetalLBChartValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB, valuesMap map[string]interface{}) {
+func patchMetalLBChartValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB, valuesMap map[string]interface{}) error {
+	var err error
 	valuesMap["loadBalancerClass"] = loadBalancerClassValue(crdConfig)
 	valuesMap["prometheus"] = metalLBprometheusValues(envConfig)
-	valuesMap["controller"] = controllerValues(envConfig, crdConfig)
-	valuesMap["speaker"] = speakerValues(envConfig, crdConfig)
+	valuesMap["controller"], err = controllerValues(envConfig, crdConfig)
+	if err != nil {
+		return err
+	}
+	valuesMap["speaker"], err = speakerValues(envConfig, crdConfig)
+	if err != nil {
+		return err
+	}
 	valuesMap["frrk8s"] = metalLBFrrk8sValues(envConfig, crdConfig)
 	valuesMap["networkpolicies"] = netpolValues(envConfig)
 	valuesMap["tls"] = metallbTLSHelmValues(envConfig)
+	return nil
 }
 
 func metallbTLSHelmValues(envConfig params.EnvConfig) map[string]interface{} {
@@ -261,7 +269,7 @@ func metalLBprometheusValues(envConfig params.EnvConfig) map[string]interface{} 
 	}
 }
 
-func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
+func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) (map[string]interface{}, error) {
 	controllerValueMap := map[string]interface{}{
 		"image": map[string]interface{}{
 			"repository": envConfig.ControllerImage.Repo,
@@ -294,7 +302,11 @@ func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 		controllerValueMap["nodeSelector"] = toInterfaceMap(crdConfig.Spec.ControllerNodeSelector)
 	}
 	if crdConfig.Spec.ControllerTolerations != nil {
-		controllerValueMap["tolerations"] = crdConfig.Spec.ControllerTolerations
+		v, err := toJSONValue(crdConfig.Spec.ControllerTolerations)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert controller tolerations to helm value: %w", err)
+		}
+		controllerValueMap["tolerations"] = v
 	}
 	otherConfigs := crdConfig.Spec.ControllerConfig
 	if otherConfigs != nil {
@@ -308,10 +320,10 @@ func controllerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.Meta
 			controllerValueMap["podAnnotations"] = toInterfaceMap(otherConfigs.Annotations)
 		}
 	}
-	return controllerValueMap
+	return controllerValueMap, nil
 }
 
-func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) map[string]interface{} {
+func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB) (map[string]interface{}, error) {
 	frrEnabled := params.BGPType(crdConfig, envConfig) == metallbv1beta1.FRRMode
 
 	speakerValueMap := map[string]interface{}{
@@ -350,7 +362,11 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 		speakerValueMap["nodeSelector"] = toInterfaceMap(crdConfig.Spec.SpeakerNodeSelector)
 	}
 	if crdConfig.Spec.SpeakerTolerations != nil {
-		speakerValueMap["tolerations"] = crdConfig.Spec.SpeakerTolerations
+		v, err := toJSONValue(crdConfig.Spec.SpeakerTolerations)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert speaker tolerations to helm value: %w", err)
+		}
+		speakerValueMap["tolerations"] = v
 	}
 	otherConfigs := crdConfig.Spec.SpeakerConfig
 	if otherConfigs != nil {
@@ -367,7 +383,7 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 	if crdConfig.Spec.SpeakerGratuitousARPInterval != nil && crdConfig.Spec.SpeakerGratuitousARPInterval.Duration >= time.Second {
 		speakerValueMap["gratuitousARPInterval"] = crdConfig.Spec.SpeakerGratuitousARPInterval.Duration.String()
 	}
-	return speakerValueMap
+	return speakerValueMap, nil
 }
 
 func netpolValues(envConfig params.EnvConfig) map[string]any {

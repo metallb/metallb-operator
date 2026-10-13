@@ -5,11 +5,13 @@ import (
 
 	metallbv1beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	. "github.com/onsi/gomega"
+	helmchart "helm.sh/helm/v4/pkg/chart"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 )
 
 const (
@@ -27,7 +29,9 @@ func TestLoadFRRK8SChart(t *testing.T) {
 	chart, err := NewFRRK8SChart(frrk8sHelmChartPath, frrk8sHelmChartName, MetalLBTestNameSpace)
 	g.Expect(err).To(BeNil())
 	g.Expect(chart.chart).NotTo(BeNil())
-	g.Expect(chart.chart.Name()).To(Equal(frrk8sHelmChartName))
+	chartAccessor, err := helmchart.NewAccessor(chart.chart)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(chartAccessor.Name()).To(Equal(frrk8sHelmChartName))
 }
 
 func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
@@ -38,7 +42,16 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 		"foo":              "bar",
 		"kubernetes.io/os": "linux",
 	}
-	tolerations := []corev1.Toleration{{Key: "foo", Operator: corev1.TolerationOpExists}}
+	tolerations := []corev1.Toleration{
+		{Key: "foo", Operator: corev1.TolerationOpExists},
+		{
+			Key:               "bar",
+			Operator:          corev1.TolerationOpEqual,
+			Value:             "baz",
+			Effect:            corev1.TaintEffectNoExecute,
+			TolerationSeconds: ptr.To(int64(0)),
+		},
+	}
 
 	metallb := &metallbv1beta1.MetalLB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -103,7 +116,9 @@ func TestParseFRRK8SChartWithCustomValues(t *testing.T) {
 			}
 			g.Expect(frrk8sControllerFound).To(BeTrue())
 			g.Expect(frrk8s.Spec.Template.Spec.NodeSelector).To(Equal(nodeSelector))
-			g.Expect(frrk8s.Spec.Template.Spec.Tolerations).To(ContainElement(tolerations[0]))
+			for _, toleration := range tolerations {
+				g.Expect(frrk8s.Spec.Template.Spec.Tolerations).To(ContainElement(toleration))
+			}
 			isFRRK8SFound = true
 		}
 		if objKind == "Deployment" && objName == frrk8sStatusCleanerDeploymentName {

@@ -18,6 +18,7 @@ package helm
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -73,11 +74,26 @@ func setOcpMonitorFields(obj *unstructured.Unstructured) error {
 	return nil
 }
 
-func logLevelValue(crdConfig *metallbv1beta1.MetalLB) metallbv1beta1.MetalLBLogLevel {
+func logLevelValue(crdConfig *metallbv1beta1.MetalLB) string {
 	if crdConfig.Spec.LogLevel != "" {
-		return crdConfig.Spec.LogLevel
+		return string(crdConfig.Spec.LogLevel)
 	}
-	return metallbv1beta1.LogLevelInfo
+	return string(metallbv1beta1.LogLevelInfo)
+}
+
+// toJSONValue converts a typed Go value (e.g. a Kubernetes API struct) into
+// the plain map[string]any/[]any/etc. representation that Helm's value
+// schema validation expects.
+func toJSONValue(v any) (any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var out any
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func toInterfaceMap(m map[string]string) map[string]interface{} {
