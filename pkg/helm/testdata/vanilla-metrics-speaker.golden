@@ -391,7 +391,7 @@
                     },
                     {
                         "configMap": {
-                            "defaultMode": 256,
+                            "defaultMode": 292,
                             "name": "metallb-excludel2"
                         },
                         "name": "metallb-excludel2"
