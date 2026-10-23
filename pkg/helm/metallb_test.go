@@ -292,7 +292,10 @@ func TestSpeakerGratuitousARPInterval(t *testing.T) {
 		expectSet bool
 	}{
 		{"unset", nil, "", false},
-		{"set", &metav1.Duration{Duration: 5 * time.Second}, "--gratuitous-arp-interval=5s", true},
+		{"set", &metav1.Duration{Duration: 5 * time.Second}, "--gratuitous-arp-interval=5", true},
+		{"minutes", &metav1.Duration{Duration: 2 * time.Minute}, "--gratuitous-arp-interval=120", true},
+		{"fractional truncated", &metav1.Duration{Duration: 1500 * time.Millisecond}, "--gratuitous-arp-interval=1", true},
+		{"zero", &metav1.Duration{Duration: 0}, "", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
