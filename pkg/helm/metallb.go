@@ -381,7 +381,8 @@ func speakerValues(envConfig params.EnvConfig, crdConfig *metallbv1beta1.MetalLB
 		}
 	}
 	if crdConfig.Spec.SpeakerGratuitousARPInterval != nil && crdConfig.Spec.SpeakerGratuitousARPInterval.Duration >= time.Second {
-		speakerValueMap["gratuitousARPInterval"] = crdConfig.Spec.SpeakerGratuitousARPInterval.Duration.String()
+		// The speaker's --gratuitous-arp-interval flag is an integer number of seconds.
+		speakerValueMap["gratuitousARPInterval"] = int64(crdConfig.Spec.SpeakerGratuitousARPInterval.Duration / time.Second)
 	}
 	return speakerValueMap, nil
 }
