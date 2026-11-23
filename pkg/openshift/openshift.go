@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/Masterminds/semver/v3"
@@ -9,9 +10,13 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	openshiftapiv1 "github.com/openshift/api/operator/v1"
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var ErrEmbeddedFRRK8sUnsupported = errors.New("current CNO version does not support deploying frr-k8s")
 
 func SupportsFRRK8s(ctx context.Context, cli client.Client, envConfig params.EnvConfig) (bool, error) {
 	cno := &openshiftconfigv1.ClusterOperator{}
@@ -54,8 +59,13 @@ func DeployFRRK8s(ctx context.Context, cli client.Client) error {
 		return nil
 	}
 	network.Spec.AdditionalRoutingCapabilities.Providers = append(network.Spec.AdditionalRoutingCapabilities.Providers, openshiftapiv1.RoutingCapabilitiesProviderFRR)
-	err = cli.Update(ctx, network)
+	// Strict validation makes the apiserver reject the update instead of pruning the field
+	// with a warning, which happens when the operator is upgraded before the CNO CRD is.
+	err = cli.Update(ctx, network, client.FieldValidation(metav1.FieldValidationStrict))
 	if err != nil {
+		if apierrors.IsBadRequest(err) {
+			return fmt.Errorf("%w: %w", ErrEmbeddedFRRK8sUnsupported, err)
+		}
 		return err
 	}
 	return nil
